@@ -48,6 +48,24 @@ export interface Camera {
   y: number;
   scale: number;
 }
+/** An actual draw submission; it does not certify native presentation. */
+export interface FrameSubmission {
+  sessionId: string;
+  frame: number;
+  viewGeneration: number;
+  revision: number;
+  exactRevision: number;
+  at: number;
+  uploadedBytes: number;
+}
+
+export interface RegionInspection {
+  status: "outside" | "missing" | "stale" | "current";
+  sessionId: string;
+  frame: number;
+  viewGeneration: number;
+}
+
 type Rect = [number, number, number, number];
 interface RasterTile {
   key: string;
@@ -121,7 +139,6 @@ export class WorldRenderer {
   private tileToken = 0;
   private document!: EditorDocument;
   private sessionId = "";
-  private animation = 0;
   private frame = 0;
   private viewGeneration = 0;
   private preparedViewGeneration = -1;
@@ -130,8 +147,6 @@ export class WorldRenderer {
   private feedbackBounds: Bounds | null = null;
   private localBatches = 0;
   private requestFrame = true;
-  private lastFrameAt = 0;
-  private lastSubmit = "";
   private pendingDelay = new Set<number>();
   private destroyed = false;
   private submittedRevision = -1;
@@ -158,9 +173,6 @@ export class WorldRenderer {
   sourceBytes = 0;
   workerSourceBytes = 0;
   totalSamples = 0;
-  frameCpuMax = 0;
-  advanceFrame: (now: number) => void = () => {};
-  onSubmit: (frame: number) => void = () => {};
   onError: (error: Error) => void = () => {};
 
   constructor(private observation: Observation) {
@@ -215,7 +227,8 @@ export class WorldRenderer {
       // A large accepted dose may span several bounded batches. Its remaining
       // current-revision rectangles can run while completed pixels await RAF.
       // Do not queue view loading here: RAF must first publish this result and
-      // admit any next local dose. Upload/render and input admission stay in tick.
+      // admit any next local dose. Upload/render and input admission stay in the
+      // controller's frame coordinator.
       if (
         completed &&
         (!this.faultArmed || this.fault === "none") &&
@@ -239,7 +252,6 @@ export class WorldRenderer {
       antialias: false,
       background: 0x294e63,
     });
-    this.animation = requestAnimationFrame(this.tick);
   }
 
   reset(document: EditorDocument): void {
@@ -268,7 +280,6 @@ export class WorldRenderer {
       sessionId: this.sessionId,
       tiles: [],
     } satisfies RasterMessage);
-    this.lastSubmit = "";
     this.requestFrame = true;
   }
 
@@ -557,99 +568,44 @@ export class WorldRenderer {
     this.feedbackBounds = feedback ? [...feedback] : null;
   }
 
-  /** The last real render, including a locally useful but incomplete view. */
-  submission(): { frame: number; viewGeneration: number } {
-    return {
-      frame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
-      viewGeneration: this.lastSubmittedViewGeneration,
-    };
-  }
-
   /**
-   * Only the visible part of the requested (possibly swept) area needs a display.
-   * A drawn foundation may survive its own pending edit; current=true also
-   * requires all changes in that area to have reached an actual submission.
+   * Inspect only the visible part of a requested (possibly swept) region.
+   * Missing and stale are distinct: a submitted foundation survives its own
+   * pending edit, but that edit is current only after an actual matching draw.
+   * Completely offscreen work cannot provide a submission proof.
    */
-  regionDisplayed(bounds: Bounds, current = true): boolean {
+  inspectRegion(bounds: Bounds): RegionInspection {
+    const result: RegionInspection = {
+      status: "outside",
+      sessionId: this.sessionId,
+      frame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
+      viewGeneration: this.viewGeneration,
+    };
     const area = intersection(bounds, this.bounds());
-    if (!area) return true;
+    if (!area) return result;
+    result.status = "missing";
     if (
       this.preparedViewGeneration !== this.viewGeneration ||
       this.lastSubmittedViewGeneration !== this.viewGeneration
     )
-      return false;
+      return result;
     let covered = false;
+    let current = true;
     for (const tile of this.tiles.values()) {
       if (!tile.visible || !intersectsBounds(tile.bounds, area)) continue;
       covered = true;
       if (tile.submittedRevision < 0 || tile.submittedFrame !== this.frame)
-        return false;
-      if (!current) continue;
+        return result;
       const rect = pixelRect(tile, area);
       if (
         tile.submittedRevision !== tile.paintedRevision ||
         (tile.dirty && overlaps(tile.dirty, rect)) ||
         (tile.pending && overlaps(tile.pending.rect, rect))
       )
-        return false;
+        current = false;
     }
-    return covered;
-  }
-
-  regionExact(bounds: Bounds): boolean {
-    if (this.preparedViewGeneration !== this.viewGeneration) return false;
-    const relevant = [...this.tiles.values()].filter(
-      (tile) => tile.visible && intersectsBounds(tile.bounds, bounds),
-    );
-    return (
-      relevant.length > 0 &&
-      relevant.every((tile) => {
-        const rect = pixelRect(tile, bounds);
-        return (
-          tile.paintedRevision >= 0 &&
-          (!tile.dirty || !overlaps(tile.dirty, rect)) &&
-          (!tile.pending || !overlaps(tile.pending.rect, rect))
-        );
-      })
-    );
-  }
-
-  /** Input-version coverage only; mixed tile prefixes are not a current exact region. */
-  regionCoverage(
-    bounds: Bounds,
-    requiredRevision: number,
-  ): { minPaintedRevision: number; maxPaintedRevision: number } | null {
-    if (
-      this.preparedViewGeneration !== this.viewGeneration ||
-      !Number.isSafeInteger(requiredRevision) ||
-      requiredRevision < 0 ||
-      requiredRevision > this.document.revision
-    )
-      return null;
-    const relevant = [...this.tiles.values()].filter(
-      (tile) => tile.visible && intersectsBounds(tile.bounds, bounds),
-    );
-    if (!relevant.length) return null;
-    for (const tile of relevant) {
-      if (tile.paintedRevision < 0) return null;
-      // A tile not changed by later input already contains that input's version.
-      if (tile.paintedRevision >= Math.min(requiredRevision, tile.revision))
-        continue;
-      const rect = pixelRect(tile, bounds);
-      if (
-        (tile.dirty && overlaps(tile.dirty, rect)) ||
-        (tile.pending && overlaps(tile.pending.rect, rect))
-      )
-        return null;
-    }
-    return {
-      minPaintedRevision: Math.min(
-        ...relevant.map((tile) => tile.paintedRevision),
-      ),
-      maxPaintedRevision: Math.max(
-        ...relevant.map((tile) => tile.paintedRevision),
-      ),
-    };
+    if (covered) result.status = current ? "current" : "stale";
+    return result;
   }
 
   state() {
@@ -673,7 +629,7 @@ export class WorldRenderer {
       totalSamples: this.totalSamples,
       submittedRevision: this.submittedRevision,
       submittedViewGeneration: this.submittedViewGeneration,
-      lastSubmittedFrame: this.submission().frame,
+      lastSubmittedFrame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
       lastSubmittedViewGeneration: this.lastSubmittedViewGeneration,
       viewGeneration: this.viewGeneration,
       fault: this.fault,
@@ -685,7 +641,7 @@ export class WorldRenderer {
     return this.fault === "pointerup-render" && Boolean(this.document?.active);
   }
 
-  private dispatch(continuationRevision?: number): void {
+  dispatch(continuationRevision?: number): void {
     if (
       this.running ||
       !this.document ||
@@ -837,9 +793,9 @@ export class WorldRenderer {
     }
   }
 
-  private tick = (now: number): void => {
-    if (this.destroyed) return;
-    const start = performance.now();
+  /** Consume bounded results and draw once; the controller owns the frame loop. */
+  renderFrame(_now: number): FrameSubmission | null {
+    if (this.destroyed) return null;
     const resultStart = performance.now();
     let uploaded = 0;
     while (
@@ -896,7 +852,7 @@ export class WorldRenderer {
       this.requestFrame = true;
     }
     if (this.requestFrame && this.document) {
-      // Submit callbacks may request another overlay frame as readiness changes.
+      // Later readiness decisions may request the next overlay frame.
       this.requestFrame = false;
       this.drawOverlay();
       const exact =
@@ -912,6 +868,7 @@ export class WorldRenderer {
       const exactRevision =
         exact && this.tiles.size ? this.document.revision : -1;
       this.renderer.render(this.stage);
+      const submittedAt = performance.now();
       this.frame++;
       this.lastSubmittedViewGeneration = this.viewGeneration;
       for (const tile of this.tiles.values())
@@ -919,41 +876,22 @@ export class WorldRenderer {
           tile.submittedRevision = tile.paintedRevision;
           tile.submittedFrame = this.frame;
         }
-      const identity = `${this.sessionId}.${this.frame}.${this.viewGeneration}.${exactRevision}`;
-      this.observation.mark("submit", identity, {
-        frame: this.frame,
-        sessionId: this.sessionId,
-        revision: this.document.revision,
-        exactRevision,
-        cameraGeneration: this.viewGeneration,
-        uploadedBytes: uploaded,
-      });
-      this.onSubmit(this.frame);
-      // This is explicitly submission, not an invented presentation timestamp.
-      if (exactRevision >= 0 && identity !== this.lastSubmit) {
+      if (exactRevision >= 0) {
         this.submittedRevision = exactRevision;
         this.submittedViewGeneration = this.viewGeneration;
       }
-      this.lastSubmit = identity;
+      return {
+        sessionId: this.sessionId,
+        frame: this.frame,
+        viewGeneration: this.viewGeneration,
+        revision: this.document.revision,
+        exactRevision,
+        at: submittedAt,
+        uploadedBytes: uploaded,
+      };
     }
-    // Publish the accepted state before admitting the next bounded brush dose.
-    // All newly accepted input still precedes selection of the next raster batch.
-    try {
-      this.advanceFrame(performance.now());
-    } catch (error) {
-      this.onError(error instanceof Error ? error : new Error(String(error)));
-    }
-    if (this.destroyed) return;
-    this.dispatch();
-    if (this.lastFrameAt)
-      this.observation.event("frame", {
-        interval: now - this.lastFrameAt,
-        cpuMs: performance.now() - start,
-      });
-    this.lastFrameAt = now;
-    this.frameCpuMax = Math.max(this.frameCpuMax, performance.now() - start);
-    this.animation = requestAnimationFrame(this.tick);
-  };
+    return null;
+  }
 
   private drawOverlay(): void {
     this.overlay.clear();
@@ -1030,7 +968,6 @@ export class WorldRenderer {
 
   destroy(): void {
     this.destroyed = true;
-    cancelAnimationFrame(this.animation);
     for (const timer of this.pendingDelay) clearTimeout(timer);
     this.raster.terminate();
     for (const tile of this.tiles.values()) this.destroyTile(tile);

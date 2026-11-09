@@ -17,6 +17,7 @@ import {
   evaluateRun,
   selectP0Scope,
   evaluateScenario,
+  evaluateBlockedInput,
   extractNavigationSamples,
   evaluateNavigationDiagnostics,
   strokeEvidence,
@@ -157,7 +158,7 @@ else if (native)
     "Native pilot only; use --full for the required repetitions. Acceptance still requires a qualified display and proven exact-frame presentation mapping.",
   );
 const report = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   purpose,
   mode: lab ? "lab" : "native",
   collectionStarted: false,
@@ -240,7 +241,7 @@ function checkpoint() {
     report.evaluation = evaluateRun(report);
     await atomicJson(join(out, "report.json"), report);
     await atomicJson(join(out, "run-index.json"), {
-      schemaVersion: 2,
+      schemaVersion: 3,
       purpose,
       selection: report.selection,
       startedAt: report.startedAt,
@@ -255,7 +256,7 @@ function checkpoint() {
   return checkpointTask;
 }
 async function scenarioCompleted(scenario, resultFile) {
-  const passed = scenario.collectionPassed === true;
+  const passed = scenario.evaluation.status === "PROXY_ONLY";
   const recordCheck = (id, valid) =>
     report.functional.checks.push({
       id,
@@ -289,7 +290,13 @@ async function scenarioCompleted(scenario, resultFile) {
     );
   }
   if (scenario.id === "M10-height-cold") {
-    recordCheck("cold-blocked-inputs", scenario.blockedInputs?.passed === true);
+    recordCheck(
+      "cold-blocked-inputs",
+      scenario.blockedInputs?.cases?.length === 2 &&
+        scenario.blockedInputs.cases.every(
+          (entry) => evaluateBlockedInput(entry).passed,
+        ),
+    );
     recordCheck(
       "cold-before-navigation",
       passed &&
@@ -297,7 +304,7 @@ async function scenarioCompleted(scenario, resultFile) {
     );
     recordCheck(
       "cold-edit-after-navigation",
-      passed && scenario.attempts.every((attempt) => attempt.stroke?.passed),
+      passed && scenario.evaluation.live.every((stroke) => stroke.passed),
     );
     recordCheck(
       "cold-edit-content",
@@ -889,17 +896,14 @@ async function emptyNavigation(fixture) {
         rafFrameIntervalsMs: frames.map((e) => e.interval),
         presentationFrameIntervalsMs: [],
         droppedEvents: after.droppedEvents,
+        inputCount: inputs.length,
+        wheelChecks,
+        storeCommits: metricsAfter.commits - metricsBefore.commits,
+        cameraMoved:
+          after.camera.x !== before.camera.x ||
+          after.camera.y !== before.camera.y,
       };
       session.instance.scenarios.push(scenario);
-      scenario.collectionPassed =
-        inputs.length > 0 &&
-        wheelChecks.length >= 8 &&
-        wheelChecks.every((c) => c.passed) &&
-        before.document.sequence === after.document.sequence &&
-        metricsAfter.commits === metricsBefore.commits &&
-        navigation.passed &&
-        (after.camera.x !== before.camera.x ||
-          after.camera.y !== before.camera.y);
       scenario.evaluation = evaluateScenario(scenario);
       const resultFile = join(session.directory, `${scenario.id}-result.json`);
       await atomicJson(resultFile, scenario);
@@ -911,7 +915,7 @@ async function emptyNavigation(fixture) {
       await checkpoint();
       check(
         grid ? "empty-navigation-grid-on" : "empty-navigation-grid-off",
-        scenario.collectionPassed,
+        scenario.evaluation.status === "PROXY_ONLY",
         {
           inputs: inputs.length,
           wheelChecks,

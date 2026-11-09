@@ -1,5 +1,9 @@
 // Explains renderer submission latency. These clocks do not prove display
 // presentation and this diagnostic cannot turn a native acceptance gate green.
+import {
+  distribution as summarizeDistribution,
+  extractSubmissionEvidence,
+} from "./atlas-p0-evaluate.mjs";
 const stages = [
   "inputToModelMs",
   "modelToDispatchMs",
@@ -32,58 +36,36 @@ function rasterBounds(task) {
 }
 
 function distribution(values) {
-  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
-  if (!sorted.length) return { count: 0, median: null, p95: null, max: null };
-  const at = (fraction) =>
-    sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)];
+  const result = summarizeDistribution(values);
   return {
-    count: sorted.length,
-    median: at(0.5),
-    p95: at(0.95),
-    max: sorted.at(-1),
+    count: result.count,
+    invalid: result.invalid,
+    median: result.p50,
+    p95: result.p95,
+    max: result.maximum,
   };
 }
 
-function intervalBounds(interval) {
-  if (interval.bounds) return interval.bounds;
-  // Older journals omit changed-source bounds; retain conservative support.
-  const halo = 2 * 5 * 2 ** interval.level;
-  return [
-    Math.min(interval.from[0], interval.to[0]) - interval.radius - halo,
-    Math.min(interval.from[1], interval.to[1]) - interval.radius - halo,
-    Math.max(interval.from[0], interval.to[0]) + interval.radius + halo,
-    Math.max(interval.from[1], interval.to[1]) + interval.radius + halo,
-  ];
-}
-
 export function summarizeSubmissionTiming(events) {
-  const inputs = new Map();
+  const evidence = extractSubmissionEvidence(events);
+  const { inputs, doses: intervals } = evidence;
   const batches = new Map();
   const batchStarts = new Map();
   const tasks = new Map();
   const taskResults = new Map();
   const discardedTasks = new Set();
   const uploads = new Map();
-  const submissions = new Map();
-  const frames = new Map();
-  const intervalSubmits = new Map();
-  const commits = new Map();
+  const commits = new Map(
+    evidence.commits.map((commit) => [commit.input, commit]),
+  );
   for (const event of events) {
-    if (event.kind === "input") inputs.set(event.id, event);
-    if (event.kind === "commit") commits.set(event.input, event);
     if (event.kind === "raster-batch-start") batchStarts.set(event.id, event);
-    if (event.kind === "brush-submit" && !intervalSubmits.has(event.intervalId))
-      intervalSubmits.set(event.intervalId, event);
     if (event.kind === "raster-batch-result" && event.timing)
       batches.set(event.id, event.timing);
     if (event.kind === "raster-start") tasks.set(event.id, event);
     if (event.kind === "raster-result") taskResults.set(event.id, event);
     if (event.kind === "raster-discard") discardedTasks.add(event.id);
     if (event.kind === "raster-upload") uploads.set(event.id, event);
-    if (event.kind === "edit-submit" && !submissions.has(event.input))
-      submissions.set(event.input, event);
-    if (event.kind === "submit")
-      frames.set(`${event.sessionId}/${event.frame}`, event);
   }
   const samples = [];
   const brushIntervals = [];
@@ -153,20 +135,21 @@ export function summarizeSubmissionTiming(events) {
         return result;
       });
   };
-  const diagnose = (model, input, submit, identity) => {
-    const frame = submit && frames.get(`${submit.sessionId}/${submit.frame}`);
-    if (
-      !model.sessionId ||
-      submit?.sessionId !== model.sessionId ||
-      submit.revision !== model.revision ||
-      !frame ||
-      frame.revision < model.revision ||
-      frame.at > submit.at
-    ) {
+  const diagnose = (model, input, published, identity) => {
+    if (!published) {
       incomplete.push({
         ...identity,
         reason: "missing-matching-submission",
       });
+      return null;
+    }
+    const { receipt: submit, frame } = published;
+    if (
+      !Array.isArray(model.bounds) ||
+      model.bounds.length !== 4 ||
+      !model.bounds.every(Number.isFinite)
+    ) {
+      incomplete.push({ ...identity, reason: "missing-changed-bounds" });
       return null;
     }
     // These endpoints share the renderer clock. Keep them even if worker/main
@@ -283,7 +266,14 @@ export function summarizeSubmissionTiming(events) {
       rasterBatches,
     };
   };
-  const modelEvents = events.filter((event) => event.kind === "model");
+  const modelEvents = intervals.flatMap((interval) =>
+    (interval.inputIds ?? []).map((input) => ({
+      ...interval,
+      input,
+      at: interval.projectedAt,
+      appliedAt: interval.at,
+    })),
+  );
   for (const model of modelEvents) {
     const input = inputs.get(model.input);
     if (!input) {
@@ -294,31 +284,32 @@ export function summarizeSubmissionTiming(events) {
       });
       continue;
     }
-    const sample = diagnose(model, input, submissions.get(model.input), {
-      input: model.input,
-      kind: "input",
-    });
-    if (sample) samples.push(sample);
-  }
-  const intervals = events.filter(
-    (event) => event.kind === "brush-interval" && event.changed,
-  );
-  for (const interval of intervals) {
-    // Old journals have no changed bounds: their conservative brush support
-    // encloses the real dirty source support. New observations use exact bounds.
-    const bounds = intervalBounds(interval);
     const sample = diagnose(
-      { ...interval, bounds },
+      model,
+      input,
+      evidence.publication(evidence.changesByInput.get(model.input)),
+      {
+        input: model.input,
+        kind: "input",
+      },
+    );
+    if (sample)
+      samples.push({
+        ...sample,
+        appliedToProjectedMs: model.at - model.appliedAt,
+      });
+  }
+  for (const interval of intervals) {
+    const sample = diagnose(
+      interval,
       inputs.get(interval.inputIds?.[0]),
-      intervalSubmits.get(interval.intervalId),
+      evidence.publication(interval),
       {
         intervalId: interval.intervalId,
         gestureId: interval.gestureId,
         cause: interval.cause,
         kind: "brush-interval",
-        boundsSource: interval.bounds
-          ? "changed-source-bounds"
-          : "conservative-brush-support",
+        boundsSource: "changed-source-bounds",
       },
     );
     if (sample) brushIntervals.push(sample);
@@ -330,7 +321,9 @@ export function summarizeSubmissionTiming(events) {
       event.input !== null,
   )) {
     const input = inputs.get(end.input);
-    const submit = submissions.get(end.input);
+    const commit = commits.get(end.input);
+    const published = evidence.publication(commit);
+    const submit = published?.receipt;
     const gestureIntervals = intervals.filter(
       (interval) =>
         interval.sessionId === end.sessionId &&
@@ -339,7 +332,7 @@ export function summarizeSubmissionTiming(events) {
     if (!gestureIntervals.length) continue; // Deliberately rejected/no-op gesture.
     pointerupCount++;
     const latest = gestureIntervals.at(-1);
-    const frame = submit && frames.get(`${submit.sessionId}/${submit.frame}`);
+    const frame = published?.frame;
     if (
       !input ||
       !frame ||
@@ -381,11 +374,15 @@ export function summarizeSubmissionTiming(events) {
     });
     // Pointerup creates no new dose. Only still outstanding work for its last
     // accepted revision belongs here, including batches started before release.
-    const commit = commits.get(end.input);
-    const dirtyBounds =
-      commit?.sessionId === end.sessionId && Array.isArray(commit.bounds)
-        ? commit.bounds
-        : gestureIntervals.map(intervalBounds);
+    const dirtyBounds = commit?.bounds;
+    if (!Array.isArray(dirtyBounds) || !dirtyBounds.length) {
+      incomplete.push({
+        input: end.input,
+        kind: "pointerup",
+        reason: "missing-changed-bounds",
+      });
+      continue;
+    }
     const outstanding = [...tasks.values()].filter((task) => {
       const upload = uploads.get(task.id);
       return (

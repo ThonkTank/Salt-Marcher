@@ -87,7 +87,11 @@ test("the independent coarse-dab oracle holds after a real save and fine digest 
     });
     doc.acceptCoverage(bounds, sources.tiles, info.sequence);
     doc.beginGesture(SCALING_REGION.brush);
-    doc.applyPoint(SCALING_REGION.brush.center, 1000);
+    doc.applySegment(
+      SCALING_REGION.brush.center,
+      SCALING_REGION.brush.center,
+      1000,
+    );
     const change = doc.finishGesture();
     assert.ok(change);
     store.commit(change);

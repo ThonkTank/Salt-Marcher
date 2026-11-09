@@ -498,15 +498,17 @@ Bedienverhalten, Format und Grenzen. Ausbau und Abnahme stehen im
 [Neubauplan](implementation/atlas-rebuild-plan.md), aktuelle Ergebnisse im
 [Status](implementation/status.md).
 
-| Besitzer                                           | Verantwortung                                                                                                            |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `EditorController`                                 | Effektive Einstellungen, Fehler, Kamera, Eingaben, abgeleitete lokale Freigabe, Gesten und geordnete Persistenzaufträge. |
-| `model/EditorDocument`                             | Aktive Autoren, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.            |
-| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik, regelmäßiges Abtastraster und numerische Übersicht.                                          |
-| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, priorisierte Rasteraufträge und tatsächliche Submitstempel.             |
-| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                                |
-| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                |
-| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.            |
+| Besitzer                                           | Verantwortung                                                                                                                                            |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EditorController`                                 | Effektive Einstellungen, normalisierte Eingaben, Kamera, lokale Freigabe, Gesten, ausstehende Dosis und geordnete Persistenz; einziger Framekoordinator. |
+| `brush.ts`                                         | Drei Gestenzustände und reine Entscheidung über Zielpunkt, Zeitverbrauch, Warten und nächste Folgedosis.                                                 |
+| `model/EditorDocument`                             | Aktive Autoren, ausdrücklich übergebene Segmente, Gestentransaktionen, eigene Patches, lokale History, Quellenbereitschaft und Speicherbudgets.          |
+| `model/height.ts`, `height-grid.ts`, `overview.ts` | Gemeinsame Höhenmathematik und Lesebereiche, regelmäßiges Abtastraster und numerische Übersicht.                                                         |
+| `render/WorldRenderer`                             | Beibehaltene Pixi-Kacheln, lokale Invalidierung, priorisierte Rasteraufträge, begrenzte Ergebnisübernahme und tatsächliche Submitbelege.                 |
+| `render/raster.worker.ts`                          | Rasterberechnung aus eigenen Quellkopien; keine zweite Dokumentautorität.                                                                                |
+| `observation.ts`                                   | Optionales Journal und lesende Zuordnung von Eingaben, Dosen, Commit und tatsächlichen Submits.                                                          |
+| `desktop/main.ts`, `preload.ts`                    | Fenster, native Dialoge, Session-/Dateigrenzen und typisierte IPC-Brücke.                                                                                |
+| `desktop/store-process.ts`, `project-store.ts`     | SQLite-Arbeitskopie, räumliche Reads, Autoren-/Übersichtstransaktionen und Dateisnapshots im Utility-Prozess.                                            |
 
 React hält nur noch nicht übernommene Texte numerischer Felder; Blur oder Enter
 übernimmt sie in den Controller. Werkzeugmodus, Größe, Stärke, Raster und
@@ -565,6 +567,9 @@ Laufende Reads und Ladefehler gehören zum Controller. Der gemeinsame Ladeablauf
 hält einen laufenden Read und den aktuellen Folgebedarf. Kamerabewegung und
 aktueller Werkzeugbedarf fordern Daten unabhängig von Modellgesten an; ein während
 des Lesens veränderter Werkzeugbereich wird vor dem nächsten Read neu bestimmt.
+`scheduleLoad` setzt dafür einen Bedarfsmarker, den der einzige Framekoordinator
+abnimmt. Die vorhandene Read-Schleife fasst Änderungen während eines Reads zum
+aktuellen Folgebedarf zusammen.
 
 Beide Lesezwecke teilen `readCurrent` für Session-/Navigations- und Sequenzprüfung.
 Überholt ein Persistenz-Ack den gelesenen Stand, wird neu gelesen. Auch das Modell
@@ -582,27 +587,52 @@ künftigen Patchumfang vor Mutation, Acks geben ihn frei.
 
 `localReadiness` verbindet Quellenabdeckung und tatsächlich eingereichtes lokales
 Terrain zu einem abgeleiteten Zustand. Eingabe, Cursor/Status und lesende Diagnose
-verwenden denselben Wert. `regionDisplayed` prüft Kachel-Submitstempel und die
-zuletzt eingereichte Ansicht, nicht bloß vorbereitete Texturen oder die aktuelle
-Kameravariable. Der sichtbare Wirkbereich umfasst bei Bewegung das Segment;
+verwenden denselben Wert. `WorldRenderer.inspectRegion` prüft die zuletzt wirklich
+eingereichte Ansicht und die Kachel-Submitstempel. Es liefert `outside` für einen
+vollständig unsichtbaren Bereich, `missing` für eine fehlende eingereichte
+Grundlage, `stale` für eine vorhandene Grundlage mit offenen lokalen Änderungen
+und `current` für den aktuellen eingereichten Bereich. `outside` ist kein
+Submitbeleg. Der sichtbare Wirkbereich umfasst bei Bewegung das Segment;
 unsichtbare Halos benötigen Quellen, keine eigene Darstellung. Die genaue
 Gesten- und Wartesemantik steht im Produktvertrag.
 
 Kameraänderungen und Resize bereiten die neue Kachelauswahl synchron vor.
-Quellenantworten beginnen oder reaktivieren keine Geste. Eine Höhengeste hält
-letzten angenommenen Punkt, neuesten Zeigerpunkt und höchstens eine ausstehende
-Dosis. Der reine Fachkern integriert nur die ausdrücklich angenommene Zeit;
-Uhr, Begrenzung und Rückkopplung gehören zum Controller.
+Quellenantworten beginnen oder reaktivieren keine Geste. `BrushState` unterscheidet
+`idle`, `blocked` mit physisch noch gehaltener Taste und `active` mit einem
+`BrushStroke`. Der Strich hält Segmentanker, jüngste Zeigerposition und letzten
+untersuchten Zeitpunkt. `brushTarget` wählt den zu prüfenden Zielpunkt;
+`decideBrushFrame` liefert rein die nächste begrenzte Dosis oder Warteentscheidung.
+Bei eigenem Feedback aktualisiert die Entscheidung den Anker, verbraucht aber
+Wartezeit und Weg ohne spätere Nachholung. Fehlende Quellen oder Terrain beenden
+die Geste; der Controller erhält die Sperre bis zum Loslassen. Eine gültige
+Down-Eingabe wendet die nominale Press-Dosis synchron an, damit Down/Up zwischen
+zwei Frames einen kurzen Klick behalten.
 
-Der gemeinsame Frameablauf übernimmt gültige Ergebnisse, zeichnet sie und
-bestätigt aktuelle Regionen. Erst danach nimmt er einen weiteren zulässigen
-Pinselschritt an und disponiert neue Rasterarbeit. Dadurch entwertet die nächste
-Änderung ein fertiges Ergebnis nicht vor dessen Darstellung. Restarbeit derselben
-angenommenen Revision darf nach Workerabschluss direkt weiterlaufen. Sie wartet
-nicht auf einen zusätzlichen Frame allein zur Disposition; Upload, Zeichnen und
-die nächste Dosis bleiben im gemeinsamen RAF. Ein laufender Batch und das
-gemeinsame Budget für fertige plus laufende Resultate begrenzen diese Fortsetzung.
-Kein zweiter Gesten-RAF und kein Zeichnen aus dem Worker-Nachrichtenhandler.
+Der Controller hält die noch nicht dargestellte Dosis unabhängig vom Gestenzustand
+in `awaitingDose`. Sie überlebt Pointerup und verhindert weitere unsichtbare
+Dosen. Ein aktueller lokaler Submit gibt sie frei; vollständiges Verlassen der
+Ansicht macht sie für die Rückkopplung gegenstandslos, ohne einen Submit zu
+behaupten. Das Modell erhält ausschließlich
+`applySegment(from, to, elapsedMs)`. Es führt keinen eigenen Segmentanker und
+kennt weder Uhr noch Frameplanung. Controller und Modell verwenden dieselbe
+reine Funktion `heightBrushReadBounds` für Segment und Quellenhalo.
+
+Der einzige RAF gehört dem Controller. Er startet zusammengefassten Ladebedarf
+und ruft `WorldRenderer.renderFrame` auf. Diese Methode übernimmt gültige
+Ergebnisse im bestehenden Budget, zeichnet bei Bedarf und gibt ausschließlich
+nach einer tatsächlichen Zeichnung einen `FrameSubmission` zurück. Der Controller
+übergibt den Beleg an die Beobachtung, löst passende Rückkopplung und berechnet die
+lokale Freigabe. Erst danach entscheidet er über die nächste Halte-/Bewegungsdosis
+und ruft `dispatch` auf. Dadurch entwertet die nächste Änderung ein fertiges
+Ergebnis nicht vor dessen Darstellung. Der Renderer besitzt weder einen eigenen
+RAF noch einen Callback zur Eingabefreigabe.
+
+Restarbeit derselben angenommenen Revision darf nach Workerabschluss direkt
+weiterlaufen. Sie wartet nicht auf einen zusätzlichen Frame allein zur
+Disposition; Upload, Zeichnen und die nächste Folgedosis bleiben im gemeinsamen
+RAF. Ein laufender Batch und das gemeinsame Budget für fertige plus laufende
+Resultate begrenzen diese Fortsetzung. Der Worker-Nachrichtenhandler zeichnet
+nicht.
 
 Angenommene Abschnitte liefern eigene Patches nur für geänderte Quellen an
 Renderer und Worker. Vollständige Ausschnittskopien je Eingabe entfallen.
@@ -620,13 +650,14 @@ wird vollständig übernommen, auch bei neueren Eingaben; sein Stand darf nicht
 älter als der bereits angezeigte sein. Neuere Änderungen bleiben für Folgearbeit
 vorgemerkt. Session und monotone Tokens schützen vor überholten Ergebnissen.
 
-Ein exakter lokaler Submit verlangt den vollständigen aktuellen Bereich, nicht
-eine einzelne aktuelle Kachel. `input-covered` belegt nur Versionsabdeckung,
-auch über gemischte Revisionen; es ersetzt kein `edit-submit`.
-`submittedRevision`/`exactRevision` bezeichnen den neuesten vollständig
-gezeichneten Modellstand. Lokale Kachelstempel können zusätzlich eine brauchbare
-Teilansicht belegen. Geänderte Freigabe und Pointerup können einen Overlayframe
-anfordern, auch ohne neue Modellrevision. Kameraoffsets werden vor der
+Ein aktueller lokaler Submit verlangt den vollständigen sichtbaren Prüfbereich.
+Offene Dirty-/Pendingrechtecke zählen nur, soweit sie diesen Bereich überlappen;
+unveränderte Kacheln dürfen einen älteren Revisionsstempel behalten. Frame,
+Session und Ansicht müssen zum tatsächlichen Submit gehören. `exactRevision`
+bezeichnet eine in diesem Submit vollständig aktuelle Ansicht;
+`submittedRevision` hält den letzten solchen Stand. Lokale Kachelstempel können
+bereits eine aktuelle Teilansicht belegen. Geänderte Freigabe und Pointerup können
+einen Overlayframe anfordern, auch ohne neue Modellrevision. Kameraoffsets werden vor der
 GPU-Übergabe abgezogen. `budgets.ts` begrenzt Quellen, History, Pendingdaten,
 CPU-/GPU-Darstellungen und Arbeit pro Frame.
 
@@ -671,6 +702,31 @@ Ausführliche Beobachtung, synthetischer Sampling-Lastworker und Renderstörunge
 entstehen nur mit `ATLAS_P0_DIAGNOSTICS=1`. Der Normalstart besitzt keine
 `atlasObserve`-Anbindung, Host-Diagnose, Atlas-Performance-Marks oder Belastungs-UI.
 Produktfreigabe und Renderabschluss hängen nicht von Diagnose ab.
+
+`Observation` erhält Fakten vom Controller und tatsächliche `FrameSubmission`s.
+Nur bei eingeschalteter Diagnose hält es offene Zuordnungen für Dosen, Commit und
+Navigation. Der Controller besitzt die Eingabe-IDs. Jede angenommene Dosis liefert
+einen `brush-interval` mit Modellzeit `at`, Projektionsabschluss `projectedAt`,
+Segment, angenommener Zeit und Eingabe-IDs. Ein fehlender Projektionsabschluss
+bleibt mit `projectedAt: null` sichtbar und erhält keinen Dosis-Submitbeleg.
+`brush-submit` verbindet eine erfolgreich projizierte Dosis über
+Session, Geste, Intervall und Revision mit einem tatsächlichen `submit` derselben
+Ansicht und desselben Frames. Der Abschluss einer geänderten Geste per Pointerup
+liefert `commit`; dessen `edit-submit` bindet auch die Dokumentsequenz.
+Die Beobachtung liest regionale
+Submitbelege und abgeleitete Bereitschaft, verändert aber weder Produktzustand
+noch Frameplanung.
+
+Journal und Laufberichte verwenden Schema 3. `extractSubmissionEvidence` in
+`scripts/atlas-p0-evaluate.mjs` verbindet Eingabe, Dosis oder Commit, lokalen
+Beleg und tatsächlichen Frame. Sammler, Wiederholung gespeicherter Journale und
+Zeitzerlegung verwenden diese Extraktion; Navigation und kalte Freigabe teilen
+ebenfalls eine Extraktion. `evaluateAttempt` und `evaluateScenario` besitzen die
+gemeinsamen Versuchs- und Szenarioregeln. `scenario.evaluation` hält das eine
+abgeleitete Szenariourteil; Inhalts- und Messfakten bleiben davon getrennt.
+Fehlende Eingaben, Identitäten, Bereiche oder Zeitstempel werden als fehlende
+Nachweise erhalten. Historische Journale werden mit ihrem damaligen Harnessstand
+ausgewertet.
 
 Diagnosebatches erfassen Versand, Workerbeginn/-ende und Rendererempfang über
 `performance.timeOrigin + performance.now`. Der bestehende Journalpfad verbindet

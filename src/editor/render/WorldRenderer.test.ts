@@ -127,7 +127,7 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   document.acceptCoverage(broad, [...createCoastFixture(), distant]);
   const original = document.sampleHeight(320, 0);
   document.beginGesture({ level: 8, radius: 12_000, amount: 100 });
-  document.applyPoint([0, 0], 1000);
+  document.applySegment([0, 0], [0, 0], 1000);
   const edit = document.finishGesture()!;
   document.acceptPersistence(edit.sequence);
   const lifted = document.sampleHeight(320, 0);
@@ -250,7 +250,6 @@ async function readyRenderer({
   rendered = true,
 } = {}) {
   let worker!: RasterWorker;
-  let callback!: FrameRequestCallback;
   vi.stubGlobal(
     "Worker",
     class extends RasterWorker {
@@ -261,10 +260,6 @@ async function readyRenderer({
     },
   );
   vi.stubGlobal("devicePixelRatio", 1);
-  vi.stubGlobal("requestAnimationFrame", (next: FrameRequestCallback) => {
-    callback = next;
-    return 1;
-  });
   const document = new EditorDocument("render-progress", { empty: true });
   const observation = new Observation(true);
   const world = new WorldRenderer(observation);
@@ -281,24 +276,29 @@ async function readyRenderer({
     true,
   );
   world.refresh();
-  const frame = () => callback(performance.now());
+  const frame = (beforeDispatch?: () => void) => {
+    const submitted = world.renderFrame(performance.now());
+    beforeDispatch?.();
+    world.dispatch();
+    return submitted;
+  };
   if (rendered) {
     for (
       let step = 0;
-      step < 100 && !world.regionExact(world.bounds());
+      step < 100 && world.inspectRegion(world.bounds()).status !== "current";
       step++
     ) {
       if (worker.completed.length) worker.deliver();
       frame();
     }
-    expect(world.regionExact(world.bounds())).toBe(true);
+    expect(world.inspectRegion(world.bounds()).status).toBe("current");
   }
   const change = (
     point: [number, number],
     brush = { level: 0, radius: 20, amount: 400 },
   ) => {
     document.beginGesture(brush);
-    const update = document.applyPoint(point, 1000)!;
+    const update = document.applySegment(point, point, 1000)!;
     world.updateSourcePatches(update.patches);
     world.invalidate(update.bounds);
     document.finishGesture();
@@ -312,11 +312,11 @@ it("confirms a current edited region while another part of its tile still render
   const first = change([160, 160]);
   frame();
   const second = change([352, 352]);
-  expect(world.regionExact(first.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
   worker.deliver();
   frame();
-  expect(world.regionExact(first.bounds)).toBe(true);
-  expect(world.regionExact(second.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).toBe("current");
+  expect(world.inspectRegion(second.bounds).status).not.toBe("current");
   const offset = (39 * 128 + 39) * 4;
   expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
     ...colour(document.sampleHeight(158, 158)),
@@ -324,7 +324,7 @@ it("confirms a current edited region while another part of its tile still render
   ]);
   worker.deliver();
   frame();
-  expect(world.regionExact(second.bounds)).toBe(true);
+  expect(world.inspectRegion(second.bounds).status).toBe("current");
   expect(world.state().submittedViewGeneration).toBe(
     world.state().viewGeneration,
   );
@@ -334,49 +334,55 @@ it("requires an actual local submission, not only source readiness or uploaded p
   const { world, worker, frame } = await readyRenderer({ rendered: false });
   const area: Bounds = [200, 200, 240, 240];
   expect(world.isPresentationReady(area)).toBe(true);
-  expect(world.regionDisplayed(area, false)).toBe(false);
-  expect(world.regionDisplayed(area)).toBe(false);
+  expect(world.inspectRegion(area).status).toBe("missing");
   frame();
   worker.deliver();
-  expect(world.regionDisplayed(area, false)).toBe(false);
+  expect(world.inspectRegion(area).status).toBe("missing");
   const render = vi
     .spyOn(world.renderer, "render")
     .mockImplementationOnce(() => {
       // The upload is complete, but this call has not submitted it yet.
-      expect(world.regionExact(area)).toBe(true);
-      expect(world.regionDisplayed(area, false)).toBe(false);
-      expect(world.regionDisplayed(area)).toBe(false);
+      expect(world.inspectRegion(area).status).toBe("missing");
     });
-  frame();
+  const receipt = frame();
   expect(render).toHaveBeenCalledOnce();
-  expect(world.regionDisplayed(area, false)).toBe(true);
-  expect(world.regionDisplayed(area)).toBe(true);
-  expect(world.submission()).toEqual({
+  expect(receipt).toMatchObject({
+    sessionId: "render-progress",
     frame: world.state().lastSubmittedFrame,
     viewGeneration: world.state().viewGeneration,
+  });
+  expect(world.inspectRegion(area)).toEqual({
+    status: "current",
+    sessionId: receipt!.sessionId,
+    frame: receipt!.frame,
+    viewGeneration: receipt!.viewGeneration,
   });
 });
 
 it("requires a new submitted view after camera changes, resize and session replacement", async () => {
   const { world, frame } = await readyRenderer();
   const area: Bounds = [200, 200, 240, 240];
-  const first = world.submission();
+  const first = world.inspectRegion(area);
   world.moveCamera({ ...world.camera, x: world.camera.x + 4 });
   world.refresh();
-  expect(world.regionExact(area)).toBe(true);
-  expect(world.submission()).toEqual(first);
-  expect(world.regionDisplayed(area, false)).toBe(false);
+  expect(world.inspectRegion(area)).toMatchObject({
+    status: "missing",
+    frame: first.frame,
+  });
   frame();
-  expect(world.regionDisplayed(area)).toBe(true);
-  expect(world.submission().frame).toBeGreaterThan(first.frame);
+  expect(world.inspectRegion(area).status).toBe("current");
+  expect(world.inspectRegion(area).frame).toBeGreaterThan(first.frame);
   world.resize(68, 68);
   world.refresh();
-  expect(world.regionDisplayed(area, false)).toBe(false);
+  expect(world.inspectRegion(area).status).toBe("missing");
   frame();
-  expect(world.regionDisplayed(area)).toBe(true);
+  expect(world.inspectRegion(area).status).toBe("current");
   world.reset(new EditorDocument("replacement", { empty: true }));
-  expect(world.submission()).toEqual({ frame: 0, viewGeneration: -1 });
-  expect(world.regionDisplayed(area, false)).toBe(false);
+  expect(world.inspectRegion(area)).toMatchObject({
+    status: "missing",
+    sessionId: "replacement",
+    frame: 0,
+  });
 });
 
 it("marks a still-unprepared view as loading even without a pointer or terrain tiles", async () => {
@@ -394,15 +400,12 @@ it("marks a still-unprepared view as loading even without a pointer or terrain t
   expect(lines).not.toHaveBeenCalled();
 });
 
-it("preserves a readiness overlay redraw requested by a submit callback", async () => {
+it("preserves a readiness overlay redraw requested after an actual submit", async () => {
   const { world, frame } = await readyRenderer();
   const render = vi.spyOn(world.renderer, "render");
-  world.onSubmit = () => {
-    world.onSubmit = () => {};
-    world.redraw();
-  };
   world.redraw();
-  frame();
+  const receipt = frame(() => world.redraw());
+  expect(receipt).not.toBeNull();
   expect(render).toHaveBeenCalledTimes(1);
   frame();
   expect(render).toHaveBeenCalledTimes(2);
@@ -413,13 +416,12 @@ it("preserves a readiness overlay redraw requested by a submit callback", async 
 it("keeps a drawn foundation during its own pending edit without confirming the new content", async () => {
   const { world, worker, frame, change } = await readyRenderer();
   const update = change([200, 200]);
-  expect(world.regionDisplayed(update.bounds, false)).toBe(true);
-  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
   frame();
   worker.deliver();
-  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  expect(world.inspectRegion(update.bounds).status).not.toBe("current");
   frame();
-  expect(world.regionDisplayed(update.bounds)).toBe(true);
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
 });
 
 it("checks the entire visible swept area without waiting for unrelated screen tiles", async () => {
@@ -435,24 +437,23 @@ it("checks the entire visible swept area without waiting for unrelated screen ti
   worker.deliver();
   world.setPriorityAreas(right);
   frame();
-  expect(world.regionDisplayed(left)).toBe(true);
-  expect(world.regionDisplayed(right, false)).toBe(false);
+  expect(world.inspectRegion(left).status).toBe("current");
+  expect(world.inspectRegion(right).status).toBe("missing");
   worker.deliver();
   frame();
-  expect(world.regionDisplayed(left)).toBe(true);
-  expect(world.regionDisplayed(right)).toBe(true);
-  expect(world.regionExact(world.bounds())).toBe(false);
+  expect(world.inspectRegion(left).status).toBe("current");
+  expect(world.inspectRegion(right).status).toBe("current");
+  expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
   // Both endpoints are drawn; the unpainted middle still prohibits this sweep.
-  expect(world.regionDisplayed([240, 240, 1296, 272], false)).toBe(false);
+  expect(world.inspectRegion([240, 240, 1296, 272]).status).toBe("missing");
 });
 
 it("does not require offscreen brush or halo pixels even inside a partially visible tile", async () => {
   const { world } = await readyRenderer();
   const offscreen: Bounds = [400, 160, 420, 180];
   world.invalidate(offscreen);
-  expect(world.regionExact([160, 160, 420, 180])).toBe(false);
-  expect(world.regionDisplayed([160, 160, 420, 180])).toBe(true);
-  expect(world.regionDisplayed(offscreen)).toBe(true);
+  expect(world.inspectRegion([160, 160, 420, 180]).status).toBe("current");
+  expect(world.inspectRegion(offscreen).status).toBe("outside");
 });
 
 it("loads the current local focus before unrelated cold tiles without queueing old focus areas", async () => {
@@ -469,11 +470,11 @@ it("loads the current local focus before unrelated cold tiles without queueing o
   frame();
   expect(worker.batches[0].tasks.map((task) => task.key)).toEqual(["2:1:1"]);
   expect(worker.batches[0].tasks[0].rect).toEqual([0, 0, 128, 128]);
-  expect(world.regionDisplayed(focus, false)).toBe(false);
+  expect(world.inspectRegion(focus).status).toBe("missing");
   worker.deliver();
   frame();
-  expect(world.regionDisplayed(focus)).toBe(true);
-  expect(world.regionExact(world.bounds())).toBe(false);
+  expect(world.inspectRegion(focus).status).toBe("current");
+  expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
 });
 
 it("returns an accepted local edit before loading a newly requested cold focus", async () => {
@@ -490,19 +491,17 @@ it("returns an accepted local edit before loading a newly requested cold focus",
   frame();
   worker.deliver();
   let changed: Bounds | null = null;
-  world.advanceFrame = () => {
+  frame(() => {
     changed = change([-580, -580]).bounds;
     world.setPriorityAreas(next, changed);
-    world.advanceFrame = () => {};
-  };
-  frame();
-  expect(world.regionDisplayed(first, false)).toBe(true);
-  expect(world.regionDisplayed(changed!)).toBe(false);
+  });
+  expect(world.inspectRegion(first).status).toBe("stale");
+  expect(world.inspectRegion(changed!).status).not.toBe("current");
   expect(worker.batches[1].tasks.map((task) => task.key)).toEqual(["2:-2:-2"]);
   worker.deliver();
   frame();
-  expect(world.regionDisplayed(changed!)).toBe(true);
-  expect(world.regionDisplayed(next, false)).toBe(false);
+  expect(world.inspectRegion(changed!).status).toBe("current");
+  expect(world.inspectRegion(next).status).toBe("missing");
   expect(worker.batches[2].tasks.map((task) => task.key)).toEqual(["2:1:1"]);
 });
 
@@ -518,16 +517,16 @@ it("continues loading the rest of the view during sustained local edits", async 
   let previous: Bounds | null = null;
   let accepted = 0;
   world.setPriorityAreas(focus);
-  world.advanceFrame = () => {
-    if (!world.regionDisplayed(previous ?? focus)) return;
+  const advance = () => {
+    if (world.inspectRegion(previous ?? focus).status !== "current") return;
     previous = change([-580, -580]).bounds;
     world.setPriorityAreas(focus, previous);
     accepted++;
   };
-  frame();
+  frame(advance);
   for (let step = 0; step < 20; step++) {
     if (worker.completed.length) worker.deliver();
-    frame();
+    frame(advance);
   }
   expect(accepted).toBeGreaterThan(4);
   expect(
@@ -582,11 +581,11 @@ it("finishes a large brush batch without main-thread redispatch and coalesces ne
   }
   worker.deliver();
   frame();
-  expect(world.regionExact(first.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
   expect(worker.batches).toHaveLength(before + 2);
   worker.deliver();
   frame();
-  expect(world.regionExact(world.bounds())).toBe(true);
+  expect(world.inspectRegion(world.bounds()).status).toBe("current");
   expect(worker.batches).toHaveLength(before + 2);
   for (const batch of worker.batches) {
     expect(batch.tasks.length).toBeLessThanOrEqual(MAX_RASTER_BATCH_TILES);
@@ -614,7 +613,6 @@ it("continues a large accepted revision between frames without publishing or adm
   const revision = document.revision;
   const count = worker.batches.length;
   const render = vi.spyOn(world.renderer, "render");
-  const advance = vi.spyOn(world, "advanceFrame");
   worker.deliver();
   expect(worker.batches).toHaveLength(count + 1);
   expect(worker.completed).toHaveLength(1);
@@ -622,17 +620,16 @@ it("continues a large accepted revision between frames without publishing or adm
     worker.batches.at(-1)!.tasks.every((task) => task.revision === revision),
   ).toBe(true);
   expect(render).not.toHaveBeenCalled();
-  expect(advance).not.toHaveBeenCalled();
-  expect(world.regionDisplayed(update.bounds)).toBe(false);
+  expect(world.inspectRegion(update.bounds).status).not.toBe("current");
   for (
     let step = 0;
-    step < 10 && !world.regionDisplayed(update.bounds);
+    step < 10 && world.inspectRegion(update.bounds).status !== "current";
     step++
   ) {
     if (worker.completed.length) worker.deliver();
     frame();
   }
-  expect(world.regionDisplayed(update.bounds)).toBe(true);
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
   const continuations = observation
     .read()
     .filter(
@@ -663,18 +660,18 @@ it("keeps outer view progress during repeated multi-batch local doses", async ()
   let previous: Bounds | null = null;
   let accepted = 0;
   let observationStart = 0;
-  world.advanceFrame = () => {
-    if (!world.regionDisplayed(previous ?? focus)) return;
+  const advance = () => {
+    if (world.inspectRegion(previous ?? focus).status !== "current") return;
     if (!accepted) observationStart = observation.read().length;
     previous = change([0, 0], { level: 4, radius: 1024, amount: 40 }).bounds;
     world.setPriorityAreas(focus, previous);
     accepted++;
   };
-  frame();
+  frame(advance);
   for (let step = 0; step < 40; step++) {
     // A whole accepted revision can finish before its single publication RAF.
     while (worker.completed.length) worker.deliver();
-    frame();
+    frame(advance);
   }
   const batches = observation
     .read()
@@ -695,7 +692,7 @@ it("paints an older overlapping result completely without confirming the current
   frame();
   change([172, 160]);
   const result = worker.deliver().results[0];
-  frame();
+  const receipt = frame();
   const upload = observation
     .read()
     .filter((event) => event.kind === "raster-upload")
@@ -709,22 +706,12 @@ it("paints an older overlapping result completely without confirming the current
     ...colour(firstSample(158, 158)),
     255,
   ]);
-  expect(world.regionCoverage(first.bounds, 1)).toEqual({
-    minPaintedRevision: 1,
-    maxPaintedRevision: 1,
-  });
-  expect(world.regionCoverage(first.bounds, 2)).toBeNull();
-  expect(world.regionExact(first.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
   expect(world.state().submittedRevision).toBe(0);
-  expect(
-    observation
-      .read()
-      .filter((event) => event.kind === "submit")
-      .at(-1)!.exactRevision,
-  ).toBe(-1);
+  expect(receipt!.exactRevision).toBe(-1);
   worker.deliver();
   frame();
-  expect(world.regionExact(first.bounds)).toBe(true);
+  expect(world.inspectRegion(first.bounds).status).toBe("current");
   expect(world.state().submittedRevision).toBe(2);
   expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
     ...colour(document.sampleHeight(158, 158)),
@@ -743,10 +730,6 @@ it("does not call mixed tile prefixes a current exact region", async () => {
   change([4, 160]);
   worker.deliver();
   frame();
-  expect(world.regionCoverage(first.bounds, 1)).toEqual({
-    minPaintedRevision: 1,
-    maxPaintedRevision: 1,
-  });
   worker.deliver();
   // Model the real result CPU cap: one tile uploads this frame, one next frame.
   let now = performance.now();
@@ -761,19 +744,10 @@ it("does not call mixed tile prefixes a current exact region", async () => {
   frame();
   events.mockRestore();
   clock.mockRestore();
-  expect(world.regionCoverage(first.bounds, 1)).toEqual({
-    minPaintedRevision: 1,
-    maxPaintedRevision: 2,
-  });
-  expect(world.regionCoverage(first.bounds, 2)).toBeNull();
-  expect(world.regionExact(first.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
   expect(world.state().submittedRevision).toBe(0);
   frame();
-  expect(world.regionExact(first.bounds)).toBe(true);
-  expect(world.regionCoverage(first.bounds, 2)).toEqual({
-    minPaintedRevision: 2,
-    maxPaintedRevision: 2,
-  });
+  expect(world.inspectRegion(first.bounds).status).toBe("current");
 });
 
 it("keeps painted execution revisions monotone through Undo, Redo and late duplicate replies", async () => {
@@ -790,8 +764,7 @@ it("keeps painted execution revisions monotone through Undo, Redo and late dupli
   for (const bounds of undone.dirtyBounds) world.invalidate(bounds);
   const older = worker.deliver();
   frame();
-  expect(world.regionCoverage(first.bounds, 1)).not.toBeNull();
-  expect(world.regionExact(first.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
   const undoResult = worker.deliver();
   frame();
   expect(world.state().submittedRevision).toBe(3);
@@ -811,16 +784,11 @@ it("keeps painted execution revisions monotone through Undo, Redo and late dupli
   expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual(
     paintedUndo,
   );
-  expect(world.regionCoverage(first.bounds, 3)).toEqual({
-    minPaintedRevision: 3,
-    maxPaintedRevision: 3,
-  });
-  expect(world.regionCoverage(first.bounds, 4)).toBeNull();
-  expect(world.regionExact(first.bounds)).toBe(false);
+  expect(world.inspectRegion(first.bounds).status).not.toBe("current");
   expect(world.state().submittedRevision).toBe(3);
   worker.deliver();
   frame();
-  expect(world.regionExact(first.bounds)).toBe(true);
+  expect(world.inspectRegion(first.bounds).status).toBe("current");
   expect(world.state().submittedRevision).toBe(4);
   expect([...renderedSources[0].slice(offset, offset + 4)]).toEqual([
     ...colour(document.sampleHeight(158, 158)),
@@ -841,10 +809,10 @@ it("keeps drop-render negative control and recovers through the same real raster
   frame();
   worker.deliver();
   frame();
-  expect(world.regionExact(update.bounds)).toBe(false);
+  expect(world.inspectRegion(update.bounds).status).not.toBe("current");
   world.fault = "none";
   frame();
-  expect(world.regionExact(update.bounds)).toBe(true);
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
 });
 
 it("keeps the same certified source area during a small camera move", async () => {
@@ -853,32 +821,36 @@ it("keeps the same certified source area during a small camera move", async () =
   world.moveCamera({ ...world.camera, x: world.camera.x + 4 });
   expect(world.sourceBounds()).toEqual(bounds);
   expect(world.isPresentationReady(bounds)).toBe(true);
-  expect(world.regionExact(world.bounds())).toBe(false);
+  expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
   world.refresh();
   frame();
-  expect(world.regionExact(world.bounds())).toBe(true);
+  expect(world.inspectRegion(world.bounds()).status).toBe("current");
 });
 
-it("keeps result progress and the main loop after a slow or failed input hook", async () => {
-  const { world, worker, frame, change } = await readyRenderer();
-  const update = change([160, 160]);
-  world.onError = vi.fn();
-  world.advanceFrame = vi.fn().mockImplementationOnce(() => {
+it("keeps result progress and the controller frame loop after a slow or failed brush decision", async () => {
+  const { controller, worker, frame, pointer, advance } =
+    await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 20, 20);
+  const decision = vi.spyOn(
+    controller as unknown as { advanceHeldBrush(now: number): void },
+    "advanceHeldBrush",
+  );
+  decision.mockImplementationOnce(() => {
     throw new Error("input failed");
   });
   frame();
-  expect(world.onError).toHaveBeenCalledOnce();
+  expect(controller.state.error).toBe("input failed");
   worker.deliver();
-  let now = performance.now();
-  const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
-  // Input work exceeding the separate 2 ms result budget must not suppress
-  // every completed upload while the pointer keeps moving.
-  world.advanceFrame = () => {
-    now += 5;
-  };
+  // Later input work cannot exhaust the already completed upload's CPU budget.
+  decision.mockImplementation(() => advance(5));
   frame();
-  expect(world.regionExact(update.bounds)).toBe(true);
-  clock.mockRestore();
+  expect(controller.world.inspectRegion(controller.world.bounds()).status).toBe(
+    "current",
+  );
+  expect(controller.observe().document!.revision).toBe(1);
+  pointer("pointerup", 20, 20);
+  controller.destroy();
 });
 
 async function readyController(
@@ -1005,7 +977,8 @@ async function readyController(
       frame();
       if (
         !controller.state.loading &&
-        controller.world.regionExact(controller.world.bounds())
+        controller.world.inspectRegion(controller.world.bounds()).status ===
+          "current"
       )
         return;
     }
@@ -1085,13 +1058,89 @@ it("keeps a short click and prevents invisible impulses from stacking across ges
       .read()
       .filter((event) => event.kind === "edit-submit")
       .map((event) => event.input),
-  ).toEqual([1, 2]);
+  ).toEqual([2]);
   expect(
     controller.observation
       .read()
       .filter((event) => event.kind === "noop")
       .map((event) => event.input),
   ).toEqual([3, 4]);
+  controller.destroy();
+});
+
+it("retains an accepted press and its dose fact when presentation projection fails", async () => {
+  const { controller, bridge, frame, pointer, drainView } =
+    await readyController();
+  controller.setBrush(16, 400);
+  const original = controller.observe([[-48, -48]]).samples[0]!;
+  const previousFrame = controller.world.state().lastSubmittedFrame;
+  const projection = vi
+    .spyOn(controller.world, "updateSourcePatches")
+    .mockImplementationOnce(() => {
+      throw new Error("Darstellungsbudget überschritten");
+    });
+
+  pointer("pointerdown", 20, 20);
+  const accepted = controller.observe([[-48, -48]]);
+  expect(controller.state.error).toBe("Darstellungsbudget überschritten");
+  expect(accepted.gesture).toBeNull();
+  expect(accepted.document).toMatchObject({
+    revision: 1,
+    sequence: 1,
+    historyActions: 1,
+  });
+  expect(accepted.samples[0]).toBeGreaterThan(original);
+  expect(controller.state.canUndo).toBe(true);
+  expect(controller.state.needsPress).toBe(true);
+  const intervals = controller.observation
+    .read()
+    .filter((event) => event.kind === "brush-interval");
+  expect(intervals).toHaveLength(1);
+  expect(intervals[0]).toMatchObject({
+    cause: "press",
+    changed: true,
+    revision: 1,
+    acceptedElapsedMs: 1000 / 60,
+    projectedAt: null,
+  });
+
+  // Redrawing the old terrain must not certify this failed projection.
+  frame();
+  expect(controller.world.state().lastSubmittedFrame).toBeGreaterThan(
+    previousFrame,
+  );
+  pointer("pointerup", 20, 20);
+  await drainView();
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  const committed = bridge.commit.mock.calls[0][0];
+  expect(committed.sequence).toBe(1);
+  expect(committed.patches.length).toBeGreaterThan(0);
+  expect(
+    prepareHeightSampler(
+      committed.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+    )(-48, -48),
+  ).toBeCloseTo(accepted.samples[0]!, 10);
+
+  controller.undo();
+  await drainView();
+  for (let step = 0; step < 20 && controller.state.writing; step++)
+    await Promise.resolve();
+  expect(controller.state.writing).toBe(false);
+  expect(projection).toHaveBeenCalledTimes(2);
+  expect(controller.observe([[-48, -48]]).samples[0]).toBe(original);
+  expect(controller.state.canRedo).toBe(true);
+  expect(bridge.commit).toHaveBeenCalledTimes(2);
+  expect(bridge.commit.mock.calls[1][0].sequence).toBe(2);
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-submit"),
+  ).toHaveLength(0);
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-interval"),
+  ).toHaveLength(1);
   controller.destroy();
 });
 
@@ -1478,6 +1527,79 @@ it("uses the displayed-terrain gate in normal startup without diagnostic callbac
   controller.destroy();
 });
 
+it("keeps input decisions, terrain and history identical with diagnostics enabled or disabled", async () => {
+  const apply = vi.spyOn(EditorDocument.prototype, "applySegment");
+  const replay = async (diagnostics: boolean) => {
+    apply.mockClear();
+    const { controller, bridge, worker, pointer, frame, drainView } =
+      await readyController(0, { diagnostics, ready: false });
+    controller.setBrush(16, 400);
+    const states: unknown[] = [];
+    const capture = () => {
+      const { document, readiness, samples } = controller.observe([
+        [-48, -48],
+        [-32, -48],
+        [0, -48],
+      ]);
+      states.push({
+        document,
+        readiness,
+        samples,
+        needsPress: controller.state.needsPress,
+      });
+    };
+
+    // A cold press remains blocked after loading while its physical button is held.
+    pointer("pointerdown", 20, 20);
+    pointer("pointermove", 24, 20);
+    await drainView();
+    frame(500);
+    capture();
+    expect(controller.observe().document!.revision).toBe(0);
+    expect(controller.state.needsPress).toBe(true);
+    pointer("pointerup", 24, 20);
+
+    pointer("pointerdown", 24, 20);
+    pointer("pointermove", 32, 20);
+    frame(24);
+    capture();
+    expect(controller.observe().document!.revision).toBe(1);
+    worker.deliver();
+    frame(16);
+    capture();
+    expect(controller.observe().document!.revision).toBe(2);
+
+    // The accepted dose survives Up, so a second unseen press cannot stack it.
+    pointer("pointerup", 32, 20);
+    pointer("pointerdown", 32, 20);
+    pointer("pointerup", 32, 20);
+    expect(controller.observe().document!.revision).toBe(2);
+    await drainView();
+    capture();
+    controller.undo();
+    await drainView();
+    capture();
+    controller.redo();
+    await drainView();
+    for (let step = 0; step < 20 && controller.state.writing; step++)
+      await Promise.resolve();
+    expect(controller.state.writing).toBe(false);
+    capture();
+
+    const result = {
+      states,
+      segments: structuredClone(apply.mock.calls),
+      commits: structuredClone(bridge.commit.mock.calls),
+    };
+    expect(result.segments).toHaveLength(2);
+    expect(result.commits).toHaveLength(3);
+    expect(controller.observation.eventCount > 0).toBe(diagnostics);
+    controller.destroy();
+    return result;
+  };
+  expect(await replay(true)).toEqual(await replay(false));
+});
+
 it("prepares an off-center finer tool on hover and size change without a gesture", async () => {
   const { controller, bridge, pointer, drainView } = await readyController(1, {
     width: 512,
@@ -1524,11 +1646,13 @@ it("marks navigation ready only after the actual matching local submit", async (
   )!;
   expect(ready).toMatchObject({
     sessionId: "shared-frame",
-    ready: true,
-    reason: null,
     revision: 0,
   });
-  expect(submit.cameraGeneration).toBe(ready.viewGeneration);
+  expect(controller.observe().readiness).toMatchObject({
+    ready: true,
+    reason: null,
+  });
+  expect(submit.viewGeneration).toBe(ready.viewGeneration);
   expect(events.indexOf(submit)).toBeLessThan(events.indexOf(ready));
   pointer("pointerdown");
   pointer("pointerup");
@@ -1540,12 +1664,15 @@ it("ends a stroke before an unseen gap even when its two endpoints are visible",
   const { controller, bridge, frame, pointer, drainView } =
     await readyController(0, { width: 512 });
   controller.setBrush(16, 400);
-  const displayed = controller.world.regionDisplayed.bind(controller.world);
+  const inspect = controller.world.inspectRegion.bind(controller.world);
   const gap = vi
-    .spyOn(controller.world, "regionDisplayed")
-    .mockImplementation((bounds, current) =>
-      bounds[0] < 0 && bounds[2] > 0 ? false : displayed(bounds, current),
-    );
+    .spyOn(controller.world, "inspectRegion")
+    .mockImplementation((bounds) => {
+      const region = inspect(bounds);
+      return bounds[0] < 0 && bounds[2] > 0
+        ? { ...region, status: "missing" }
+        : region;
+    });
   pointer("pointerdown", 64, 32);
   const accepted = controller.observe().document!.revision;
   pointer("pointermove", 448, 32);
@@ -1940,11 +2067,10 @@ it("projects fine source changes into a certified empty overview exactly once, i
       -100 / HEIGHT_SUM_SCALE + (worker.overviews.get(key)?.values[0] ?? 0),
     );
   document.beginGesture({ level: 0, radius: 20, amount: 400 });
-  const first = document.applyPoint([32, 32], 1000)!;
+  const first = document.applySegment([32, 32], [32, 32], 1000)!;
   world.updateSourcePatches(first.patches);
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
-  document.applyPoint([48, 32], 0);
-  const second = document.applyPoint([48, 32], 1000)!;
+  const second = document.applySegment([48, 32], [48, 32], 1000)!;
   world.updateSourcePatches(second.patches);
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
   expect(

@@ -4,13 +4,36 @@ import {
   HEIGHT_TILE_SIZE,
   WORLD_LIMIT,
   assertBounds,
+  assertPoint,
+  clipBounds,
   heightSpacing,
   heightTileSupport,
   validateHeightTile,
   type Bounds,
+  type HeightBrush,
   type HeightSnapshot,
   type HeightTile,
+  type Point,
 } from "./types";
+
+/** Complete explicit segment support, including the cubic reconstruction halo. */
+export function heightBrushReadBounds(
+  brush: Pick<HeightBrush, "level" | "radius">,
+  from: Point,
+  to: Point,
+): Bounds {
+  assertPoint(from);
+  assertPoint(to);
+  if (!Number.isFinite(brush.radius) || brush.radius <= 0)
+    throw new RangeError("Ungültiger Höhenpinsel.");
+  const halo = brush.radius + 2 * heightSpacing(brush.level);
+  return clipBounds([
+    Math.min(from[0], to[0]) - halo,
+    Math.min(from[1], to[1]) - halo,
+    Math.max(from[0], to[0]) + halo,
+    Math.max(from[1], to[1]) + halo,
+  ]);
+}
 
 /** The positive cubic basis from src-tauri/src/atlas/terrain.rs. */
 export function splineWeights(t: number): [number, number, number, number] {

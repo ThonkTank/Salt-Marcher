@@ -473,48 +473,120 @@ export function distribution(values) {
   };
 }
 
+/** One interpretation of input -> dose/commit -> local receipt -> real draw. */
+export function extractSubmissionEvidence(events) {
+  const inputs = new Map();
+  const frames = new Map();
+  const changesByInput = new Map();
+  const doses = [];
+  const commits = [];
+  const receipts = [];
+  for (const event of events) {
+    if (event.kind === "input") inputs.set(event.id, event);
+    if (event.kind === "submit")
+      frames.set(`${event.sessionId}/${event.frame}`, event);
+    if (event.kind === "brush-interval" && event.changed === true) {
+      doses.push(event);
+      for (const input of event.inputIds ?? [])
+        changesByInput.set(input, event);
+    }
+    if (event.kind === "commit") {
+      commits.push(event);
+      changesByInput.set(event.input, event);
+    }
+    if (["brush-submit", "edit-submit"].includes(event.kind))
+      receipts.push(event);
+  }
+  const publication = (change) => {
+    const boundsValid = (bounds) =>
+      Array.isArray(bounds) &&
+      bounds.length === 4 &&
+      bounds.every(finite) &&
+      bounds[0] < bounds[2] &&
+      bounds[1] < bounds[3];
+    if (
+      !nonempty(change?.sessionId) ||
+      !Number.isSafeInteger(change.revision) ||
+      change.revision < 0 ||
+      !Number.isSafeInteger(change.gestureId)
+    )
+      return null;
+    if (
+      change.kind === "brush-interval"
+        ? !Number.isSafeInteger(change.intervalId) ||
+          !Array.isArray(change.inputIds) ||
+          !boundsValid(change.bounds)
+        : !Number.isSafeInteger(change.sequence) ||
+          !Array.isArray(change.bounds) ||
+          !change.bounds.length ||
+          !change.bounds.every(boundsValid)
+    )
+      return null;
+    const projectedAt =
+      change.kind === "brush-interval" ? change.projectedAt : change.at;
+    if (!finite(change.at) || !finite(projectedAt) || projectedAt < change.at)
+      return null;
+    for (const receipt of receipts) {
+      if (
+        receipt.sessionId !== change.sessionId ||
+        receipt.revision !== change.revision
+      )
+        continue;
+      if (
+        change.kind === "brush-interval"
+          ? receipt.kind !== "brush-submit" ||
+            receipt.gestureId !== change.gestureId ||
+            receipt.intervalId !== change.intervalId
+          : receipt.kind !== "edit-submit" ||
+            receipt.input !== change.input ||
+            receipt.sequence !== change.sequence
+      )
+        continue;
+      const frame = frames.get(`${receipt.sessionId}/${receipt.frame}`);
+      if (
+        frame &&
+        Number.isSafeInteger(frame.frame) &&
+        frame.frame > 0 &&
+        Number.isSafeInteger(frame.viewGeneration) &&
+        frame.viewGeneration >= 0 &&
+        receipt.viewGeneration === frame.viewGeneration &&
+        frame.revision >= change.revision &&
+        frame.at >= projectedAt &&
+        finite(receipt.at) &&
+        frame.at <= receipt.at
+      )
+        return { receipt, frame };
+    }
+    return null;
+  };
+  return { inputs, frames, doses, commits, changesByInput, publication };
+}
+
 /** Missing inputs remain explicit samples; never flatMap away failed observations. */
-export function extractEditSamples(events, inputIds, sessionId) {
+export function extractEditSamples(
+  events,
+  inputIds,
+  sessionId,
+  evidence = extractSubmissionEvidence(events),
+) {
   return inputIds.map((inputId) => {
-    const input = events.find((e) => e.kind === "input" && e.id === inputId);
-    const model = events.find(
-      (e) =>
-        e.kind === (input?.inputKind === "pointerup" ? "commit" : "model") &&
-        e.input === inputId,
-    );
+    const input = evidence.inputs.get(inputId);
+    const candidate = evidence.changesByInput.get(inputId);
+    const model =
+      candidate?.sessionId === sessionId &&
+      candidate.kind ===
+        (input?.inputKind === "pointerup" ? "commit" : "brush-interval")
+        ? candidate
+        : null;
     const noop = events.find(
       (e) =>
         e.kind === "noop" &&
         e.input === inputId &&
         (e.sessionId === undefined || e.sessionId === sessionId),
     );
-    const edits = events.filter(
-      (e) =>
-        e.kind === "edit-submit" &&
-        e.input === inputId &&
-        e.sessionId === sessionId &&
-        e.revision === model?.revision,
-    );
-    const edit = edits.find((candidate) =>
-      events.some(
-        (e) =>
-          e.kind === "submit" &&
-          e.frame === candidate.frame &&
-          e.sessionId === sessionId &&
-          // edit-submit certifies this input's region. Other viewport regions
-          // may still be dirty, so a global exactRevision of -1 is not stale.
-          e.revision >= model?.revision &&
-          e.at >= (model?.at ?? Infinity),
-      ),
-    );
-    const submit =
-      edit &&
-      events.find(
-        (e) =>
-          e.kind === "submit" &&
-          e.frame === edit.frame &&
-          e.sessionId === sessionId,
-      );
+    const published = evidence.publication(model);
+    const edit = published?.receipt;
+    const submit = published?.frame;
     const gesture = events.find(
       (start) =>
         start.kind === "brush-start" &&
@@ -538,7 +610,11 @@ export function extractEditSamples(events, inputIds, sessionId) {
       discardedDuringGesture: Boolean(noop && gesture),
       createdAt: input?.createdAt ?? null,
       handlerAt: input?.at ?? null,
-      modelAt: model?.at ?? null,
+      modelAt:
+        model?.kind === "brush-interval"
+          ? (model.projectedAt ?? null)
+          : (model?.at ?? null),
+      appliedAt: model?.at ?? null,
       modelChanged: model ? true : noop ? false : null,
       noopAt: noop?.at ?? null,
       accepted: model ? true : noop ? noop.accepted !== false : null,
@@ -581,7 +657,7 @@ export function extractColdBoundary(events, navigationId, sessionId) {
         event.kind === "submit" &&
         event.sessionId === sessionId &&
         event.frame === gate.frame &&
-        event.cameraGeneration === gate.viewGeneration &&
+        event.viewGeneration === gate.viewGeneration &&
         event.revision >= gate.revision &&
         event.at <= gate.at &&
         event.at >= navigation?.at,
@@ -714,6 +790,7 @@ export function evaluateBlockedInput(evidence = {}) {
   /** @type {EvaluationIssue[]} */
   const issues = [];
   const fail = (code) => issues.push({ code });
+  if (evidence.error) fail("BLOCKED_INPUT_COLLECTION_ERROR");
   const samples = Array.isArray(evidence.samples) ? evidence.samples : [];
   const first = samples[0];
   const up = samples.at(-1);
@@ -801,6 +878,7 @@ export function evaluateBlockedInput(evidence = {}) {
 
 /** One unpublished dose per session, including across gesture boundaries. */
 export function evaluateBrushPublicationOrder(events, sessionId) {
+  const evidence = extractSubmissionEvidence(events);
   const intervals = events.filter(
     (e) =>
       e.kind === "brush-interval" &&
@@ -812,25 +890,7 @@ export function evaluateBrushPublicationOrder(events, sessionId) {
   const previousBySession = new Map();
   for (const interval of intervals) {
     const previous = previousBySession.get(interval.sessionId);
-    const receipts = events.filter(
-      (e) =>
-        e.kind === "brush-submit" &&
-        e.sessionId === interval.sessionId &&
-        e.gestureId === interval.gestureId &&
-        e.intervalId === interval.intervalId &&
-        e.revision === interval.revision,
-    );
-    const receipt = receipts.find((e) =>
-      events.some(
-        (frame) =>
-          frame.kind === "submit" &&
-          frame.sessionId === interval.sessionId &&
-          frame.frame === e.frame &&
-          frame.revision >= interval.revision &&
-          frame.at >= interval.at &&
-          frame.at <= e.at,
-      ),
-    );
+    const receipt = evidence.publication(interval)?.receipt;
     const validBounds = (bounds) =>
       Array.isArray(bounds) &&
       bounds.length === 4 &&
@@ -938,9 +998,7 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
   )
     fail("INVALID_BRUSH_TIME_CLOCK");
   const intervals = events.filter((e) => e.kind === "brush-interval" && own(e));
-  const discarded = events.filter(
-    (e) => ["brush-discard", "brush-pause"].includes(e.kind) && own(e),
-  );
+  const discarded = events.filter((e) => e.kind === "brush-discard" && own(e));
   if (!intervals.length) fail("BRUSH_DOSE_MISSING");
   if (new Set(intervals.map((e) => e.intervalId)).size !== intervals.length)
     fail("DUPLICATE_BRUSH_INTERVAL");
@@ -1742,6 +1800,39 @@ function strokesFromSamples(samples) {
   return strokes;
 }
 
+/** The collector and final evaluator use this same decision for an attempt. */
+export function evaluateAttempt(attempt, samples) {
+  const failures = [];
+  if (attempt.error || attempt.observationError)
+    failures.push({
+      code: "CONTENT_OR_INTERACTION_FAILED",
+      error: attempt.error ?? attempt.observationError,
+    });
+  const content = evaluateStrokeContent({
+    ...attempt.content,
+    changedPixels: attempt.changedImage?.pixels,
+    restoredPixels: attempt.undoneImage?.pixels,
+  });
+  if (!content.passed)
+    failures.push({ code: "MOVING_STROKE_ENDPOINT_CONTENT_UNPROVEN" });
+  if (!attempt.time || attempt.time.passed !== true)
+    failures.push(
+      ...(attempt.time?.issues?.length
+        ? attempt.time.issues
+        : [{ code: "BRUSH_TIME_EVIDENCE_INVALID" }]),
+    );
+  if (attempt.overlapRequired && attempt.overlapProven !== true)
+    failures.push({ code: "BUSY_OVERLAP_UNPROVEN" });
+  const live = strokeEvidence({ samples, timedOut: attempt.timedOut });
+  if (!live.passed) failures.push({ code: "ATTEMPT_LIVE_FEEDBACK_FAILED" });
+  return {
+    passed: failures.length === 0 && live.passed,
+    failures,
+    content,
+    live,
+  };
+}
+
 /** Evaluate the selected scenario now, independently of a later complete run. */
 export function evaluateScenario(scenario) {
   /** @type {EvaluationIssue[]} */
@@ -1757,7 +1848,14 @@ export function evaluateScenario(scenario) {
   if (scenario.aborted || scenario.error)
     fail("SCENARIO_ABORTED", { error: scenario.error });
   if (scenario.kind === "navigation") {
-    if (scenario.collectionPassed === false) fail("NAVIGATION_BEHAVIOR_FAILED");
+    if (
+      !(scenario.inputCount > 0) ||
+      !(scenario.wheelChecks?.length >= 8) ||
+      !scenario.wheelChecks.every((check) => check.passed) ||
+      scenario.storeCommits !== 0 ||
+      scenario.cameraMoved !== true
+    )
+      fail("NAVIGATION_BEHAVIOR_FAILED");
     const navigation = evaluateNavigationDiagnostics(samples);
     failures.push(...navigation.issues);
     if (scenario.authorChanges !== 0) fail("NAVIGATION_CHANGED_DOCUMENT");
@@ -1802,32 +1900,18 @@ export function evaluateScenario(scenario) {
       requested: scenario.requestedAttempts,
       observed: attempts.length,
     });
-  for (const attempt of attempts)
-    if (attempt.passed !== true)
-      fail("CONTENT_OR_INTERACTION_FAILED", {
-        attempt: attempt.attempt,
-        error: attempt.error,
-      });
-    else if (
-      !evaluateStrokeContent({
-        ...attempt.content,
-        changedPixels: attempt.changedImage?.pixels,
-        restoredPixels: attempt.undoneImage?.pixels,
-      }).passed
-    )
-      fail("MOVING_STROKE_ENDPOINT_CONTENT_UNPROVEN", {
-        attempt: attempt.attempt,
-      });
+  const attemptResults = attempts.map((attempt) =>
+    evaluateAttempt(
+      attempt,
+      samples.filter((sample) => attempt.inputIds?.includes(sample.inputId)),
+    ),
+  );
+  attemptResults.forEach((result, index) => {
+    for (const issue of result.failures)
+      fail(issue.code, { ...issue, attempt: attempts[index].attempt });
+  });
   if (scenario.contentObserved === false)
     missing.push({ code: "CONTENT_CHECKS_UNAVAILABLE_FROM_JOURNAL" });
-  for (const attempt of attempts)
-    if (attempt.time && attempt.time.passed !== true)
-      failures.push(
-        ...(attempt.time.issues?.length
-          ? attempt.time.issues
-          : [{ code: "BRUSH_TIME_EVIDENCE_INVALID" }]
-        ).map((issue) => ({ ...issue, attempt: attempt.attempt })),
-      );
   // Cold and warm retain and evaluate the entire same ordinary gesture.
   const live = strokesFromSamples(samples).map((stroke, attempt) => ({
     attempt,
@@ -1866,14 +1950,7 @@ export function evaluateScenario(scenario) {
     contentPassed:
       attempts.length > 0 &&
       scenario.contentObserved !== false &&
-      attempts.every(
-        (attempt) =>
-          evaluateStrokeContent({
-            ...attempt.content,
-            changedPixels: attempt.changedImage?.pixels,
-            restoredPixels: attempt.undoneImage?.pixels,
-          }).passed,
-      ),
+      attemptResults.every((result) => result.content.passed),
     liveFeedback: {
       status:
         live.some((stroke) => !stroke.passed) || submission.status === "FAIL"
@@ -1916,25 +1993,18 @@ export function evaluateScenario(scenario) {
  */
 export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
   const events = observation.events ?? [];
+  const evidence = extractSubmissionEvidence(events);
   const inputs = events.filter(
     (event) =>
       event.kind === "input" && ["edit", "pointerup"].includes(event.inputKind),
   );
   const samples = inputs.map((input) => {
-    const model = events.find(
-      (event) =>
-        ["model", "commit"].includes(event.kind) && event.input === input.id,
-    );
-    const submitted = events.find(
-      (event) =>
-        event.kind === "edit-submit" &&
-        event.input === input.id &&
-        event.revision === model?.revision,
-    );
+    const model = evidence.changesByInput.get(input.id);
     return extractEditSamples(
       events,
       [input.id],
-      submitted?.sessionId ?? model?.sessionId ?? observation.sessionId,
+      model?.sessionId ?? observation.sessionId,
+      evidence,
     )[0];
   });
   let selected = samples;
@@ -2022,7 +2092,7 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
         continue;
       }
       const scenario = scenarios[0];
-      if (scenario.collectionPassed === false || scenario.aborted === true)
+      if (scenario.error || scenario.aborted === true)
         fail("SCENARIO_COLLECTION_FAILED", context);
       if (requirements === P0_REQUIREMENTS && spec.kind !== "navigation") {
         if (!Array.isArray(scenario.attempts) || !scenario.attempts.length)
@@ -2450,11 +2520,13 @@ if (
         throw new Error(
           "Raw observations require --scenario with a fixed P0 scenario ID",
         );
+      if (source.schemaVersion !== 3)
+        throw new Error(
+          "Expected current P0 schema 3; evaluate historical evidence with its recorded harness commit",
+        );
       const result = Array.isArray(source.events)
         ? evaluateObservation(source, spec)
-        : source.schemaVersion >= 2
-          ? evaluateRun(source)
-          : evaluateAcceptance(source);
+        : evaluateRun(source);
       if (process.argv[3] && !process.argv[3].startsWith("--"))
         await writeFile(process.argv[3], JSON.stringify(result, null, 2));
       console.log(JSON.stringify(result, null, 2));

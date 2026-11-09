@@ -5,11 +5,11 @@ import { Observation } from "./observation";
 it("reads incremental observations without consuming the retained journal", () => {
   const observation = new Observation(true);
   observation.event("ready", { sessionId: "first" });
-  const firstInput = observation.input(new Event("pointerdown"), "edit");
+  observation.input(17, new Event("pointerdown"), "edit");
   const first = observation.read();
   const cursor = observation.eventCount;
-  observation.event("model", { input: firstInput });
-  const lastInput = observation.input(new Event("pointerup"), "pointerup");
+  observation.event("noop", { input: 17 });
+  observation.input(18, new Event("pointerup"), "pointerup");
   const complete = observation.read();
 
   expect(observation.read({ events: false })).toEqual([]);
@@ -21,7 +21,9 @@ it("reads incremental observations without consuming the retained journal", () =
   expect(observation.read({ sinceEvent: 0 })).toEqual(complete);
   expect(observation.read()).toEqual([...first, ...complete.slice(cursor)]);
   expect(observation.eventCount).toBe(4);
-  expect(observation.lastInputId).toBe(lastInput);
+  expect(
+    complete.filter((event) => event.kind === "input").map((event) => event.id),
+  ).toEqual([17, 18]);
   expect(observation.dropped).toBe(0);
 });
 
@@ -51,9 +53,8 @@ it("keeps the journal cap and dropped counter across lightweight and incremental
   expect(last).toHaveLength(1);
   expect(last[0].index).toBe(editorBudgets.observationEvents - 1);
   expect(observation.read({ events: false })).toEqual([]);
-  const input = observation.input(new Event("pointerup"), "pointerup");
+  observation.input(7, new Event("pointerup"), "pointerup");
   expect(observation.eventCount).toBe(editorBudgets.observationEvents);
-  expect(observation.lastInputId).toBe(input);
   expect(observation.dropped).toBe(1);
   expect(observation.read({ sinceEvent: observation.eventCount - 1 })).toEqual(
     last,
@@ -62,18 +63,156 @@ it("keeps the journal cap and dropped counter across lightweight and incremental
   expect(observation.dropped).toBe(1);
 });
 
-it("retains input identity without collecting events or trace marks in a normal start", () => {
+it("does not collect events or trace marks in a normal start", () => {
   const mark = vi.spyOn(performance, "mark");
   const observation = new Observation();
   for (let index = 0; index <= editorBudgets.observationEvents; index++)
     observation.event("frame", { index });
-  expect(observation.input(new Event("pointerdown"), "edit")).toBe(1);
-  observation.mark("model", "1", { input: 1 });
-  expect(observation.input(new Event("pointerup"), "pointerup")).toBe(2);
-  expect(observation.lastInputId).toBe(2);
+  observation.input(21, new Event("pointerdown"), "edit");
+  observation.mark("noop", "21", { input: 21 });
+  observation.input(22, new Event("pointerup"), "pointerup");
   expect(observation.read()).toEqual([]);
   expect(observation.eventCount).toBe(0);
   expect(observation.dropped).toBe(0);
   expect(mark).not.toHaveBeenCalled();
   mark.mockRestore();
+});
+
+const submission = {
+  sessionId: "a",
+  frame: 3,
+  viewGeneration: 2,
+  revision: 7,
+  exactRevision: -1,
+  at: 10,
+  uploadedBytes: 0,
+};
+const dose = {
+  sessionId: "a",
+  gestureId: 1,
+  intervalId: 2,
+  revision: 7,
+  changed: true,
+  bounds: [0, 0, 1, 1] as [number, number, number, number],
+  at: 2,
+  projectedAt: 3,
+  inputIds: [21],
+};
+const current = {
+  status: "current" as const,
+  sessionId: "a",
+  frame: 3,
+  viewGeneration: 2,
+};
+
+it("requires the actual current local submission and never publishes an outside or stale region", () => {
+  const observation = new Observation(true);
+  observation.dose(dose);
+  for (const region of [
+    { ...current, status: "outside" as const },
+    { ...current, status: "missing" as const },
+    { ...current, status: "stale" as const },
+    { ...current, sessionId: "old" },
+    { ...current, frame: 2 },
+    { ...current, viewGeneration: 1 },
+  ])
+    observation.submitted(submission, () => region);
+  expect(
+    observation.read().filter((event) => event.kind === "brush-submit"),
+  ).toEqual([]);
+  observation.submitted(submission, () => current);
+  expect(
+    observation.read().filter((event) => event.kind === "brush-submit"),
+  ).toMatchObject([
+    { intervalId: 2, revision: 7, frame: 3, viewGeneration: 2 },
+  ]);
+  expect(
+    observation
+      .read()
+      .some((event) =>
+        ["model", "input-covered", "brush-covered", "edit-submit"].includes(
+          event.kind,
+        ),
+      ),
+  ).toBe(false);
+});
+
+it("requires every commit region and retains pointerup separately from held doses", () => {
+  const observation = new Observation(true);
+  observation.dose({ ...dose, inputIds: [] });
+  observation.commit({
+    input: 22,
+    sessionId: "a",
+    gestureId: 1,
+    revision: 7,
+    sequence: 5,
+    bounds: [
+      [0, 0, 1, 1],
+      [2, 2, 3, 3],
+    ],
+  });
+  observation.submitted(submission, (bounds) =>
+    bounds[0] === 0 ? current : { ...current, status: "stale" },
+  );
+  expect(
+    observation.read().filter((event) => event.kind === "brush-submit"),
+  ).toHaveLength(1);
+  expect(
+    observation.read().filter((event) => event.kind === "edit-submit"),
+  ).toHaveLength(0);
+  observation.submitted(submission, () => current);
+  expect(
+    observation.read().filter((event) => event.kind === "edit-submit"),
+  ).toMatchObject([{ input: 22, sequence: 5, frame: 3 }]);
+});
+
+it("retains an applied dose after projection failure without inventing its submission", () => {
+  const observation = new Observation(true);
+  observation.dose({ ...dose, projectedAt: null });
+  observation.submitted(submission, () => current);
+  expect(
+    observation.read().filter((event) => event.kind === "brush-interval"),
+  ).toMatchObject([{ changed: true, at: 2, projectedAt: null }]);
+  expect(
+    observation.read().some((event) => event.kind === "brush-submit"),
+  ).toBe(false);
+});
+
+it("retires offscreen and old-session associations without inventing submissions", () => {
+  const observation = new Observation(true);
+  observation.dose(dose);
+  observation.event("brush-feedback-obsolete", {
+    ...dose,
+    reason: "outside-view",
+  });
+  observation.submitted(submission, () => current);
+  observation.dose({ ...dose, intervalId: 3 });
+  observation.reset();
+  observation.submitted(submission, () => current);
+  expect(
+    observation.read().some((event) => event.kind === "brush-submit"),
+  ).toBe(false);
+});
+
+it("observes navigation milestones once and does not query or retain work while disabled", () => {
+  const observation = new Observation(true);
+  observation.navigation(4, { sessionId: "a", camera: {} });
+  const ready = { ...submission, ready: true, sourcesReady: true };
+  observation.readiness({ ...ready, sessionId: "old" });
+  observation.readiness({ ...ready, ready: false });
+  observation.readiness(ready);
+  observation.readiness(ready);
+  expect(observation.read().map((event) => event.kind)).toEqual([
+    "camera",
+    "sources-ready",
+    "input-ready",
+  ]);
+  const disabled = new Observation();
+  const inspect = vi.fn(() => current);
+  disabled.dose(dose);
+  disabled.submitted(submission, inspect);
+  disabled.navigation(4, { sessionId: "a", camera: {} });
+  disabled.readiness(ready);
+  expect(inspect).not.toHaveBeenCalled();
+  expect(disabled.read()).toEqual([]);
 });

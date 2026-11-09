@@ -577,16 +577,24 @@ export async function observeStroke(session, before, timeout = 5000) {
               return true;
             const model = o.events.find(
               (e) =>
-                e.kind ===
-                  (input?.inputKind === "pointerup" ? "commit" : "model") &&
-                e.input === id,
+                e.sessionId === o.sessionId &&
+                (input?.inputKind === "pointerup"
+                  ? e.kind === "commit" && e.input === id
+                  : e.kind === "brush-interval" &&
+                    e.changed === true &&
+                    e.inputIds.includes(id)),
             );
             return (
               model &&
               o.events.some(
                 (edit) =>
-                  edit.kind === "edit-submit" &&
-                  edit.input === id &&
+                  (input?.inputKind === "pointerup"
+                    ? edit.kind === "edit-submit" &&
+                      edit.input === id &&
+                      edit.sequence === model.sequence
+                    : edit.kind === "brush-submit" &&
+                      edit.intervalId === model.intervalId &&
+                      edit.gestureId === model.gestureId) &&
                   edit.sessionId === o.sessionId &&
                   edit.revision === model.revision &&
                   o.events.some(
@@ -594,8 +602,9 @@ export async function observeStroke(session, before, timeout = 5000) {
                       frame.kind === "submit" &&
                       frame.frame === edit.frame &&
                       frame.sessionId === o.sessionId &&
+                      frame.viewGeneration === edit.viewGeneration &&
                       frame.revision >= model.revision &&
-                      frame.at >= model.at,
+                      frame.at >= (model.projectedAt ?? model.at),
                   ),
               )
             );

@@ -641,7 +641,9 @@ describe("release grouping preserves independent coverage", () => {
 
   it("retains a failed collection even when enough fast samples were captured", () => {
     const report = knownGood();
-    Object.assign(report.runs[0].scenarios[0], { collectionPassed: false });
+    Object.assign(report.runs[0].scenarios[0], {
+      error: "Collection stopped after a content failure",
+    });
     expect(evaluateAcceptance(report, oneCase).failures).toContainEqual({
       code: "SCENARIO_COLLECTION_FAILED",
       run: "release-1",
@@ -940,25 +942,52 @@ describe("independent negative-control evaluation", () => {
   it("extracts only the exact session/revision/frame and retains missing input IDs", () => {
     const events = [
       { kind: "input", id: 7, inputKind: "edit", createdAt: 10, at: 12 },
-      { kind: "model", input: 7, revision: 5, at: 15 },
       {
-        kind: "edit-submit",
-        input: 7,
+        kind: "brush-interval",
+        inputIds: [7],
+        intervalId: 7,
+        gestureId: 1,
+        changed: true,
+        sessionId: "session-a",
+        revision: 5,
+        bounds: [0, 0, 1, 1],
+        at: 15,
+        projectedAt: 15,
+      },
+      {
+        kind: "brush-submit",
+        intervalId: 7,
+        gestureId: 1,
+        viewGeneration: 1,
         frame: 8,
         sessionId: "old-session",
         revision: 5,
         at: 17,
       },
-      { kind: "submit", frame: 8, sessionId: "old-session", at: 17 },
       {
-        kind: "edit-submit",
-        input: 7,
+        kind: "submit",
+        frame: 8,
+        viewGeneration: 1,
+        sessionId: "old-session",
+        at: 17,
+      },
+      {
+        kind: "brush-submit",
+        intervalId: 7,
+        gestureId: 1,
+        viewGeneration: 1,
         frame: 9,
         sessionId: "session-a",
         revision: 4,
         at: 18,
       },
-      { kind: "submit", frame: 9, sessionId: "session-a", at: 18 },
+      {
+        kind: "submit",
+        frame: 9,
+        viewGeneration: 1,
+        sessionId: "session-a",
+        at: 18,
+      },
     ];
     const result = extractEditSamples(events, [7, 8], "session-a");
     expect(result).toHaveLength(2);
@@ -986,21 +1015,34 @@ describe("explicit processed no-op evidence", () => {
           events.push({ kind: "noop", input, at: createdAt + 2 });
       } else {
         events.push({
-          kind: index === 3 ? "commit" : "model",
+          kind: index === 3 ? "commit" : "brush-interval",
           input,
+          inputIds: [input],
+          intervalId: input,
+          gestureId: 1,
+          changed: true,
+          sessionId: "session-a",
+          projectedAt: createdAt + 2,
+          bounds: index === 3 ? [[0, 0, 1, 1]] : [0, 0, 1, 1],
+          sequence: input,
           revision: input,
           at: createdAt + 2,
         });
         events.push({
           kind: "submit",
+          viewGeneration: 1,
           sessionId: "session-a",
           frame: input,
           revision: input,
           at: createdAt + 4,
         });
         events.push({
-          kind: "edit-submit",
+          kind: index === 3 ? "edit-submit" : "brush-submit",
           input,
+          sequence: input,
+          intervalId: input,
+          gestureId: 1,
+          viewGeneration: 1,
           sessionId: "session-a",
           revision: input,
           frame: input,
@@ -1165,13 +1207,14 @@ describe("explicit processed no-op evidence", () => {
 
 describe("bounded accepted brush time", () => {
   function events(): Record<string, unknown>[] {
-    const base = { sessionId: "session-a", gestureId: 1 };
+    const base = { sessionId: "session-a", gestureId: 1, viewGeneration: 1 };
     const dose = {
       ...base,
       from: [0, 0],
       to: [0, 0],
       rateFtPerSecond: 100,
       changed: true,
+      bounds: [-1, -1, 1, 1],
     };
     return [
       { kind: "input", id: 1, inputKind: "edit", createdAt: 0, at: 1 },
@@ -1198,6 +1241,7 @@ describe("bounded accepted brush time", () => {
         rawElapsedMs: 0,
         inputIds: [1],
         at: 2.1,
+        projectedAt: 2.1,
       },
       {
         ...base,
@@ -1229,6 +1273,7 @@ describe("bounded accepted brush time", () => {
         rawElapsedMs: 20,
         inputIds: [],
         at: 30.1,
+        projectedAt: 30.1,
       },
       { ...base, kind: "submit", frame: 2, revision: 2, at: 40.1 },
       {
@@ -1341,9 +1386,9 @@ describe("bounded accepted brush time", () => {
     journal[3].bounds = journal[4].viewBounds = [-0.5, -0.5, 0.5, 0.5];
     expect(evaluateBrushPublicationOrder(journal).passed).toBe(false);
   });
-  it("does not turn input-version coverage into a published brush step", () => {
+  it("does not turn a receipt without its actual frame into a published brush step", () => {
     const journal = events();
-    journal[5].kind = "brush-covered";
+    journal[5].frame = 999;
     expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual(
       expect.objectContaining({
         code: "BRUSH_STEP_SUBMISSION_MISSING",
@@ -1432,6 +1477,10 @@ describe("actual navigation response", () => {
       storeReads: 1,
       returnedTiles: 0,
       cpuWorkMs: [1, 2],
+      inputCount: 1,
+      wheelChecks: Array.from({ length: 8 }, () => ({ passed: true })),
+      storeCommits: 0,
+      cameraMoved: true,
     };
     expect(evaluateScenario(scenario).status).toBe("PROXY_ONLY");
     expect(evaluateScenario({ ...scenario, authorChanges: 1 }).status).toBe(
@@ -1479,14 +1528,27 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
         at: sample.handlerAt,
       },
       {
-        kind: sample.inputKind === "pointerup" ? "commit" : "model",
+        kind: sample.inputKind === "pointerup" ? "commit" : "brush-interval",
         input: sample.inputId,
+        inputIds: [sample.inputId],
+        intervalId: sample.inputId,
+        gestureId: 1,
+        changed: true,
+        sessionId: sample.sessionId,
+        projectedAt: sample.modelAt,
+        bounds:
+          sample.inputKind === "pointerup" ? [[0, 0, 1, 1]] : [0, 0, 1, 1],
+        sequence: sample.inputId,
         revision: sample.revision,
         at: sample.modelAt,
       },
       {
-        kind: "edit-submit",
+        kind: sample.inputKind === "pointerup" ? "edit-submit" : "brush-submit",
         input: sample.inputId,
+        sequence: sample.inputId,
+        intervalId: sample.inputId,
+        gestureId: 1,
+        viewGeneration: 1,
         sessionId: sample.sessionId,
         revision: sample.revision,
         frame: sample.frameId,
@@ -1494,6 +1556,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       },
       {
         kind: "submit",
+        viewGeneration: 1,
         sessionId: sample.sessionId,
         frame: sample.frameId,
         revision: sample.revision,
@@ -1518,11 +1581,11 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       samples: stroke(delayed),
       droppedEvents: 0,
       requestedAttempts: 1,
-      collectionPassed: true,
       attempts: [
         {
           attempt: 0,
-          passed: true,
+          inputIds: stroke(delayed).map((sample) => sample.inputId),
+          time: { passed: true, issues: [] },
           content: {
             points: [
               [-800, 0],
@@ -1656,7 +1719,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
   });
   it("requires pointerup's own commit even when its revision was already submitted", () => {
     const pending = journal();
-    pending.events.find((event) => event.kind === "commit")!.kind = "model";
+    pending.events.find((event) => event.kind === "commit")!.kind = "brush-end";
     expect(evaluateObservation(pending).failures).toContainEqual(
       expect.objectContaining({
         code: "MISSING_INPUT_OR_MODEL",
@@ -1689,7 +1752,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
   });
   it("keeps a passing selected probe distinct from the fixed native manifest", () => {
     const report = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       purpose: "probe",
       selection: "collection",
       mode: "lab",
@@ -1972,7 +2035,6 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
       sequence: 1,
     };
     const samples = [first, ...movement, up];
-    const stroke = strokeEvidence({ samples });
     return {
       kind: "cold",
       droppedEvents: 0,
@@ -1982,8 +2044,8 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
       attempts: [
         {
           attempt: 0,
-          passed: stroke.passed,
-          stroke,
+          inputIds: samples.map((entry) => entry.inputId),
+          time: { passed: true, issues: [] },
           content: {
             points: [
               [0, 0],
@@ -2315,7 +2377,7 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
         sessionId: "session-a",
         frame: 5,
         revision: 0,
-        cameraGeneration: 2,
+        viewGeneration: 2,
       },
       {
         kind: "input-ready",

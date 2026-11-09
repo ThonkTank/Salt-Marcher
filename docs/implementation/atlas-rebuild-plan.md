@@ -1,10 +1,10 @@
 # Atlas-Neubau und Aufräumen: ausführbarer Implementierungsplan
 
 Dieser Plan erhält den vollständigen Zielumfang **F01–F19 mit D01–D11** und die
-Pakete P0–P9. Die **Planung vom 9. November 2026 in Abschnitt 5** beschreibt als
-nächsten begrenzten Schritt einen einfacheren P0-Ablauf bei gleichem Verhalten.
-Dieser neue Schritt ist geplant, noch nicht zur Umsetzung beauftragt. Er ersetzt
-die inzwischen ausgeführte Reparaturliste als nächsten Arbeitsvorschlag.
+Pakete P0–P9. Die **begrenzte Vereinfachung vom 9. November 2026 in Abschnitt 5**
+ist umgesetzt und am integrierten Stand geprüft. Sie erhält das P0-Verhalten
+mit eindeutigen Besitzern für Pinselzustand, lokale Darstellung und Diagnose.
+Großpinselgeschwindigkeit und native Freigabe bleiben eigene offene Abschlüsse.
 Erreichter Implementierungs- und Nachweisstand stehen im Status; das native
 P0-Gate bleibt Voraussetzung für P1–P9. K1–K6 werden nicht erneut umgesetzt.
 
@@ -698,12 +698,13 @@ nur ihre tatsächlich betroffenen Nachweise.
 
 ### P0-Fortsetzung und nächster Produktnachweis
 
-**Planungsauftrag vom 9. November 2026:** Vor weiterer Reparatur den vorhandenen
-P0-Ablauf mit denselben Bedienregeln einfacher und nachvollziehbarer machen.
-Dieser Abschnitt plant den Umbau; er erklärt ihn nicht für umgesetzt und aktiviert
-weder P1–P9 noch eine neue native Messmethode. Der Produktvertrag bleibt die
-Verhaltensautorität. Die folgende Zuordnung macht seine Regeln für diesen Umbau
-prüfbar, ohne einen zweiten Vertrag anzulegen.
+**Begrenzter Umsetzungsauftrag vom 9. November 2026, abgeschlossen:** Der vorhandene
+P0-Ablauf ist mit denselben Bedienregeln vereinfacht. Der Schnitt und seine
+Abschlusskriterien stehen hier; aktuelle Zuständigkeiten beschreibt die Architektur,
+den geprüften Endstand und die weiterhin offenen Leistungsgrenzen der Status.
+Dieser Auftrag aktiviert weder P1–P9 noch eine neue native Messmethode. Der
+Produktvertrag bleibt die Verhaltensautorität; die Zuordnung unten erhält seine
+prüfbaren Grenzen für weitere Arbeit.
 
 #### Ausgangspunkt und begrenztes Ziel
 
@@ -749,7 +750,7 @@ Der feste warme 512-Pixel-Fall behält Eingabefolge, Inhalt, Livekriterien und
 Zeitgrenzen. Ein nach Pointerup nachgemalter Endpunkt wäre eine Verhaltensänderung,
 keine gültige Reparatur dieses Falls.
 
-#### Zielzuständigkeiten und konkrete Löschungen
+#### Zuständigkeiten und entfallene Altwege
 
 | Besitzer                        | Eigene Verantwortung                                                                                            | Entfallende Doppelung                                                                                          |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -776,7 +777,7 @@ Segmentintegral, additive Höhenwerte, Dirtybereich und History bleiben gleich.
 
 Nur die Pinselsteuerung verschiebt den Anker. Wird Wartezeit verworfen, ändern
 sich dort Ort und Uhr; das Dokument erhält dafür keinen wirkungslosen Aufruf.
-`applyPoint(point, 0)` und der versteckte Modellanker werden vollständig entfernt,
+`applyPoint(point, 0)` und der versteckte Modellanker sind vollständig entfernt,
 auch aus Aufrufern und Prüfhelfern. Ein Abschnitt mit null Dauer ändert weder
 Höhenwerte noch einen versteckten Eingabezustand.
 
@@ -822,7 +823,7 @@ entfallen: Für ihre Aussage über ältere, teilweise enthaltene Revisionen exis
 kein positiver Produkt- oder Auswerteverbraucher. Sie werden nicht zur neuen
 öffentlichen Schnittstelle ausgebaut. Die vorhandene Negativprüfung bleibt als
 Aussage erhalten: Teilwirkung oder ein veralteter Frame ist kein vollständiger
-Submitbeleg. `regionExact` entfällt ebenfalls nach Umstellung aller Verbraucher;
+Submitbeleg. `regionExact` ist nach Umstellung aller Verbraucher entfernt;
 vorbereitete Pixel dürfen keinen tatsächlichen Submit vortäuschen.
 
 Modellrevision, Storesequenz, Ansichtsgeneration und Job-/Kacheltoken schützen
@@ -850,14 +851,14 @@ Resultatnachrichten dürfen weiterhin erforderliche Restbatches **derselben bere
 angenommenen Revision** direkt starten. Dabei entstehen keine neue Dosis, kein
 Renderaufruf und kein zweiter Framepfad. Ein laufender Batch, Pixel-/Bytegrenzen,
 Fairness und die Abweisung alter Session-/Ansichts-/Jobergebnisse bleiben erhalten.
-Die bisherige Framenummer im `lastSubmit`-Identitätsvergleich macht den Vergleich
-wirkungslos; nach Umstellung entfällt dieser Doppelzustand ebenfalls.
+Der wirkungslose `lastSubmit`-Identitätsvergleich mit ohnehin neuer Framenummer
+und sein Doppelzustand sind entfernt.
 
 **5. Wenige Messfakten, eine Zuordnung und ein Auswertungspfad.**
 
 Der vorhandene Beobachter bleibt passiv und begrenzt. Diagnosezuordnungen aus
-`pendingEdits`, `navInput`, `readyNavInput` und `sourcesNavInput` verlassen den
-Produktcontroller. Der tatsächliche Frame liefert die benötigten lokalen Fakten;
+`pendingEdits`, `navInput`, `readyNavInput` und `sourcesNavInput` liegen im
+passiven Beobachter statt im Produktcontroller. Der tatsächliche Frame liefert die benötigten lokalen Fakten;
 der Beobachter hält nur bei eingeschalteter Diagnose seine offenen Messzuordnungen.
 Er kann weder Freigabe setzen noch eine Dosis oder Darstellung herstellen.
 
@@ -873,13 +874,14 @@ im Dosisfakt erhalten, statt historische Millisekundenwerte umzudeuten.
 einer gemeinsamen reinen Extraktion. Sammler liefern Fakten und benutzen für ein
 sofortiges Szenariourteil denselben Auswerter wie der Abschlussbericht. Parallele
 veränderbare Urteile wie `attempt.passed`, `collectionPassed` und
-`scenario.evaluation` werden auf Fakten plus ein abgeleitetes Urteil zurückgeführt;
+`scenario.evaluation` sind durch Fakten plus abgeleitete Bewertungen ersetzt;
 Fehler oder Abbruch dürfen dabei nicht durch Wiederholung verschwinden.
 
 Aktuelle Belege erhalten ein eindeutiges Schema; ersetzte aktive Aliase und
 Rekonstruktionswege entfallen mit ihren Verbrauchern. Alte Rohbelege bleiben
-unverändert und durch den zugehörigen Harness-Commit auswertbar. Höhen-/Pixel-/
-Undo-Erwartungen bleiben unabhängig von der gemeinsamen Faktenextraktion.
+unverändert und werden mit dem erhaltenen Auswerter ihres Schemas bewertet.
+Die Provenienzgrenze des historischen Gesamtharness steht beim Beleg und im Status.
+Höhen-/Pixel-/Undo-Erwartungen bleiben unabhängig von der gemeinsamen Faktenextraktion.
 Fehlende Daten werden abgelehnt. Die Diagnose liefert keine Steuerentscheidungen.
 Bei identischen Eingaben, Zeitpunkten und Produktfakten bleiben Entscheidungen
 und Fachwerte mit und ohne Diagnose gleich; unterschiedliche Laufzeitkosten
@@ -893,8 +895,10 @@ der ersten tatsächlichen Bildschirmpräsentation bleibt ausdrücklich blockiert
 
 #### Umsetzung und gezielter Nachweis
 
-Bei einem späteren begrenzten Umsetzungsauftrag diesen Ablauf nacheinander
-ersetzen. Kein dauerhaft zweiter Pinsel-, Render- oder Diagnosepfad.
+Die vier Phasen sind umgesetzt und am integrierten Stand geprüft. Ihre
+Abschlusskriterien bleiben unten nachvollziehbar; konkrete Prüfzahlen und
+Messergebnisse stehen ausschließlich im [Status](status.md). Ein zweiter Pinsel-,
+Render- oder Diagnosepfad ist nicht erhalten geblieben.
 
 | Phase                     | Änderung                                                                                                                                                           | Abschluss am integrierten Stand                                                                                                                                                                                                                         |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -903,19 +907,19 @@ ersetzen. Kein dauerhaft zweiter Pinsel-, Render- oder Diagnosepfad.
 | C — Diagnose              | Doppelte Dosis-/Inputbelege, historische Coverage-Logik, Controllerbuchhaltung und parallele Auswertung ablösen.                                                   | Ein Fakt je Dosis, eine Zuordnung zum echten Submit und ein Szenariourteil. Unabhängige Inhaltskontrollen sowie Drop/Delay/Recovery bleiben aussagekräftig; Diagnose an/aus ergibt bei gleichen Eingaben, Zeiten und Produktfakten dieselben Fachwerte. |
 | D — Gemeinsamer Abschluss | Gezielte bestehende Modell-/Controller-/Renderer-/Auswerterprüfungen und eine kurze tatsächliche Desktopintegration am endgültigen Stand.                          | Grob/Fein, lokale Bereitschaft, Release vor/nach Submit, Undo/Redo, Save/Neustart und Fehlerfälle geprüft; ersetzte Pfade samt Aufrufern und überholten Spiegeltests entfernt.                                                                          |
 
-Für D den unveränderten warmen 512-Pixel-Fall mit demselben Inhalt und
-Messzweck erneut ausführen und ehrlich bewerten. Das vorhandene Fehlerartefakt
-bleibt mit seinem zugehörigen Auswerter ein Fehler; neue Belege dürfen fehlende
-Endpunkte, Livebilder oder Zeitdaten nicht herausfiltern. Vorhandene unabhängige
-Fachprüfungen erhalten; keine vollständige native Dreifachreihe als bloßen
-Refactorabschluss beginnen. Gezielte Prüfungen belegen erhaltenes Verhalten,
-keine allgemeine Geschwindigkeitsverbesserung.
+Der Nachweis für D umfasst den unveränderten warmen 512-Pixel-Fall mit demselben
+Inhalt und Messzweck. Sein erneutes Scheitern bleibt im Status sichtbar; fehlende
+Livebilder oder Zeitdaten wurden nicht herausgefiltert. Das alte Fehlerartefakt
+bleibt unter dem verifizierten alten Schema-2-Auswerter ein Fehler; der aktuelle
+CLI lehnt alte Schemata ausdrücklich ab. Die Provenienzgrenze des historischen
+Gesamtharness steht beim Beleg, kein Latenzvergleich wird daraus abgeleitet.
+Unabhängige Fachprüfungen bleiben erhalten. Die gezielten Prüfungen belegen das
+Verhalten des Umbaus, keine allgemeine Beschleunigung oder native Dreifachabnahme.
 
-Bei Umsetzung Architektur und Kurzstatus auf den tatsächlich erreichten Zustand
-bringen; den Produktvertrag nur ändern, wenn seine Beschreibung dadurch präziser
-wird, nicht um Verhalten oder Schwellen zu lockern. Quellcode, Prüfcode und
-Belege auf denselben Endstand beziehen. Danach diesen begrenzten Umbau abschließen,
-ohne weitere Aufräum- oder Optimierungsrunden anzuhängen.
+Architektur und Kurzstatus beschreiben den erreichten Zustand; Produktvertrag und
+Schwellen wurden nicht gelockert. Produkt-, Prüfcode und Belege sind dem geprüften
+Stand zugeordnet. Der begrenzte Aufräumschnitt ist abgeschlossen; weitere
+Optimierung gehört zu den getrennten offenen Aufgaben unten.
 
 #### Drei getrennte Abschlussfragen
 
@@ -931,7 +935,7 @@ Wartezeit benennen, eine begrenzte Änderung samt Widerlegungskriterium wählen 
 deren tatsächliche Wirkung prüfen. Keine GPU- oder Workerentscheidung auf Verdacht.
 Der bereits ungeeignete native Messkandidat wird nicht ohne neue konkrete
 Beweisidee wiederholt. Das bestehende P0-Gate und der daran anschließende gemeinsame
-P1/P2/P3-Produktfall bleiben in diesem Planungsauftrag unverändert.
+P1/P2/P3-Produktfall bleiben durch diesen begrenzten Umsetzungsauftrag unverändert.
 
 ### P0 — Vorhandene Grundlage und verbleibendes Gate
 
@@ -1456,19 +1460,19 @@ Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
 konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
 Rohbelege werden nicht umgeschrieben.
 
-| Paket | Umfang                                                                | Status / Nachweis                                                                                                          |
-| ----- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                       |
-| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Quellen-/Rasterreparatur implementiert; Vereinfachung in Abschnitt 5 geplant, Gate offen. Genaue Fehler/Blocker im Status. |
-| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; nach P0 schrittweise mit P3 entwickeln.                                                                             |
-| P2    | F19, A07 und vollständige Projektdateien.                             | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                      |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                                                                     |
-| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                                                                     |
-| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                                                                     |
-| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                                                                     |
-| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                                                                     |
-| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                                                                     |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                                                                     |
+| Paket | Umfang                                                                | Status / Nachweis                                                                                                                        |
+| ----- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                             | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                     |
+| P0    | Höhenversuch P0a–P0f, D10/D11 und native Höhenabnahme.                | Quellen-/Rasterreparatur implementiert; Vereinfachung in Abschnitt 5 umgesetzt und geprüft; Gate offen. Genaue Fehler/Blocker im Status. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                        | Offen; nach P0 schrittweise mit P3 entwickeln.                                                                                           |
+| P2    | F19, A07 und vollständige Projektdateien.                             | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                    |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle. | Offen.                                                                                                                                   |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                      | Offen.                                                                                                                                   |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                      | Offen.                                                                                                                                   |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                   | Offen.                                                                                                                                   |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                            | Offen.                                                                                                                                   |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                     | Offen.                                                                                                                                   |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.              | Offen.                                                                                                                                   |
 
 ## 8. Definition von „erledigt“
 
@@ -1563,8 +1567,8 @@ Diese Quellen belegen Bibliotheksfunktionen, keine SaltMarcher-Latenzen.
 Am 9. November 2026 gegen die tatsächlich installierte Laufzeit **Electron
 44.10.2 / Chromium 152.0.7977.169** geprüft. Die Quellen begründeten den inzwischen
 ausgeführten kleinen Versuch. Seine fehlende Copy-/Generationsbindung steht im
-[Status](status.md#präsentationsprobe-und-tatsächlicher-blocker). Sie begründen keinen erneuten
-Versuch im jetzt geplanten Aufräumschritt und keine funktionierende Atlas-Zuordnung:
+[Status](status.md#native-freigabe-und-verbleibende-grenzen). Sie begründen keinen erneuten
+Versuch im abgeschlossenen Aufräumschritt und keine funktionierende Atlas-Zuordnung:
 
 - [Chromium: DevTools-Tracebilder](https://github.com/chromium/chromium/blob/152.0.7977.169/content/browser/devtools/protocol/tracing_handler.cc):
   Bild und Framekennungen; `expected_display_time` ist nur geschätzt.

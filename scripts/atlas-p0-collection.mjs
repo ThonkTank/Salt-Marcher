@@ -2,11 +2,10 @@ import { copyFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   extractEditSamples,
-  strokeEvidence,
+  evaluateAttempt,
   evaluateScenario,
   evaluateStrokeContent,
   extractColdSamples,
-  evaluateBlockedInput,
 } from "./atlas-p0-evaluate.mjs";
 import {
   snapshot,
@@ -143,12 +142,12 @@ async function verifyStrokeContent(
     probes,
   );
   record.content.undone = undone.samples;
-  record.content.evaluation = evaluateStrokeContent({
+  const content = evaluateStrokeContent({
     ...record.content,
     changedPixels: record.changedImage.pixels,
     restoredPixels: record.undoneImage.pixels,
   });
-  if (!record.content.evaluation.passed)
+  if (!content.passed)
     throw new Error(
       "Moving stroke did not change terrain pixels at both endpoints",
     );
@@ -187,7 +186,7 @@ async function collectWarm(context, session, spec, scenario) {
             [-440, -300],
           ];
   for (let attempt = 0; attempt < scenario.requestedAttempts; attempt++) {
-    const record = { attempt, passed: false };
+    const record = { attempt, overlapRequired: Boolean(spec.busy) };
     scenario.attempts.push(record);
     let before;
     try {
@@ -227,7 +226,7 @@ async function collectWarm(context, session, spec, scenario) {
       retainSamples(scenario, edit.samples);
       record.inputIds = edit.samples.map((sample) => sample.inputId);
       record.sessionId = edit.after.sessionId;
-      record.stroke = strokeEvidence(edit);
+      record.timedOut = edit.timedOut;
       record.time = edit.time;
       const after = await stateSnapshot(page, points);
       scenario.droppedEvents = after.droppedEvents;
@@ -241,24 +240,11 @@ async function collectWarm(context, session, spec, scenario) {
         before.samples,
         after,
       );
-      record.passed =
-        record.stroke.passed &&
-        record.time.passed &&
-        (!spec.busy || record.overlapProven);
-      if (!record.passed)
-        record.error =
-          spec.busy && !record.overlapProven
-            ? "Input/model did not overlap a successful save and active worker"
-            : !record.time.passed
-              ? record.time.issues.map((issue) => issue.code).join(", ")
-              : !record.stroke.complete
-                ? "Moving stroke lacks complete input/submission evidence"
-                : !record.stroke.continuity.passed
-                  ? `Exact regional submission paused for ${record.stroke.continuity.maximumMovingStallMs} ms while movement continued`
-                  : record.stroke.processedNoops
-                    ? `${record.stroke.processedNoops} expected terrain edits were processed without a change`
-                    : "Minimum live control failed: fewer than two distinct exact frames before release";
-      if (!record.passed) {
+      const evaluation = evaluateAttempt(record, edit.samples);
+      if (!evaluation.passed) {
+        record.error = evaluation.failures
+          .map((issue) => issue.code)
+          .join(", ");
         console.error(
           `[atlas-p0] ${session.instance.id}: attempt ${attempt + 1} FAIL: ${record.error}`,
         );
@@ -513,7 +499,7 @@ async function collectCold(context, session, spec, scenario) {
     const record = {
       attempt,
       target,
-      passed: false,
+      overlapRequired: Boolean(spec.busy),
       cacheReset: "ordinary-project-open",
     };
     scenario.attempts.push(record);
@@ -594,7 +580,7 @@ async function collectCold(context, session, spec, scenario) {
           : null;
         record.readyToInputMs = null;
       }
-      record.stroke = strokeEvidence({ samples, timedOut });
+      record.timedOut = timedOut;
       record.time = observedStroke.time;
       record.beforeHeightExpected = -20;
       record.beforeHeightObserved = trigger.observed?.beforeHeight ?? null;
@@ -666,12 +652,13 @@ async function collectCold(context, session, spec, scenario) {
           throw new Error(
             "Cold navigation/first edit did not both overlap real save and active worker",
           );
+        record.overlapProven = true;
       }
-      record.passed = record.stroke.passed && record.time.passed;
-      if (!record.passed) {
-        record.error = !record.time.passed
-          ? record.time.issues.map((issue) => issue.code).join(", ")
-          : "Cold released stroke failed the ordinary live criterion";
+      const evaluation = evaluateAttempt(record, samples);
+      if (!evaluation.passed) {
+        record.error = evaluation.failures
+          .map((issue) => issue.code)
+          .join(", ");
         if (context.purpose !== "acceptance") {
           scenario.aborted = true;
           break;
@@ -926,13 +913,9 @@ async function collectBlockedInputs(session, spec) {
           before.sessionId,
         ),
         mutationEvents: observed.events.filter((event) =>
-          [
-            "brush-start",
-            "brush-interval",
-            "model",
-            "commit",
-            "persisted",
-          ].includes(event.kind),
+          ["brush-start", "brush-interval", "commit", "persisted"].includes(
+            event.kind,
+          ),
         ),
       });
       // This new deliberate press belongs only to the rejection/recovery case.
@@ -951,14 +934,11 @@ async function collectBlockedInputs(session, spec) {
         sequenceAfter: after.document.sequence,
         historyAfter: after.document.historyActions,
       };
-      record.evaluation = evaluateBlockedInput(record);
-      record.passed = record.evaluation.passed;
     } catch (error) {
       record.error = String(error);
-      record.passed = false;
     }
   }
-  return { cases, passed: cases.every((record) => record.passed) };
+  return { cases };
 }
 
 /** Collect edit/cold cases, optionally one diagnostic case. M01 belongs to its runner. */
@@ -1033,13 +1013,7 @@ export async function collectRepeatedScenarios(context) {
         }
       }
     }
-    scenario.collectionPassed =
-      !scenario.aborted &&
-      scenario.attempts.length === scenario.requestedAttempts &&
-      scenario.attempts.every((a) => a.passed) &&
-      (spec.kind !== "cold" || scenario.blockedInputs?.passed === true);
     scenario.evaluation = evaluateScenario(scenario);
-    scenario.collectionPassed &&= scenario.evaluation.status !== "FAIL";
     const resultFile = join(
       session?.directory ?? context.out,
       `${spec.id}-result.json`,
@@ -1051,7 +1025,7 @@ export async function collectRepeatedScenarios(context) {
       status: scenario.evaluation.status,
     });
     await context.onScenario?.(scenario, resultFile);
-    if (!scenario.collectionPassed || scenario.evaluation.status === "FAIL")
+    if (scenario.evaluation.status !== "PROXY_ONLY")
       result.errors.push({
         scenario: spec.id,
         requested: scenario.requestedAttempts,
@@ -1060,11 +1034,15 @@ export async function collectRepeatedScenarios(context) {
           scenario.error ??
           (scenario.aborted
             ? scenario.attempts.at(-1)?.error
-            : scenario.attempts.find((a) => !a.passed)?.error) ??
+            : scenario.attempts.find((a) => a.error)?.error) ??
           scenario.evaluation.failures[0]?.code ??
           "Collection incomplete",
         failedAttempts: scenario.attempts
-          .filter((attempt) => !attempt.passed)
+          .filter((attempt) =>
+            scenario.evaluation.failures.some(
+              (issue) => issue.attempt === attempt.attempt,
+            ),
+          )
           .map(({ attempt, error }) => ({ attempt, error })),
       });
     if (context.purpose !== "acceptance" && result.errors.length) break;

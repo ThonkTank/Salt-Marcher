@@ -113,6 +113,11 @@ Kurze Probe und vollständige Sammlung verwenden dieselben Eingaben und
 Inhaltsprüfer. Die Auswahl verkleinert nicht den Abnahmeumfang. Pflichtfälle,
 Stichproben, Fehlerkontrollen und Zeitgrenzen stehen einmal im
 [Prüfvertrag](docs/implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag).
+Aktuelle Runnerberichte verwenden Schema 3. `p0:evaluate` akzeptiert nur dieses
+Schema; historische Rohbelege bleiben unverändert und benötigen ihren zugehörigen
+Auswerterstand. Eine alte Dosis-/Submitzuordnung wird nicht stillschweigend
+rekonstruiert.
+
 Ein Headless-Funktionslauf belegt keine native Leistung; Submission und RAF sind
 keine Präsentationszeitpunkte. Fehlende Messanbindung und Umgebungsqualifizierung
 bleiben ausdrücklich offen. Ein Paketstart ersetzt keine RPM-Installation.

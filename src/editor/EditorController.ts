@@ -7,9 +7,18 @@ import type {
 } from "./bridge";
 import { editorBudgets } from "./budgets";
 import {
+  brushTarget,
+  decideBrushFrame,
+  PRESS_DOSE_MS,
+  type BrushPoint,
+  type BrushState,
+  type BrushStroke,
+} from "./brush";
+import {
   clipBounds,
   EditorDocument,
   HEIGHT_LEVELS,
+  heightBrushReadBounds,
   heightSpacing,
   intersectsBounds,
   type Bounds,
@@ -46,21 +55,9 @@ export interface EditorState {
   sequence: number;
   background: boolean;
 }
-interface BrushPoint {
-  point: Point;
-  input: number;
-  at: number;
-}
-interface Gesture {
-  id: number;
-  brush: HeightBrush;
-  point: Point;
-  pointAt: number;
-  clock: number;
-  latest: BrushPoint | null;
-}
 interface LocalReadiness {
   ready: boolean;
+  sourcesReady: boolean;
   reason: "sources" | "terrain" | "feedback" | "busy" | "outside" | null;
   bounds: Bounds;
   point: Point;
@@ -68,17 +65,6 @@ interface LocalReadiness {
   frame: number;
   viewGeneration: number;
 }
-interface PendingEdit {
-  input?: number;
-  gestureId?: number;
-  intervalId?: number;
-  bounds: Bounds;
-  revision: number;
-  sequence?: number;
-  covered?: boolean;
-}
-const MAX_DOSE_MS = 50;
-const PRESS_DOSE_MS = 1000 / 60;
 const brushBounds = (point: Point, radius: number): Bounds =>
   clipBounds([
     point[0] - radius,
@@ -92,7 +78,7 @@ export class EditorController {
   readonly world: WorldRenderer;
   private doc!: EditorDocument;
   private project!: ProjectInfo;
-  private gesture: Gesture | null = null;
+  private brushState: BrushState = { kind: "idle" };
   private pan: { x: number; y: number; camera: Camera } | null = null;
   private writeQueue: Promise<void> = Promise.resolve();
   // These are the existing bounded ChangeSets, not another work queue or copy.
@@ -103,18 +89,18 @@ export class EditorController {
   private releaseFileAction: () => void;
   private pendingWrites = 0;
   private loadToken = 0;
-  private navInput: number | null = null;
-  private readyNavInput: number | null = null;
-  private sourcesNavInput: number | null = null;
-  private pendingEdits: PendingEdit[] = [];
   private awaitingDose: {
+    sessionId: string;
     bounds: Bounds;
     intervalId: number;
     gestureId: number;
     revision: number;
   } | null = null;
   private intervalId = 0;
-  private loadRequest = 0;
+  private inputId = 0;
+  private loadRequested = false;
+  private animation = 0;
+  private lastFrameAt = 0;
   private viewRead: Promise<void> | null = null;
   private viewLoadPending = false;
   private resizeObserver: ResizeObserver;
@@ -122,7 +108,6 @@ export class EditorController {
   private disposed = false;
   private fileActionOwner: "renderer" | "native" | null = null;
   private pointer: Point = [0, 0];
-  private editPointer: number | null = null;
   private backgroundStats: Record<string, unknown> = { active: false };
   private backgroundStarting = false;
   state: EditorState = {
@@ -182,75 +167,6 @@ export class EditorController {
       }
     });
     this.world.onError = this.fail;
-    this.world.advanceFrame = this.advanceFrame;
-    this.world.onSubmit = (frame) => {
-      if (
-        this.awaitingDose &&
-        this.world.regionDisplayed(this.awaitingDose.bounds)
-      )
-        this.awaitingDose = null;
-      this.checkLocalReady();
-      if (!bridge.diagnostics) return;
-      const pending: PendingEdit[] = [];
-      for (const edit of this.pendingEdits) {
-        if (!edit.covered) {
-          const coverage = this.world.regionCoverage(
-            edit.bounds,
-            edit.revision,
-          );
-          if (coverage) {
-            const details = {
-              frame,
-              sessionId: this.doc.sessionId,
-              requiredRevision: edit.revision,
-              modelRevision: this.doc.revision,
-              ...coverage,
-              sequence: edit.sequence ?? null,
-            };
-            if (edit.input !== undefined)
-              this.observation.mark("input-covered", `${edit.input}.${frame}`, {
-                ...details,
-                input: edit.input,
-              });
-            if (edit.intervalId !== undefined)
-              this.observation.mark(
-                "brush-covered",
-                `${edit.intervalId}.${frame}`,
-                {
-                  ...details,
-                  gestureId: edit.gestureId,
-                  intervalId: edit.intervalId,
-                },
-              );
-            edit.covered = true;
-          }
-        }
-        if (this.world.regionExact(edit.bounds)) {
-          const details = {
-            frame,
-            sessionId: this.doc.sessionId,
-            revision: edit.revision,
-            sequence: edit.sequence ?? null,
-          };
-          if (edit.input !== undefined)
-            this.observation.mark("edit-submit", `${edit.input}.${frame}`, {
-              ...details,
-              input: edit.input,
-            });
-          if (edit.intervalId !== undefined)
-            this.observation.mark(
-              "brush-submit",
-              `${edit.intervalId}.${frame}`,
-              {
-                ...details,
-                gestureId: edit.gestureId,
-                intervalId: edit.intervalId,
-              },
-            );
-        } else pending.push(edit);
-      }
-      this.pendingEdits = pending;
-    };
     if (bridge.diagnostics)
       this.work = new Worker(
         new URL("./render/work.worker.ts", import.meta.url),
@@ -286,6 +202,7 @@ export class EditorController {
       this.world.fault = fault;
     this.installEvents();
     this.setProject(await this.bridge.status());
+    this.animation = requestAnimationFrame(this.frame);
     await this.loadView().catch(this.fail);
   }
 
@@ -300,13 +217,10 @@ export class EditorController {
       maxHistoryBytes: editorBudgets.historyBytes,
       maxHistoryActions: editorBudgets.historyActions,
     });
-    this.gesture = null;
-    this.editPointer = null;
+    this.brushState = { kind: "idle" };
     this.awaitingDose = null;
-    this.pendingEdits = [];
-    this.navInput = null;
-    this.readyNavInput = null;
-    this.sourcesNavInput = null;
+    this.loadRequested = false;
+    this.observation.reset();
     this.writeQueue = Promise.resolve();
     this.unconfirmedWrites.clear();
     this.writeError = null;
@@ -323,6 +237,10 @@ export class EditorController {
       message: "Kartenausschnitt wird geladen …",
       background: false,
     });
+  }
+
+  private get stroke(): BrushStroke | null {
+    return this.brushState.kind === "active" ? this.brushState.stroke : null;
   }
 
   private publish(
@@ -358,8 +276,8 @@ export class EditorController {
       loading:
         readiness.reason === "sources" ||
         readiness.reason === "terrain" ||
-        (readiness.reason === "feedback" && !this.gesture),
-      needsPress: this.editPointer !== null && !this.gesture,
+        (readiness.reason === "feedback" && !this.stroke),
+      needsPress: this.brushState.kind === "blocked",
     };
     this.state.message = this.recovering
       ? "Speicherstand wird geprüft …"
@@ -467,11 +385,8 @@ export class EditorController {
     this.world.moveCamera(this.clampedCamera(camera));
     this.world.refresh();
     this.releaseOffscreenFeedback();
-    this.navInput = input;
-    this.readyNavInput = null;
-    this.sourcesNavInput = null;
-    this.observation.mark("camera", String(input), {
-      input,
+    this.observation.navigation(input, {
+      sessionId: this.doc.sessionId,
       camera: { ...this.world.camera },
     });
     this.checkLocalReady();
@@ -485,7 +400,6 @@ export class EditorController {
       !intersectsBounds(this.awaitingDose.bounds, this.world.bounds())
     ) {
       this.observation.event("brush-feedback-obsolete", {
-        sessionId: this.doc.sessionId,
         ...this.awaitingDose,
         reason: "outside-view",
         viewBounds: this.world.bounds(),
@@ -496,17 +410,55 @@ export class EditorController {
   }
 
   goTo(event: Event, x: number, y: number, scale: number): void {
-    if (this.gesture) return;
-    this.navigate({ x, y, scale }, this.observation.input(event, "navigation"));
+    if (this.stroke) return;
+    this.navigate({ x, y, scale }, this.input(event, "navigation"));
   }
 
   private scheduleLoad(): void {
-    if (this.loadRequest) return;
-    this.loadRequest = requestAnimationFrame(() => {
-      this.loadRequest = 0;
-      void this.loadView().catch(this.fail);
-    });
+    this.loadRequested = true;
   }
+
+  /** One owner orders accepted pixels, local feedback, the next dose and dispatch. */
+  private frame = (now: number): void => {
+    if (this.disposed) return;
+    const start = performance.now();
+    try {
+      if (this.loadRequested) {
+        this.loadRequested = false;
+        void this.loadView().catch(this.fail);
+      }
+      const submission = this.world.renderFrame(now);
+      if (submission) {
+        this.observation.submitted(submission, (bounds) =>
+          this.world.inspectRegion(bounds),
+        );
+        if (
+          this.awaitingDose?.sessionId === submission.sessionId &&
+          this.world.inspectRegion(this.awaitingDose.bounds).status ===
+            "current"
+        )
+          this.awaitingDose = null;
+        this.checkLocalReady();
+      }
+      // Use the current clock after upload/draw, just as the previous dose path did.
+      try {
+        this.advanceHeldBrush(performance.now());
+      } catch (error) {
+        this.fail(error);
+      }
+      if (!this.disposed) this.world.dispatch();
+    } catch (error) {
+      this.fail(error);
+    } finally {
+      if (this.lastFrameAt)
+        this.observation.event("frame", {
+          interval: now - this.lastFrameAt,
+          cpuMs: performance.now() - start,
+        });
+      this.lastFrameAt = now;
+      if (!this.disposed) this.animation = requestAnimationFrame(this.frame);
+    }
+  };
 
   private async ensure(bounds: Bounds, minLevel: number): Promise<boolean> {
     if (this.doc.isReady(bounds, HEIGHT_LEVELS.slice(minLevel))) return true;
@@ -676,46 +628,50 @@ export class EditorController {
   /** One derived contract for input, the normal UI and read-only observation. */
   private localReadiness(
     point = this.toolPoint(),
-    brush = this.gesture?.brush ?? this.currentBrush(),
+    brush = this.stroke?.brush ?? this.currentBrush(),
   ): LocalReadiness {
     const inWorld = point.every(
       (value) => Number.isFinite(value) && Math.abs(value) <= 100_000_000,
     );
-    const bounds =
-      this.doc && inWorld
-        ? this.doc.readBoundsForPoint(point, brush)
-        : brushBounds(point, brush.radius + 2 * heightSpacing(brush.level));
+    const bounds = inWorld
+      ? heightBrushReadBounds(brush, this.stroke?.point ?? point, point)
+      : brushBounds(point, brush.radius + 2 * heightSpacing(brush.level));
     const view = this.world.bounds();
     const visible =
       Math.hypot(
         Math.max(view[0] - point[0], 0, point[0] - view[2]),
         Math.max(view[1] - point[1], 0, point[1] - view[3]),
       ) < brush.radius;
-    const reason = !inWorld
-      ? "outside"
-      : !visible
+    const sourcesReady = Boolean(
+      inWorld && this.doc?.isReady(bounds, HEIGHT_LEVELS.slice(brush.level)),
+    );
+    const display = this.world.inspectRegion(bounds);
+    const feedback = this.awaitingDose
+      ? this.world.inspectRegion(this.awaitingDose.bounds)
+      : null;
+    const reason =
+      !inWorld || !visible
         ? "outside"
         : this.writeError || this.changingProject || this.recovering
           ? "busy"
-          : !this.doc?.isReady(bounds, HEIGHT_LEVELS.slice(brush.level))
+          : !sourcesReady
             ? "sources"
-            : !this.world.regionDisplayed(bounds, false)
+            : display.status === "missing" || display.status === "outside"
               ? "terrain"
-              : this.awaitingDose &&
-                  !this.world.regionDisplayed(this.awaitingDose.bounds)
+              : feedback && feedback.status !== "current"
                 ? "feedback"
-                : !this.world.regionDisplayed(bounds)
+                : display.status !== "current"
                   ? "terrain"
                   : null;
-    const submitted = this.world.submission();
     return {
       ready: reason === null,
+      sourcesReady,
       reason,
       bounds,
       point,
       brush,
-      frame: submitted.frame,
-      viewGeneration: submitted.viewGeneration,
+      frame: display.frame,
+      viewGeneration: display.viewGeneration,
     };
   }
 
@@ -724,34 +680,21 @@ export class EditorController {
     this.world.setPriorityAreas(readiness.bounds, this.awaitingDose?.bounds);
     if (this.world.cursor) {
       const waiting =
-        !readiness.ready && !(readiness.reason === "feedback" && this.gesture);
+        !readiness.ready && !(readiness.reason === "feedback" && this.stroke);
       if (Boolean(this.world.cursor.waiting) !== waiting) {
         this.world.cursor.waiting = waiting;
         this.world.redraw();
       }
     }
-    if (this.doc && this.navInput !== null) {
-      const details = {
-        input: this.navInput,
+    if (this.doc)
+      this.observation.readiness({
         sessionId: this.doc.sessionId,
-        ...readiness,
         revision: this.doc.revision,
-      };
-      if (
-        this.sourcesNavInput !== this.navInput &&
-        this.doc.isReady(
-          readiness.bounds,
-          HEIGHT_LEVELS.slice(readiness.brush.level),
-        )
-      ) {
-        this.sourcesNavInput = this.navInput;
-        this.observation.mark("sources-ready", String(this.navInput), details);
-      }
-      if (readiness.ready && this.readyNavInput !== this.navInput) {
-        this.readyNavInput = this.navInput;
-        this.observation.mark("input-ready", String(this.navInput), details);
-      }
-    }
+        frame: readiness.frame,
+        viewGeneration: readiness.viewGeneration,
+        ready: readiness.ready,
+        sourcesReady: readiness.sourcesReady,
+      });
     this.publish({}, readiness);
     return readiness;
   }
@@ -773,7 +716,7 @@ export class EditorController {
     if (event.button !== 0 && event.button !== 1) return;
     this.canvas.focus();
     this.canvas.setPointerCapture(event.pointerId);
-    const input = this.observation.input(
+    const input = this.input(
       event,
       this.mode === "pan" || event.button === 1 ? "navigation" : "edit",
     );
@@ -786,16 +729,14 @@ export class EditorController {
       return;
     }
     this.updatePointer(event);
-    if (this.editPointer !== null) {
-      this.skipInput(input, this.gesture ? "busy" : "new-press-required");
+    if (this.brushState.kind !== "idle") {
+      this.skipInput(
+        input,
+        this.brushState.kind === "active" ? "busy" : "new-press-required",
+      );
       return;
     }
-    this.editPointer = event.pointerId;
-    if (this.gesture || this.writeError || this.changingProject) {
-      this.skipInput(input, "busy");
-      this.checkLocalReady();
-      return;
-    }
+    this.brushState = { kind: "blocked", pointerId: event.pointerId };
     const brush = this.currentBrush();
     const point = this.worldPoint(event);
     const readiness = this.localReadiness(point, brush);
@@ -807,15 +748,16 @@ export class EditorController {
     }
     this.awaitingDose = null;
     const now = performance.now();
-    const gesture: Gesture = {
+    const gesture: BrushStroke = {
       id: input,
+      pointerId: event.pointerId,
       brush,
       point: [...point],
       pointAt: this.inputTime(event),
       clock: now,
       latest: null,
     };
-    this.gesture = gesture;
+    this.brushState = { kind: "active", stroke: gesture };
     this.observation.event("brush-start", {
       sessionId: this.doc.sessionId,
       gestureId: input,
@@ -829,7 +771,6 @@ export class EditorController {
     });
     try {
       this.doc.beginGesture(brush);
-      this.doc.applyPoint(point, 0);
       // A valid down/up between frames must keep its small immediate click dose.
       this.applyDose(gesture, point, now, now, 0, "press", input);
     } catch (error) {
@@ -844,8 +785,8 @@ export class EditorController {
     this.world.cursor = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
-      radius: this.gesture
-        ? this.gesture.brush.radius * this.world.camera.scale
+      radius: this.stroke
+        ? this.stroke.brush.radius * this.world.camera.scale
         : this.diameter / 2,
     };
     this.world.redraw();
@@ -863,29 +804,26 @@ export class EditorController {
           this.pan.camera.y -
           (event.clientY - this.pan.y) / this.pan.camera.scale,
       };
-      this.navigate(camera, this.observation.input(event, "navigation"));
-    } else if (this.gesture) {
+      this.navigate(camera, this.input(event, "navigation"));
+    } else if (this.stroke) {
       const events = event.getCoalescedEvents?.() ?? [];
       for (const e of events.length ? events : [event]) {
         const latest: BrushPoint = {
           point: this.worldPoint(e),
-          input: this.observation.input(e, "edit"),
+          input: this.input(e, "edit"),
           at: this.inputTime(e),
         };
-        if (this.gesture.latest && latest.at < this.gesture.latest.at) {
+        if (this.stroke.latest && latest.at < this.stroke.latest.at) {
           this.skipInput(latest.input, "stale");
           continue;
         }
-        if (this.gesture.latest)
-          this.skipInput(this.gesture.latest.input, "coalesced");
-        this.gesture.latest = latest;
+        if (this.stroke.latest)
+          this.skipInput(this.stroke.latest.input, "coalesced");
+        this.stroke.latest = latest;
       }
     } else {
-      if (this.editPointer !== null)
-        this.skipInput(
-          this.observation.input(event, "edit"),
-          "new-press-required",
-        );
+      if (this.brushState.kind === "blocked")
+        this.skipInput(this.input(event, "edit"), "new-press-required");
       this.updateToolNeed();
     }
   };
@@ -895,18 +833,27 @@ export class EditorController {
       this.pan = null;
       return;
     }
-    if (this.editPointer !== event.pointerId) return;
-    this.editPointer = null;
-    const input = this.observation.input(event, "pointerup");
-    if (this.gesture) this.finishGesture(input, "pointerup", event);
-    else this.skipInput(input, "no-gesture");
+    const state = this.brushState;
+    if (
+      state.kind === "idle" ||
+      (state.kind === "active" ? state.stroke.pointerId : state.pointerId) !==
+        event.pointerId
+    )
+      return;
+    const input = this.input(event, "pointerup");
+    if (state.kind === "active")
+      this.finishGesture(input, "pointerup", event, true);
+    else {
+      this.brushState = { kind: "idle" };
+      this.skipInput(input, "no-gesture");
+    }
     this.checkLocalReady();
   };
 
   private wheel = (event: WheelEvent): void => {
     event.preventDefault();
-    if (this.gesture) return;
-    const input = this.observation.input(event, "navigation");
+    if (this.stroke) return;
+    const input = this.input(event, "navigation");
     if (this.world.fault === "ignore-zoom") {
       this.observation.event("fault", { fault: "ignore-zoom", input });
       return;
@@ -929,6 +876,12 @@ export class EditorController {
     );
   };
 
+  private input(event: Event, kind: string): number {
+    const id = ++this.inputId;
+    this.observation.input(id, event, kind);
+    return id;
+  }
+
   private inputTime(event: Event): number {
     return event.timeStamp > performance.timeOrigin
       ? event.timeStamp - performance.timeOrigin
@@ -941,12 +894,12 @@ export class EditorController {
       accepted: false,
       reason,
       sessionId: this.doc.sessionId,
-      gestureId: this.gesture?.id ?? null,
+      gestureId: this.stroke?.id ?? null,
     });
   }
 
   private discardTime(
-    gesture: Gesture,
+    gesture: BrushStroke,
     fromAt: number,
     toAt: number,
     reason: string,
@@ -961,26 +914,14 @@ export class EditorController {
     });
   }
 
-  private anchor(gesture: Gesture, point: Point, at = gesture.pointAt): void {
-    if (at < gesture.pointAt) return;
-    this.doc.applyPoint(point, 0);
-    gesture.point = [...point];
-    gesture.pointAt = at;
-  }
-
-  private skipLatest(
-    gesture: Gesture,
-    reason: string,
-    trackPosition = true,
-  ): void {
+  private skipLatest(gesture: BrushStroke, reason: string): void {
     const latest = gesture.latest;
     gesture.latest = null;
     if (latest) this.skipInput(latest.input, reason);
-    if (latest && trackPosition) this.anchor(gesture, latest.point, latest.at);
   }
 
   private applyDose(
-    gesture: Gesture,
+    gesture: BrushStroke,
     point: Point,
     fromAt: number,
     toAt: number,
@@ -988,125 +929,112 @@ export class EditorController {
     cause: "press" | "move" | "hold",
     input?: number,
   ): void {
-    const from = [...gesture.point];
+    const from: Point = [...gesture.point];
     const acceptedElapsedMs = cause === "press" ? PRESS_DOSE_MS : toAt - fromAt;
-    const update = this.doc.applyPoint(point, acceptedElapsedMs);
+    const update = this.doc.applySegment(from, point, acceptedElapsedMs);
+    const appliedAt = performance.now();
     gesture.point = [...point];
     const intervalId = ++this.intervalId;
-    this.observation.event("brush-interval", {
-      sessionId: this.doc.sessionId,
-      gestureId: gesture.id,
-      intervalId,
-      cause,
-      nominalDose: cause === "press",
-      fromAt,
-      toAt,
-      rawElapsedMs,
-      acceptedElapsedMs,
-      from,
-      to: [...point],
-      rateFtPerSecond: gesture.brush.amount,
-      radius: gesture.brush.radius,
-      level: gesture.brush.level,
-      revision: this.doc.revision,
-      changed: Boolean(update),
-      bounds: update?.bounds ?? null,
-      inputIds: input === undefined ? [] : [input],
-    });
+    let projectedAt: number | null = null;
+    try {
+      if (update) {
+        this.world.updateSourcePatches(update.patches);
+        this.world.invalidate(update.bounds);
+        this.awaitingDose = {
+          sessionId: this.doc.sessionId,
+          bounds: update.bounds,
+          intervalId,
+          gestureId: gesture.id,
+          revision: this.doc.revision,
+        };
+      }
+      projectedAt = performance.now();
+    } finally {
+      this.observation.dose({
+        sessionId: this.doc.sessionId,
+        gestureId: gesture.id,
+        intervalId,
+        at: appliedAt,
+        projectedAt,
+        cause,
+        nominalDose: cause === "press",
+        fromAt,
+        toAt,
+        rawElapsedMs,
+        acceptedElapsedMs,
+        from,
+        to: [...point],
+        rateFtPerSecond: gesture.brush.amount,
+        radius: gesture.brush.radius,
+        level: gesture.brush.level,
+        revision: this.doc.revision,
+        changed: Boolean(update),
+        bounds: update?.bounds ?? null,
+        inputIds: input === undefined ? [] : [input],
+      });
+    }
     if (!update) {
       if (input !== undefined) this.skipInput(input, "no-change");
       return;
     }
-    this.world.updateSourcePatches(update.patches);
-    this.world.invalidate(update.bounds);
-    this.awaitingDose = {
-      bounds: update.bounds,
-      intervalId,
-      gestureId: gesture.id,
-      revision: this.doc.revision,
-    };
-    if (this.bridge.diagnostics)
-      this.pendingEdits.push({
-        input,
-        gestureId: gesture.id,
-        intervalId,
-        bounds: update.bounds,
-        revision: this.doc.revision,
-      });
-    if (input !== undefined)
-      this.observation.mark("model", String(input), {
-        input,
-        sessionId: this.doc.sessionId,
-        gestureId: gesture.id,
-        intervalId,
-        revision: this.doc.revision,
-        bounds: update.bounds,
-        point: [...point],
-        gestureReleased: false,
-      });
     this.checkLocalReady();
   }
 
-  private advanceFrame = (now: number): void => {
-    const gesture = this.gesture;
+  private advanceHeldBrush = (now: number): void => {
+    const gesture = this.stroke;
     if (this.disposed || !gesture) return;
     const fromAt = gesture.clock;
     const toAt = Math.max(fromAt, now);
-    // Every examined window ends here, including time rejected by backpressure.
-    gesture.clock = toAt;
     let accountedTo = fromAt;
     const previousInterval = this.intervalId;
     try {
-      const latest = gesture.latest;
-      const point =
-        latest && latest.at >= gesture.pointAt ? latest.point : gesture.point;
-      // Check the complete next segment before moving its model anchor. Waiting
-      // for our own accepted dose is ordinary feedback; a new cold area ends it.
-      const readiness = this.localReadiness(point, gesture.brush);
-      if (!readiness.ready) {
-        this.discardTime(gesture, fromAt, toAt, readiness.reason!);
-        accountedTo = toAt;
-        this.skipLatest(
-          gesture,
-          readiness.reason!,
-          readiness.reason === "feedback",
+      // Validate the full segment before discarding time or shifting its anchor.
+      const readiness = this.localReadiness(
+        brushTarget(gesture),
+        gesture.brush,
+      );
+      const decision = decideBrushFrame(gesture, now, readiness.reason);
+      this.brushState = { kind: "active", stroke: decision.stroke };
+      if (readiness.ready) this.awaitingDose = null;
+      if (decision.kind === "none") return;
+      if (decision.kind === "wait" || decision.kind === "stale") {
+        const reason = decision.kind === "stale" ? "stale" : decision.reason;
+        this.discardTime(
+          decision.stroke,
+          decision.fromAt,
+          decision.toAt,
+          reason,
         );
-        if (readiness.reason !== "feedback") {
-          this.finishGesture(undefined, readiness.reason!);
+        accountedTo = decision.toAt;
+        if (decision.input !== undefined)
+          this.skipInput(decision.input, reason);
+        if (decision.kind === "wait" && decision.end) {
+          this.finishGesture(undefined, reason);
           this.updateToolNeed();
         }
         return;
       }
-      this.awaitingDose = null;
-      const rawElapsedMs = toAt - fromAt;
-      if (rawElapsedMs <= 0) return;
-      gesture.latest = null;
-      if (latest && latest.at < fromAt) {
-        this.discardTime(gesture, fromAt, toAt, "stale");
-        accountedTo = toAt;
-        this.skipInput(latest.input, "stale");
-        this.anchor(gesture, point, latest.at);
-        return;
+      if (decision.discardedFrom !== undefined) {
+        this.discardTime(
+          decision.stroke,
+          decision.discardedFrom,
+          decision.fromAt,
+          "cap",
+        );
+        accountedTo = decision.fromAt;
       }
-      const acceptedFrom = toAt - Math.min(rawElapsedMs, MAX_DOSE_MS);
-      if (acceptedFrom > fromAt) {
-        this.discardTime(gesture, fromAt, acceptedFrom, "cap");
-        accountedTo = acceptedFrom;
-        this.anchor(gesture, point, latest?.at);
-      }
-      const moving =
-        point[0] !== gesture.point[0] || point[1] !== gesture.point[1];
-      if (latest) gesture.pointAt = latest.at;
       this.applyDose(
-        gesture,
-        point,
-        acceptedFrom,
-        toAt,
-        rawElapsedMs,
-        moving ? "move" : "hold",
-        latest?.input,
+        decision.stroke,
+        decision.point,
+        decision.fromAt,
+        decision.toAt,
+        decision.rawElapsedMs,
+        decision.cause,
+        decision.input,
       );
     } catch (error) {
+      // An examined window can never become backlog, even if validation fails.
+      if (this.stroke) this.stroke.clock = toAt;
       if (this.intervalId === previousInterval)
         this.discardTime(gesture, accountedTo, toAt, "error");
       this.gestureFailure(error);
@@ -1118,13 +1046,20 @@ export class EditorController {
     this.fail(error);
   }
 
-  private finishGesture(input?: number, reason = "end", event?: Event): void {
-    const gesture = this.gesture;
+  private finishGesture(
+    input?: number,
+    reason = "end",
+    event?: Event,
+    released = false,
+  ): void {
+    const gesture = this.stroke;
     if (!gesture) return;
     const endAt = performance.now();
     this.discardTime(gesture, gesture.clock, endAt, reason);
-    this.skipLatest(gesture, reason, false);
-    this.gesture = null;
+    this.skipLatest(gesture, reason);
+    this.brushState = released
+      ? { kind: "idle" }
+      : { kind: "blocked", pointerId: gesture.pointerId };
     this.observation.event("brush-end", {
       sessionId: this.doc.sessionId,
       gestureId: gesture.id,
@@ -1139,16 +1074,8 @@ export class EditorController {
       this.publish();
       return;
     }
-    if (input !== undefined) {
-      for (const bounds of change.dirtyBounds)
-        if (this.bridge.diagnostics)
-          this.pendingEdits.push({
-            input,
-            bounds,
-            revision: change.revision,
-            sequence: change.sequence,
-          });
-      this.observation.mark("commit", String(input), {
+    if (input !== undefined)
+      this.observation.commit({
         input,
         gestureId: gesture.id,
         sessionId: this.doc.sessionId,
@@ -1156,7 +1083,6 @@ export class EditorController {
         sequence: change.sequence,
         revision: change.revision,
       });
-    }
     this.world.redraw();
     this.persist(change);
   }
@@ -1239,7 +1165,7 @@ export class EditorController {
         saved:
           this.doc.sequence === result.savedSequence &&
           !this.doc.active &&
-          !this.gesture,
+          !this.stroke,
         message: "Projektdatei gespeichert",
       });
     }
@@ -1400,11 +1326,12 @@ export class EditorController {
 
   observe(points: Point[] = [], options: ObservationOptions = {}) {
     let height: number | null = null;
-    try {
-      height = this.doc.sampleHeight(this.pointer[0], this.pointer[1]);
-    } catch {
-      /* Unknown stays unknown. */
-    }
+    if (options.pointerHeight)
+      try {
+        height = this.doc.sampleHeight(this.pointer[0], this.pointer[1]);
+      } catch {
+        /* Unknown stays unknown. */
+      }
     const samples = points.map((point) => {
       try {
         return this.doc.sampleHeight(point[0], point[1]);
@@ -1413,15 +1340,16 @@ export class EditorController {
       }
     });
     return {
+      schemaVersion: 3,
       sessionId: this.doc?.sessionId,
       state: { ...this.state },
       camera: { ...this.world.camera },
       brush: this.currentBrush(),
-      gesture: this.gesture
+      gesture: this.stroke
         ? {
             active: this.doc.active,
-            pendingInput: this.gesture.latest !== null,
-            brush: { ...this.gesture.brush },
+            pendingInput: this.stroke.latest !== null,
+            brush: { ...this.stroke.brush },
           }
         : null,
       readiness: this.localReadiness(),
@@ -1441,7 +1369,7 @@ export class EditorController {
       height,
       samples,
       eventCount: this.observation.eventCount,
-      lastInputId: this.observation.lastInputId,
+      lastInputId: this.inputId,
       events: this.observation.read(options),
       droppedEvents: this.observation.dropped,
       timeOrigin: performance.timeOrigin,
@@ -1463,27 +1391,25 @@ export class EditorController {
       void this.save(event.shiftKey).catch(this.fail);
     }
   };
-  private blur = (event: Event): void => {
-    this.editPointer = null;
-    this.finishGesture(undefined, "blur", event);
+  private releasePointer(reason: string, event: Event): void {
+    this.finishGesture(undefined, reason, event, true);
+    this.brushState = { kind: "idle" };
     this.pan = null;
     this.checkLocalReady();
+  }
+
+  private blur = (event: Event): void => {
+    this.releasePointer("blur", event);
   };
   private cancel = (event: Event): void => {
-    this.editPointer = null;
-    this.finishGesture(undefined, "cancel", event);
-    this.pan = null;
-    this.checkLocalReady();
+    this.releasePointer("cancel", event);
   };
   private visibility = (event: Event): void => {
-    if (document.visibilityState !== "hidden") return;
-    this.editPointer = null;
-    this.finishGesture(undefined, "visibility", event);
-    this.pan = null;
-    this.checkLocalReady();
+    if (document.visibilityState === "hidden")
+      this.releasePointer("visibility", event);
   };
   private leave = (): void => {
-    if (this.editPointer !== null || this.pan) return;
+    if (this.brushState.kind !== "idle" || this.pan) return;
     this.world.cursor = null;
     this.updateToolNeed();
   };
@@ -1502,7 +1428,8 @@ export class EditorController {
     this.finishGesture(undefined, "destroy");
     this.disposed = true;
     this.loadToken++;
-    cancelAnimationFrame(this.loadRequest);
+    cancelAnimationFrame(this.animation);
+    this.loadRequested = false;
     this.resizeObserver.disconnect();
     this.releaseFileAction();
     this.world.destroy();

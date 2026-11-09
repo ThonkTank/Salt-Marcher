@@ -1,4 +1,5 @@
 import { editorBudgets } from "./budgets";
+import type { Bounds } from "./model/types";
 
 export interface ObservationEvent {
   kind: string;
@@ -7,16 +8,72 @@ export interface ObservationEvent {
 }
 
 export interface ObservationOptions {
+  /** Sample the current pointer only when explicitly requested. */
+  pointerHeight?: boolean;
   /** Omit journal entries from this read without changing the retained journal. */
   events?: boolean;
   /** Return entries starting at this zero-based journal index. */
   sinceEvent?: number;
 }
 
+export interface ObservedSubmission {
+  sessionId: string;
+  frame: number;
+  viewGeneration: number;
+  revision: number;
+  exactRevision: number;
+  at: number;
+  uploadedBytes: number;
+}
+
+export interface ObservedRegion {
+  status: "outside" | "missing" | "stale" | "current";
+  sessionId: string;
+  frame: number;
+  viewGeneration: number;
+}
+
+interface DoseFact extends Record<string, unknown> {
+  sessionId: string;
+  gestureId: number;
+  intervalId: number;
+  revision: number;
+  changed: boolean;
+  bounds: Bounds | null;
+  at: number;
+  projectedAt: number | null;
+  inputIds: number[];
+}
+
+interface CommitFact extends Record<string, unknown> {
+  input: number;
+  sessionId: string;
+  gestureId: number;
+  revision: number;
+  sequence: number;
+  bounds: Bounds[];
+}
+
+interface PendingReceipt {
+  sessionId: string;
+  revision: number;
+  bounds: Bounds[];
+  gestureId: number;
+  intervalId?: number;
+  input?: number;
+  sequence?: number;
+}
+
 /** Observes the product. It cannot complete a render, make sources ready, or edit. */
 export class Observation {
   private events: ObservationEvent[] = [];
-  private serial = 0;
+  private pending: PendingReceipt[] = [];
+  private navigationInput: {
+    input: number;
+    sessionId: string;
+    sources: boolean;
+    ready: boolean;
+  } | null = null;
   dropped = 0;
 
   constructor(readonly enabled = false) {}
@@ -25,12 +82,20 @@ export class Observation {
     return this.events.length;
   }
 
-  get lastInputId(): number {
-    return this.serial;
+  /** A document switch invalidates associations, not the retained evidence. */
+  reset(): void {
+    this.pending = [];
+    this.navigationInput = null;
   }
 
   event(kind: string, details: Record<string, unknown> = {}): void {
     if (!this.enabled) return;
+    if (kind === "brush-feedback-obsolete")
+      this.pending = this.pending.filter(
+        (entry) =>
+          entry.sessionId !== details.sessionId ||
+          entry.intervalId !== details.intervalId,
+      );
     if (this.events.length >= editorBudgets.observationEvents) {
       this.dropped++;
       return;
@@ -38,9 +103,8 @@ export class Observation {
     this.events.push({ kind, at: performance.now(), ...details });
   }
 
-  input(event: Event, kind: string): number {
-    const id = ++this.serial;
-    if (!this.enabled) return id;
+  input(id: number, event: Event, kind: string): void {
+    if (!this.enabled) return;
     // Event timestamps precede dispatch; handler-start-only timings hide queues.
     const createdAt =
       event.timeStamp > performance.timeOrigin
@@ -54,7 +118,129 @@ export class Observation {
       eventType: event.type,
       createdAt,
     });
-    return id;
+  }
+
+  dose(details: DoseFact): void {
+    if (!this.enabled) return;
+    if (
+      this.events.length < editorBudgets.observationEvents &&
+      details.changed &&
+      details.bounds &&
+      Number.isFinite(details.projectedAt)
+    )
+      this.pending.push({
+        sessionId: details.sessionId,
+        gestureId: details.gestureId,
+        intervalId: details.intervalId,
+        revision: details.revision,
+        bounds: [details.bounds],
+      });
+    this.event("brush-interval", details);
+  }
+
+  commit(details: CommitFact): void {
+    if (!this.enabled) return;
+    if (
+      this.events.length < editorBudgets.observationEvents &&
+      details.bounds.length
+    )
+      this.pending.push({
+        sessionId: details.sessionId,
+        gestureId: details.gestureId,
+        input: details.input,
+        revision: details.revision,
+        sequence: details.sequence,
+        bounds: details.bounds,
+      });
+    this.mark("commit", String(details.input), details);
+  }
+
+  navigation(
+    input: number,
+    details: { sessionId: string; camera: unknown },
+  ): void {
+    if (!this.enabled) return;
+    this.navigationInput = {
+      input,
+      sessionId: details.sessionId,
+      sources: false,
+      ready: false,
+    };
+    this.mark("camera", String(input), { input, ...details });
+  }
+
+  readiness(details: {
+    sessionId: string;
+    revision: number;
+    frame: number;
+    viewGeneration: number;
+    ready: boolean;
+    sourcesReady: boolean;
+  }): void {
+    if (!this.enabled) return;
+    const navigation = this.navigationInput;
+    if (!navigation || navigation.sessionId !== details.sessionId) return;
+    const { ready, sourcesReady, ...identity } = details;
+    const fact = { input: navigation.input, ...identity };
+    if (sourcesReady && !navigation.sources) {
+      navigation.sources = true;
+      this.mark("sources-ready", String(navigation.input), fact);
+    }
+    if (ready && !navigation.ready) {
+      navigation.ready = true;
+      this.mark("input-ready", String(navigation.input), fact);
+    }
+  }
+
+  /** Read-only correlation after a real draw; outside-view is never a receipt. */
+  submitted(
+    submission: ObservedSubmission,
+    inspect: (bounds: Bounds) => ObservedRegion,
+  ): void {
+    if (!this.enabled) return;
+    this.mark(
+      "submit",
+      `${submission.sessionId}.${submission.frame}.${submission.viewGeneration}`,
+      {
+        ...submission,
+      },
+    );
+    this.pending = this.pending.filter((entry) => {
+      if (
+        entry.sessionId !== submission.sessionId ||
+        entry.revision > submission.revision
+      )
+        return true;
+      const current = entry.bounds.every((bounds) => {
+        const region = inspect(bounds);
+        return (
+          region.status === "current" &&
+          region.sessionId === submission.sessionId &&
+          region.frame === submission.frame &&
+          region.viewGeneration === submission.viewGeneration
+        );
+      });
+      if (!current) return true;
+      const details = {
+        sessionId: entry.sessionId,
+        frame: submission.frame,
+        viewGeneration: submission.viewGeneration,
+        revision: entry.revision,
+        gestureId: entry.gestureId,
+      };
+      if (entry.intervalId !== undefined)
+        this.mark("brush-submit", `${entry.intervalId}.${submission.frame}`, {
+          ...details,
+          intervalId: entry.intervalId,
+        });
+      else
+        this.mark("edit-submit", `${entry.input}.${submission.frame}`, {
+          ...details,
+          input: entry.input,
+          sequence: entry.sequence,
+        });
+      return false;
+    });
   }
 
   mark(kind: string, identity: string, details: Record<string, unknown>): void {

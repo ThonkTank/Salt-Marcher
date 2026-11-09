@@ -1,4 +1,8 @@
-import { prepareHeightSampler, quarticBrushSegmentIntegral } from "./height";
+import {
+  heightBrushReadBounds,
+  prepareHeightSampler,
+  quarticBrushSegmentIntegral,
+} from "./height";
 import {
   HEIGHT_LEVELS,
   HEIGHT_MAX_ACTION_TILES,
@@ -85,7 +89,6 @@ interface Gesture {
   cellCount: number;
   /** Reserved before/after payloads if this live action finishes now. */
   retainedBytes: number;
-  previous: Point | null;
   bounds: Bounds | null;
 }
 
@@ -511,63 +514,45 @@ export class EditorDocument {
       cells: new Map(),
       cellCount: 0,
       retainedBytes: 0,
-      previous: null,
       bounds: null,
     };
   }
 
-  /** Complete segment support, using the model's last accepted point only. */
-  readBoundsForPoint(point: Point, brush: HeightBrush): Bounds {
-    assertPoint(point);
-    const activeBrush = this.gesture?.brush ?? brush;
-    const halo = activeBrush.radius + 2 * heightSpacing(activeBrush.level);
-    const previous = this.gesture?.previous ?? point;
-    return clipBounds([
-      Math.min(previous[0], point[0]) - halo,
-      Math.min(previous[1], point[1]) - halo,
-      Math.max(previous[0], point[0]) + halo,
-      Math.max(previous[1], point[1]) + halo,
-    ]);
-  }
-
-  /** Apply one elapsed time interval; a zero-duration point only sets its origin. */
-  applyPoint(point: Point, elapsedMs: number): HeightUpdate | null {
+  /** Apply one explicit timed segment; zero duration never changes the gesture. */
+  applySegment(from: Point, to: Point, elapsedMs: number): HeightUpdate | null {
     const gesture = this.gesture;
     if (!gesture) throw new Error("Keine aktive Höhengeste.");
-    assertPoint(point);
+    assertPoint(from);
+    assertPoint(to);
     if (!Number.isFinite(elapsedMs) || elapsedMs < 0)
       throw new RangeError(
         "Die Pinselzeit muss endlich und nichtnegativ sein.",
       );
     const { brush } = gesture;
     const step = heightSpacing(brush.level);
-    const from = gesture.previous ?? point;
-    const dx = point[0] - from[0];
-    const dy = point[1] - from[1];
+    const dx = to[0] - from[0];
+    const dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
-    if (elapsedMs === 0 || brush.amount === 0) {
-      gesture.previous = [...point];
-      return null;
-    }
-    const sampleBounds = this.readBoundsForPoint(point, brush);
+    if (elapsedMs === 0 || brush.amount === 0) return null;
+    const sampleBounds = heightBrushReadBounds(brush, from, to);
     const levels = HEIGHT_LEVELS.slice(brush.level);
     if (!this.isReady(sampleBounds, levels))
       throw new SourcesNotReadyError(sampleBounds);
     const minX = Math.max(
       Math.ceil(-WORLD_LIMIT / step),
-      Math.ceil((Math.min(from[0], point[0]) - brush.radius) / step),
+      Math.ceil((Math.min(from[0], to[0]) - brush.radius) / step),
     );
     const minY = Math.max(
       Math.ceil(-WORLD_LIMIT / step),
-      Math.ceil((Math.min(from[1], point[1]) - brush.radius) / step),
+      Math.ceil((Math.min(from[1], to[1]) - brush.radius) / step),
     );
     const maxX = Math.min(
       Math.floor(WORLD_LIMIT / step),
-      Math.floor((Math.max(from[0], point[0]) + brush.radius) / step),
+      Math.floor((Math.max(from[0], to[0]) + brush.radius) / step),
     );
     const maxY = Math.min(
       Math.floor(WORLD_LIMIT / step),
-      Math.floor((Math.max(from[1], point[1]) + brush.radius) / step),
+      Math.floor((Math.max(from[1], to[1]) + brush.radius) / step),
     );
     if ((maxX - minX + 1) * (maxY - minY + 1) > 400_000)
       throw new RangeError(
@@ -629,10 +614,7 @@ export class EditorDocument {
       }
     for (const [key, update] of updates)
       if (!update.values.size) updates.delete(key);
-    if (!updates.size) {
-      gesture.previous = [...point];
-      return null;
-    }
+    if (!updates.size) return null;
     const newKeys = [...updates.keys()].filter(
       (key) => !gesture.before.has(key),
     );
@@ -720,7 +702,6 @@ export class EditorDocument {
     }
     gesture.cellCount += newCells;
     gesture.retainedBytes = retainedBytes;
-    gesture.previous = [...point];
     dirty = clipBounds(dirty!);
     gesture.bounds = gesture.bounds
       ? unionBounds(gesture.bounds, dirty)

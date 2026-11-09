@@ -9,6 +9,7 @@ import {
   WORLD_LIMIT,
   createCoastFixture,
   cloneHeightTile,
+  heightBrushReadBounds,
   heightControlAddress,
   heightTileKey,
   heightTilesFromControls,
@@ -40,7 +41,10 @@ function stroke(
   radius = 20,
 ) {
   doc.beginGesture({ level, radius, amount });
-  const bounds = points.map((p) => doc.applyPoint(p, 1000)?.bounds ?? null);
+  const bounds = points.map(
+    (to, index) =>
+      doc.applySegment(points[index - 1] ?? to, to, 1000)?.bounds ?? null,
+  );
   const change = doc.finishGesture();
   return { change, bounds };
 }
@@ -240,7 +244,7 @@ describe("local source readiness and ownership", () => {
   it("evicts only confirmed sources and never reinterprets an evicted tile as ocean", () => {
     const doc = new EditorDocument("eviction", { empty: true });
     doc.beginGesture({ level: 0, amount: 10, radius: 20 });
-    doc.applyPoint([100, 100], 1000);
+    doc.applySegment([100, 100], [100, 100], 1000);
     const sample = doc.sampleHeight(100, 100);
     expect(doc.retainSources([])).toEqual([]);
     expect(control(doc, 20, 20)).toBe(10);
@@ -267,7 +271,7 @@ describe("local source readiness and ownership", () => {
     doc.acceptPersistence(distant.sequence);
     const pending = stroke(doc, [[20_000, 20_000]]).change!;
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    doc.applyPoint([30_000, 30_000], 1000);
+    doc.applySegment([30_000, 30_000], [30_000, 30_000], 1000);
     const activeControl = control(doc, 6000, 6000);
     expect(doc.retainSources([{ bounds: LOCAL, minLevel: 0 }])).toHaveLength(1);
     expect(doc.sampleHeight(100, 100)).toBeGreaterThan(-100);
@@ -439,7 +443,7 @@ describe("local gestures, history and persistence patches", () => {
         empty: true,
       });
       doc.beginGesture({ level, radius, amount: 100 });
-      expect(doc.applyPoint([0, 0], 1000)).not.toBeNull();
+      expect(doc.applySegment([0, 0], [0, 0], 1000)).not.toBeNull();
       expect(doc.metrics.gestureCells).toBeLessThan(2000);
       const change = doc.finishGesture()!;
       expect(change.patches.every((p) => p.after?.level === level)).toBe(true);
@@ -515,14 +519,12 @@ describe("local gestures, history and persistence patches", () => {
   it("preserves a time-parametrized path under event subdivision", () => {
     const a = new EditorDocument("a", { empty: true });
     const b = new EditorDocument("b", { empty: true });
-    for (const doc of [a, b]) {
+    for (const doc of [a, b])
       doc.beginGesture({ level: 0, amount: -2, radius: 30 });
-      expect(doc.applyPoint([0, 0], 0)).toBeNull();
-    }
-    a.applyPoint([60, 0], 1000);
+    a.applySegment([0, 0], [60, 0], 1000);
     let previous = 0;
     for (const x of [10, 20, 35, 60]) {
-      b.applyPoint([x, 0], ((x - previous) / 60) * 1000);
+      b.applySegment([previous, 0], [x, 0], ((x - previous) / 60) * 1000);
       previous = x;
     }
     a.finishGesture();
@@ -540,9 +542,8 @@ describe("local gestures, history and persistence patches", () => {
   it("integrates the quartic kernel analytically without a hidden initial pulse", () => {
     const doc = new EditorDocument("integral-oracle", { empty: true });
     doc.beginGesture({ level: 0, radius: 30, amount: -2 });
-    expect(doc.applyPoint([-30, 0], 0)).toBeNull();
     expect(doc.metrics.readyTiles).toBe(0);
-    doc.applyPoint([30, 0], 1000);
+    doc.applySegment([-30, 0], [30, 0], 1000);
     // Integral from -r to r is 16r/15. Averaged over length 2r, a
     // one-second rate -2 gives -16/15, with no separate click contribution.
     expect(control(doc, 0, 0)).toBeCloseTo(-16 / 15, 12);
@@ -556,18 +557,18 @@ describe("local gestures, history and persistence patches", () => {
   it("deepens during stationary holding at the configured rate and undoes one whole stroke", () => {
     const doc = new EditorDocument("stationary-rate", { empty: true });
     doc.beginGesture({ level: 0, radius: 20, amount: 20 });
-    expect(doc.applyPoint([100, 100], 0)).toBeNull();
+    expect(doc.applySegment([100, 100], [100, 100], 0)).toBeNull();
     expect(doc.revision).toBe(0);
     for (let interval = 0; interval < 12; interval++) {
-      expect(doc.applyPoint([100, 100], 250)).not.toBeNull();
+      expect(doc.applySegment([100, 100], [100, 100], 250)).not.toBeNull();
       expect(control(doc, 20, 20)).toBe((interval + 1) * 5);
     }
     expect(control(doc, 21, 20)).toBeCloseTo(60 * (15 / 16) ** 2, 12);
     const revision = doc.revision;
-    expect(doc.applyPoint([100, 100], 0)).toBeNull();
+    expect(doc.applySegment([100, 100], [100, 100], 0)).toBeNull();
     expect(doc.revision).toBe(revision);
     // Long elapsed intervals have no artificial duration cap.
-    doc.applyPoint([100, 100], 120_000);
+    doc.applySegment([100, 100], [100, 100], 120_000);
     expect(control(doc, 20, 20)).toBe(2460);
     const after = values(doc.snapshot(LOCAL).tiles);
     const change = doc.finishGesture()!;
@@ -580,8 +581,27 @@ describe("local gestures, history and persistence patches", () => {
 
     const click = new EditorDocument("short-click", { empty: true });
     click.beginGesture({ level: 0, radius: 20, amount: 20 });
-    click.applyPoint([100, 100], 5);
+    click.applySegment([100, 100], [100, 100], 5);
     expect(control(click, 20, 20)).toBeCloseTo(0.1, 14);
+  });
+
+  it("keeps explicit segments separate and zero-duration intervals neutral within one undo action", () => {
+    const doc = new EditorDocument("explicit-segments", { empty: true });
+    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
+    doc.applySegment([100, 100], [100, 100], 1000);
+    const before = { metrics: doc.metrics, revision: doc.revision };
+    expect(doc.applySegment([100, 100], [1000, 100], 0)).toBeNull();
+    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
+    doc.applySegment([200, 100], [200, 100], 1000);
+    expect(control(doc, 20, 20)).toBe(10);
+    expect(control(doc, 40, 20)).toBe(10);
+    expect(control(doc, 30, 20)).toBe(0);
+    expect(control(doc, 100, 20)).toBe(0);
+    doc.finishGesture();
+    expect(doc.metrics.historyActions).toBe(1);
+    doc.undo();
+    expect(doc.sampleHeight(100, 100)).toBe(-100);
+    expect(doc.sampleHeight(200, 100)).toBe(-100);
   });
 
   it("makes slower travel proportionally stronger and updates every short interval", () => {
@@ -589,14 +609,17 @@ describe("local gestures, history and persistence patches", () => {
     const slow = new EditorDocument("slow", { empty: true });
     const divided = new EditorDocument("short-intervals", { empty: true });
     const brush = { level: 3, radius: 512, amount: 40 };
-    for (const doc of [fast, slow, divided]) {
-      doc.beginGesture(brush);
-      doc.applyPoint([-1000, -300], 0);
-    }
-    fast.applyPoint([-160, -300], 960);
-    slow.applyPoint([-160, -300], 1920);
+    for (const doc of [fast, slow, divided]) doc.beginGesture(brush);
+    fast.applySegment([-1000, -300], [-160, -300], 960);
+    slow.applySegment([-1000, -300], [-160, -300], 1920);
     for (let i = 1; i <= 40; i++)
-      expect(divided.applyPoint([-1000 + 21 * i, -300], 24)).not.toBeNull();
+      expect(
+        divided.applySegment(
+          [-1000 + 21 * (i - 1), -300],
+          [-1000 + 21 * i, -300],
+          24,
+        ),
+      ).not.toBeNull();
     expect(divided.revision).toBe(40);
     const area: Bounds = [-2000, -1500, 1000, 1000];
     const baseline = values(fast.snapshot(area).tiles);
@@ -627,21 +650,22 @@ describe("local gestures, history and persistence patches", () => {
     doc.acceptCoverage([-50, -50, 50, 50], []);
     doc.acceptCoverage([950, -50, 1050, 50], []);
     doc.beginGesture(brush);
-    doc.applyPoint([0, 0], 100);
-    const needed = doc.readBoundsForPoint([1000, 0], brush);
+    doc.applySegment([0, 0], [0, 0], 100);
+    const needed = heightBrushReadBounds(brush, [0, 0], [1000, 0]);
     expect(needed).toEqual([-30, -30, 1030, 30]);
     expect(doc.isReady([970, -30, 1030, 30])).toBe(true);
     const before = { metrics: doc.metrics, revision: doc.revision };
-    expect(() => doc.applyPoint([1000, 0], 1000)).toThrow(SourcesNotReadyError);
+    expect(() => doc.applySegment([0, 0], [1000, 0], 1000)).toThrow(
+      SourcesNotReadyError,
+    );
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
-    expect(doc.readBoundsForPoint([1000, 0], brush)).toEqual(needed);
     doc.acceptCoverage(needed, []);
-    doc.applyPoint([1000, 0], 1000);
+    doc.applySegment([0, 0], [1000, 0], 1000);
 
     const uninterrupted = new EditorDocument("known-segment", { empty: true });
     uninterrupted.beginGesture(brush);
-    uninterrupted.applyPoint([0, 0], 100);
-    uninterrupted.applyPoint([1000, 0], 1000);
+    uninterrupted.applySegment([0, 0], [0, 0], 100);
+    uninterrupted.applySegment([0, 0], [1000, 0], 1000);
     expect(values(doc.snapshot(needed).tiles)).toEqual(
       values(uninterrupted.snapshot(needed).tiles),
     );
@@ -657,17 +681,18 @@ describe("local gestures, history and persistence patches", () => {
       ];
       const to: Point = [sign * WORLD_LIMIT, sign * WORLD_LIMIT];
       const brush = { level: 0, radius: 30, amount: -2 };
-      for (const target of [doc, divided]) {
-        target.beginGesture(brush);
-        target.applyPoint(from, 0);
-      }
-      const bounds = doc.readBoundsForPoint(to, brush);
+      for (const target of [doc, divided]) target.beginGesture(brush);
+      const bounds = heightBrushReadBounds(brush, from, to);
       expect(bounds.every((value) => Math.abs(value) <= WORLD_LIMIT)).toBe(
         true,
       );
-      doc.applyPoint(to, 1000);
+      doc.applySegment(from, to, 1000);
       for (let i = 1; i <= 10; i++)
-        divided.applyPoint(
+        divided.applySegment(
+          [
+            from[0] + ((to[0] - from[0]) * (i - 1)) / 10,
+            from[1] + ((to[1] - from[1]) * (i - 1)) / 10,
+          ],
           [
             from[0] + ((to[0] - from[0]) * i) / 10,
             from[1] + ((to[1] - from[1]) * i) / 10,
@@ -704,21 +729,25 @@ describe("local gestures, history and persistence patches", () => {
     });
     const brush = { level: 0, radius: 20, amount: 10 };
     doc.beginGesture(brush);
-    doc.applyPoint([0, 0], 100);
+    doc.applySegment([0, 0], [0, 0], 100);
     const before = {
       metrics: doc.metrics,
       revision: doc.revision,
       height: doc.sampleHeight(0, 0),
     };
     for (const duration of [-1, NaN, Infinity])
-      expect(() => doc.applyPoint([10, 0], duration)).toThrow(/Pinselzeit/);
-    expect(() => doc.applyPoint([1000, 0], 1000)).toThrow(/Höhenpunkte/);
+      expect(() => doc.applySegment([0, 0], [10, 0], duration)).toThrow(
+        /Pinselzeit/,
+      );
+    expect(() => doc.applySegment([0, 0], [1000, 0], 1000)).toThrow(
+      /Höhenpunkte/,
+    );
     expect({
       metrics: doc.metrics,
       revision: doc.revision,
       height: doc.sampleHeight(0, 0),
     }).toEqual(before);
-    expect(doc.readBoundsForPoint([1000, 0], brush)).toEqual([
+    expect(heightBrushReadBounds(brush, [0, 0], [1000, 0])).toEqual([
       -30, -30, 1030, 30,
     ]);
     expect(doc.finishGesture()).not.toBeNull();
@@ -729,14 +758,16 @@ describe("local gestures, history and persistence patches", () => {
   it("rejects unready edits before mutation and preserves a valid partial stroke on failure", () => {
     const doc = new EditorDocument("partial");
     doc.beginGesture({ level: 0, amount: 10, radius: 20 });
-    expect(() => doc.applyPoint([100, 100], 1000)).toThrow(
+    expect(() => doc.applySegment([100, 100], [100, 100], 1000)).toThrow(
       SourcesNotReadyError,
     );
     expect(doc.metrics.gestureCells).toBe(0);
     doc.acceptCoverage(LOCAL, []);
-    doc.applyPoint([100, 100], 1000);
+    doc.applySegment([100, 100], [100, 100], 1000);
     const accepted = doc.sampleHeight(100, 100);
-    expect(() => doc.applyPoint([50_000, 50_000], 1000)).toThrow();
+    expect(() =>
+      doc.applySegment([100, 100], [50_000, 50_000], 1000),
+    ).toThrow();
     expect(doc.sampleHeight(100, 100)).toBe(accepted);
     const change = doc.finishGesture()!;
     expect(change.sequence).toBe(1);
@@ -767,7 +798,9 @@ describe("local gestures, history and persistence patches", () => {
     const first = stroke(doc, [[100, 100]]).change!;
     const original = doc.sampleHeight(100, 100);
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    expect(() => doc.applyPoint([100, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect(() => doc.applySegment([100, 100], [100, 100], 1000)).toThrow(
+      /Arbeitskopie/,
+    );
     expect(doc.finishGesture()).toBeNull();
     expect(doc.sampleHeight(100, 100)).toBe(original);
     doc.acceptPersistence(first.sequence);
@@ -787,14 +820,16 @@ describe("local gestures, history and persistence patches", () => {
       ]),
     );
     doc.beginGesture({ level: 0, radius: 1, amount: -10 });
-    doc.applyPoint([100, 100], 1000);
+    doc.applySegment([100, 100], [100, 100], 1000);
     const live = doc.presentationPatchesAfter(0);
     expect(live).toHaveLength(1);
     expect(live[0].before?.values.byteLength).toBe(HEIGHT_TILE_BYTES);
     expect(live[0].after).toBeNull();
     const acceptedDeletion = { metrics: doc.metrics, revision: doc.revision };
     // Continuing onto a zero neighbour would retain a nonempty after as well.
-    expect(() => doc.applyPoint([105, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect(() => doc.applySegment([100, 100], [105, 100], 1000)).toThrow(
+      /Arbeitskopie/,
+    );
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(
       acceptedDeletion,
     );
@@ -805,7 +840,9 @@ describe("local gestures, history and persistence patches", () => {
     const before = { metrics: doc.metrics, revision: doc.revision };
     const unchanged = doc.sampleHeight(420, 100);
     doc.beginGesture({ level: 0, radius: 1, amount: -10 });
-    expect(() => doc.applyPoint([420, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect(() => doc.applySegment([420, 100], [420, 100], 1000)).toThrow(
+      /Arbeitskopie/,
+    );
     expect(doc.finishGesture()).toBeNull();
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
     expect(doc.sampleHeight(420, 100)).toBe(unchanged);
@@ -831,7 +868,9 @@ describe("local gestures, history and persistence patches", () => {
     tooSmall.acceptCoverage(ALL, source);
     const original = tooSmall.sampleHeight(100, 100);
     tooSmall.beginGesture({ level: 0, radius: 1, amount: 5 });
-    expect(() => tooSmall.applyPoint([100, 100], 1000)).toThrow(/Arbeitskopie/);
+    expect(() => tooSmall.applySegment([100, 100], [100, 100], 1000)).toThrow(
+      /Arbeitskopie/,
+    );
     expect(tooSmall.finishGesture()).toBeNull();
     expect(tooSmall.sampleHeight(100, 100)).toBe(original);
     expect(tooSmall.metrics.historyActions).toBe(0);
@@ -874,14 +913,14 @@ describe("local gestures, history and persistence patches", () => {
     // controls, so the cell and byte budgets alone do not bound a commit.
     doc.beginGesture({ level: 0, radius: 8 / (2 * 25.6), amount: 10 });
     for (let tile = 0; tile < HEIGHT_MAX_ACTION_TILES; tile++)
-      doc.applyPoint([tile * 320, 0], 1000);
+      doc.applySegment([Math.max(0, tile - 1) * 320, 0], [tile * 320, 0], 1000);
     const lastPoint: Point = [(HEIGHT_MAX_ACTION_TILES - 1) * 320, 0];
     const lastKey = heightTileKey(0, HEIGHT_MAX_ACTION_TILES - 1, 0);
     const accepted = author(doc, lastKey)!.values;
     const acceptedHeight = doc.sampleHeight(...lastPoint);
     const before = { metrics: doc.metrics, revision: doc.revision };
     expect(() =>
-      doc.applyPoint([HEIGHT_MAX_ACTION_TILES * 320, 0], 1000),
+      doc.applySegment(lastPoint, [HEIGHT_MAX_ACTION_TILES * 320, 0], 1000),
     ).toThrow(/höchstens 512 Höhenkacheln/);
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
     expect(author(doc, lastKey)!.values).toEqual(accepted);
@@ -930,8 +969,15 @@ describe("local gestures, history and persistence patches", () => {
       doc.beginGesture({ level: 0, radius: Number.NaN, amount: 1 }),
     ).toThrow();
     doc.beginGesture({ level: 0, radius: 20, amount: 1 });
-    expect(() => doc.applyPoint([Number.POSITIVE_INFINITY, 0], 1000)).toThrow();
-    expect(() => doc.applyPoint([0, 0], 1000)).toThrow(/Speicherbudget/);
+    expect(() =>
+      doc.applySegment([Number.POSITIVE_INFINITY, 0], [0, 0], 1000),
+    ).toThrow();
+    expect(() =>
+      doc.applySegment([0, 0], [Number.POSITIVE_INFINITY, 0], 1000),
+    ).toThrow();
+    expect(() => doc.applySegment([0, 0], [0, 0], 1000)).toThrow(
+      /Speicherbudget/,
+    );
     expect(doc.finishGesture()).toBeNull();
     expect(doc.sequence).toBe(0);
     expect(doc.metrics.readyTiles).toBe(0);
@@ -946,7 +992,7 @@ describe("bounded source reads and presentation projection", () => {
     expect(doc.sourceState(heightTileKey(0, 0, 0))).toBe("unknown");
     expect(doc.isReady(LOCAL)).toBe(false);
     doc.beginGesture({ level: 8, radius: 10_000, amount: 10 });
-    const update = doc.applyPoint([0, 0], 1000);
+    const update = doc.applySegment([0, 0], [0, 0], 1000);
     expect(update?.patches.length).toBeGreaterThan(0);
     expect(update?.patches.every((p) => p.after?.level === 8)).toBe(true);
     expect(doc.snapshot(LOCAL, [8]).tiles.length).toBeGreaterThan(0);
@@ -956,11 +1002,11 @@ describe("bounded source reads and presentation projection", () => {
   it("returns incremental owned source patches while one gesture retains its original undo values", () => {
     const doc = new EditorDocument("live-patches", { empty: true });
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    const first = doc.applyPoint([0, 0], 1000)!;
+    const first = doc.applySegment([0, 0], [0, 0], 1000)!;
     const firstValues = values(
       first.patches.flatMap((p) => (p.after ? [p.after] : [])),
     );
-    const next = doc.applyPoint([10, 0], 1000)!;
+    const next = doc.applySegment([0, 0], [10, 0], 1000)!;
     const repeated = next.patches.find(
       (p) => p.before && first.patches.some((prior) => prior.key === p.key),
     )!;
@@ -991,7 +1037,7 @@ describe("bounded source reads and presentation projection", () => {
     doc.acceptPersistence(a.sequence);
     expect(() => doc.presentationPatchesAfter(0)).toThrow(/aktuell/);
     doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    const live = doc.applyPoint([200, 0], 1000)!;
+    const live = doc.applySegment([200, 0], [200, 0], 1000)!;
     const pending = doc.presentationPatchesAfter(b.sequence);
     expect(pending).toHaveLength(live.patches.length);
     pending[0].after!.values.fill(0);

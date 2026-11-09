@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { summarizeSubmissionTiming } from "../../../scripts/atlas-p0-timing.mjs";
+import {
+  extractEditSamples,
+  evaluateSubmissionDiagnostics,
+} from "../../../scripts/atlas-p0-evaluate.mjs";
 
 const journal = () => [
-  { kind: "input", id: 1, at: 12, createdAt: 10 },
+  { kind: "input", id: 1, inputKind: "edit", at: 12, createdAt: 10 },
   {
-    kind: "model",
-    input: 1,
+    kind: "brush-interval",
+    inputIds: [1],
+    intervalId: 1,
+    gestureId: 1,
+    changed: true,
     at: 15,
+    projectedAt: 15,
     sessionId: "a",
     revision: 2,
     bounds: [0, 0, 10, 10],
@@ -35,10 +43,19 @@ const journal = () => [
     },
   },
   { kind: "raster-upload", id: 7, at: 36, sessionId: "a", paintedRevision: 2 },
-  { kind: "submit", at: 39, frame: 9, sessionId: "a", revision: 2 },
   {
-    kind: "edit-submit",
-    input: 1,
+    kind: "submit",
+    at: 39,
+    frame: 9,
+    viewGeneration: 1,
+    sessionId: "a",
+    revision: 2,
+  },
+  {
+    kind: "brush-submit",
+    intervalId: 1,
+    gestureId: 1,
+    viewGeneration: 1,
     at: 40,
     frame: 9,
     sessionId: "a",
@@ -113,6 +130,37 @@ describe("renderer latency diagnosis", () => {
     expect(result.incomplete[0].reason).toBe("missing-matching-submission");
   });
 
+  it("shares the same rejected view and missing projection evidence with acceptance diagnostics", () => {
+    for (const invalidate of [
+      (events: ReturnType<typeof journal>) => {
+        events[6].viewGeneration = 2;
+      },
+      (events: ReturnType<typeof journal>) => {
+        events[1].projectedAt = undefined;
+      },
+    ]) {
+      const events = journal();
+      invalidate(events);
+      const samples = extractEditSamples(events, [1], "a");
+      expect(samples[0].submissionAt).toBeNull();
+      expect(evaluateSubmissionDiagnostics(samples).status).toBe("FAIL");
+      expect(summarizeSubmissionTiming(events).samples).toEqual([]);
+    }
+  });
+
+  it("preserves model application separately from completed source projection", () => {
+    const events = journal();
+    events[1].at = 14;
+    const samples = extractEditSamples(events, [1], "a");
+    expect(samples[0]).toMatchObject({ appliedAt: 14, modelAt: 15 });
+    const timing = summarizeSubmissionTiming(events);
+    expect(timing.samples[0]).toMatchObject({
+      appliedToProjectedMs: 1,
+      modelToSubmitMs: 25,
+    });
+    expect(timing.brushIntervals[0].modelToSubmitMs).toBe(26);
+  });
+
   it("keeps superseded revisions and another session out of the causal path", () => {
     const superseded = journal();
     superseded[2].revision = 3;
@@ -138,7 +186,8 @@ describe("renderer latency diagnosis", () => {
 
   it("explains every batch of a hold interval and outstanding work at pointerup", () => {
     const events: Record<string, any>[] = journal().filter(
-      (event) => !["input", "model", "edit-submit"].includes(event.kind),
+      (event) =>
+        !["input", "brush-interval", "brush-submit"].includes(event.kind),
     );
     events[1].timing = {
       timeOrigin: 1000,
@@ -152,6 +201,7 @@ describe("renderer latency diagnosis", () => {
       {
         kind: "brush-interval",
         at: 15,
+        projectedAt: 15,
         intervalId: 4,
         gestureId: 3,
         cause: "hold",
@@ -209,6 +259,7 @@ describe("renderer latency diagnosis", () => {
       },
       {
         kind: "brush-submit",
+        viewGeneration: 1,
         intervalId: 4,
         gestureId: 3,
         at: 40,
@@ -228,6 +279,8 @@ describe("renderer latency diagnosis", () => {
       },
       {
         kind: "edit-submit",
+        sequence: 1,
+        viewGeneration: 1,
         input: 9,
         at: 40,
         frame: 9,
@@ -236,6 +289,7 @@ describe("renderer latency diagnosis", () => {
       },
       {
         kind: "commit",
+        sequence: 1,
         input: 9,
         at: 33.1,
         sessionId: "a",

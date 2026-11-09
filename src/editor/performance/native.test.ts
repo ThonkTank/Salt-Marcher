@@ -374,7 +374,7 @@ describe("native preflight evidence and result boundary", () => {
           blockers: [{ code: nativePresentationCapability.code }],
         };
         const report = {
-          schemaVersion: 2,
+          schemaVersion: 3,
           purpose:
             mode === "native"
               ? "native-preflight"
