@@ -5,7 +5,9 @@ import { editorBudgets } from "../budgets";
 import {
   clipBounds,
   HEIGHT_LEVELS,
+  heightTileSupport,
   intersectsBounds,
+  parseHeightTileKey,
   type Bounds,
   type EditorDocument,
   type HeightPatch,
@@ -26,7 +28,11 @@ import {
   type HeightOverviewTile,
 } from "../model/overview";
 import { Observation } from "../observation";
-import { HeightField, type HeightFieldTile } from "./HeightField";
+import {
+  HeightField,
+  type HeightCompositionStats,
+  type HeightFieldTile,
+} from "./HeightField";
 
 export interface Camera {
   x: number;
@@ -62,6 +68,8 @@ interface DisplayTile {
   paintedRevision: number;
   submittedRevision: number;
   submittedFrame: number;
+  completedRevision: number;
+  completedFrame: number;
   visible: boolean;
   touched: number;
   field: HeightFieldTile;
@@ -122,6 +130,14 @@ export class WorldRenderer {
   private contextLost = false;
   private submittedRevision = -1;
   private submittedViewGeneration = -1;
+  private lastCompletedFrame = 0;
+  private lastCompletedViewGeneration = -1;
+  private pendingGpu: {
+    sync: WebGLSync;
+    submission: FrameSubmission;
+    tiles: { tile: DisplayTile; revision: number }[];
+  } | null = null;
+  private historyContext = 0;
   camera: Camera = { x: 0, y: 0, scale: 0.25 };
   width = 1000;
   height = 760;
@@ -189,7 +205,10 @@ export class WorldRenderer {
   };
 
   private invalidateGpuSubmission(): void {
+    this.releaseFence();
     this.lastSubmittedViewGeneration = -1;
+    this.lastCompletedFrame = 0;
+    this.lastCompletedViewGeneration = -1;
     this.submittedRevision = -1;
     this.submittedViewGeneration = -1;
     for (const tile of this.tiles.values()) {
@@ -198,12 +217,15 @@ export class WorldRenderer {
       tile.paintedRevision = -1;
       tile.submittedRevision = -1;
       tile.submittedFrame = 0;
+      tile.completedRevision = -1;
+      tile.completedFrame = 0;
       tile.field.mesh.visible = false;
     }
     this.requestFrame = true;
   }
 
   reset(document: EditorDocument): void {
+    this.releaseFence();
     this.document = document;
     this.sessionId = document.sessionId;
     for (const tile of this.tiles.values()) this.destroyTile(tile);
@@ -215,6 +237,9 @@ export class WorldRenderer {
     this.submittedViewGeneration = -1;
     this.preparedViewGeneration = -1;
     this.lastSubmittedViewGeneration = -1;
+    this.lastCompletedFrame = 0;
+    this.lastCompletedViewGeneration = -1;
+    this.historyContext = 0;
     this.faultArmed = false;
     this.delayUntil = 0;
     this.requestFrame = true;
@@ -251,48 +276,73 @@ export class WorldRenderer {
     this.positionTiles();
   }
 
-  /** Numeric sources are retained; a draw reconstructs the canonical sample lattice. */
+  /** A read changes only its actual sources; identical warm regions stay current. */
   updatePresentation(
     tiles: readonly HeightTile[],
     overviews: readonly HeightOverviewTile[],
     overviewKeys: readonly string[],
-    replace = false,
   ): void {
-    if (replace) {
-      this.overviews.clear();
-      this.knownOverviews.clear();
+    const incoming = new Map(overviews.map((tile) => [tile.key, tile]));
+    for (const tile of overviews) {
+      validateHeightOverviewTile(tile);
+      if (!overviewKeys.includes(tile.key))
+        throw new Error("Nicht bestätigte Höhenübersicht.");
     }
     for (const key of overviewKeys) {
       parseHeightOverviewKey(key);
+      const before = this.overviews.get(key);
+      const after = incoming.get(key);
+      const changed =
+        Boolean(before) !== Boolean(after) ||
+        Boolean(
+          before &&
+          after &&
+          before.values.some((value, i) => value !== after.values[i]),
+        );
       this.knownOverviews.add(key);
-      this.overviews.delete(key);
+      if (!changed) continue;
+      if (after)
+        this.overviews.set(key, { ...after, values: after.values.slice() });
+      else this.overviews.delete(key);
+      const tile = this.tiles.get(key.slice("height-overview:".length));
+      if (tile) {
+        tile.field.invalidateAnchor();
+        tile.dirty = [...WHOLE];
+        tile.preparedRevision = -1;
+        tile.revision = this.document.revision;
+      }
     }
-    for (const tile of overviews) {
-      validateHeightOverviewTile(tile);
-      if (!this.knownOverviews.has(tile.key))
-        throw new Error("Nicht bestätigte Höhenübersicht.");
-      this.overviews.set(tile.key, { ...tile, values: tile.values.slice() });
-    }
-    if (replace) this.field.replaceSources(tiles);
-    else this.field.updateSources(tiles);
-    // A read may replace atlas slots or certify an empty fine overview. Retained
-    // descriptors become current only after rebinding and drawing these sources.
-    for (const tile of this.tiles.values()) {
-      tile.dirty = [...WHOLE];
-      tile.preparedRevision = -1;
-      tile.revision = this.document.revision;
-    }
+    for (const bounds of this.field.updateSources(tiles))
+      this.invalidateTiles(bounds, true);
+    this.pruneOverviews(overviewKeys);
     this.checkBudgets();
     this.requestFrame = true;
   }
 
   /** Remove derived copies when the document releases author sources. */
   forgetSources(keys: readonly string[]): void {
-    if (keys.length) this.field.updateSources([], keys);
+    if (!keys.length) return;
+    this.field.updateSources([], keys);
+    for (const key of keys) {
+      const at = parseHeightTileKey(key);
+      this.invalidateTiles(heightTileSupport(at), true, at.level);
+    }
   }
 
   /** History already owns complete changed sources, even after distant eviction. */
   updateSourcePatches(patches: readonly HeightPatch[]): void {
+    const gesture = this.document.activeHeightGesture();
+    if (gesture) this.field.beginGesture(gesture);
+    else if (patches.length) {
+      const levels = new Set(
+        patches.map((patch) => (patch.after ?? patch.before)!.level),
+      );
+      this.field.beginGesture({
+        id: `history:${++this.historyContext}`,
+        level: levels.size === 1 ? [...levels][0] : -1,
+        before: new Map(patches.map((patch) => [patch.key, patch.before])),
+      });
+    }
     const powers = new Set(
       [...this.knownOverviews].map((key) => parseHeightOverviewKey(key).power),
     );
@@ -420,6 +470,8 @@ export class WorldRenderer {
             paintedRevision: -1,
             submittedRevision: -1,
             submittedFrame: 0,
+            completedRevision: -1,
+            completedFrame: 0,
             visible: true,
             touched: performance.now(),
             field,
@@ -446,12 +498,26 @@ export class WorldRenderer {
     this.faultArmed = true;
     if (this.fault === "delay-render")
       this.delayUntil = performance.now() + 250;
+    this.invalidateTiles(bounds);
+  }
+
+  private invalidateTiles(
+    bounds: Bounds,
+    sourcesChanged = false,
+    sourceLevel?: number,
+  ): void {
     for (const tile of this.tiles.values()) {
+      if (
+        sourceLevel !== undefined &&
+        sourceLevel < minimumCoarseHeightLevel(tile.power)
+      )
+        continue;
       if (!intersectsBounds(tile.bounds, bounds)) continue;
       const rect = pixelRect(tile, bounds);
       if (rect[0] >= rect[2] || rect[1] >= rect[3]) continue;
       tile.dirty = tile.dirty ? merged(tile.dirty, rect) : rect;
       tile.revision = this.document.revision;
+      if (sourcesChanged) tile.preparedRevision = -1;
     }
     this.requestFrame = true;
   }
@@ -467,10 +533,23 @@ export class WorldRenderer {
    * Completely offscreen work cannot provide a submission proof.
    */
   inspectRegion(bounds: Bounds): RegionInspection {
+    return this.inspect(bounds, true);
+  }
+
+  /** CPU submission evidence remains separate from completed GPU work. */
+  inspectSubmittedRegion(bounds: Bounds): RegionInspection {
+    return this.inspect(bounds, false);
+  }
+
+  private inspect(bounds: Bounds, completed: boolean): RegionInspection {
+    const frame = completed ? this.lastCompletedFrame : this.frame;
+    const view = completed
+      ? this.lastCompletedViewGeneration
+      : this.lastSubmittedViewGeneration;
     const result: RegionInspection = {
       status: "outside",
       sessionId: this.sessionId,
-      frame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
+      frame: view < 0 ? 0 : frame,
       viewGeneration: this.viewGeneration,
     };
     const area = intersection(bounds, this.bounds());
@@ -479,7 +558,7 @@ export class WorldRenderer {
     if (
       this.contextLost ||
       this.preparedViewGeneration !== this.viewGeneration ||
-      this.lastSubmittedViewGeneration !== this.viewGeneration
+      view !== this.viewGeneration
     )
       return result;
     let covered = false;
@@ -487,11 +566,14 @@ export class WorldRenderer {
     for (const tile of this.tiles.values()) {
       if (!tile.visible || !intersectsBounds(tile.bounds, area)) continue;
       covered = true;
-      if (tile.submittedRevision < 0 || tile.submittedFrame !== this.frame)
-        return result;
+      const revision = completed
+        ? tile.completedRevision
+        : tile.submittedRevision;
+      const tileFrame = completed ? tile.completedFrame : tile.submittedFrame;
+      if (revision < 0 || tileFrame !== frame) return result;
       const rect = pixelRect(tile, area);
       if (
-        tile.submittedRevision !== tile.paintedRevision ||
+        revision !== tile.paintedRevision ||
         (tile.dirty && overlaps(tile.dirty, rect))
       )
         current = false;
@@ -515,6 +597,8 @@ export class WorldRenderer {
         .length,
       fallbackTiles: metrics.fallbackTiles,
       fallbackSamples: metrics.fallbackSamples,
+      anchoredTiles: metrics.anchoredTiles,
+      anchorRebases: metrics.anchorRebases,
       pendingUploadBytes: metrics.pendingUploadBytes,
       pendingCompositionTiles: metrics.pendingCompositionTiles,
       submittedRevision: this.submittedRevision,
@@ -522,6 +606,9 @@ export class WorldRenderer {
       lastSubmittedFrame: this.lastSubmittedViewGeneration < 0 ? 0 : this.frame,
       lastSubmittedViewGeneration: this.lastSubmittedViewGeneration,
       viewGeneration: this.viewGeneration,
+      lastCompletedFrame: this.lastCompletedFrame,
+      lastCompletedViewGeneration: this.lastCompletedViewGeneration,
+      gpuPending: this.pendingGpu !== null,
       fault: this.fault,
       contextLost: this.contextLost,
       heldForPointerup: this.heldForPointerup,
@@ -556,7 +643,8 @@ export class WorldRenderer {
       this.destroyed ||
       this.contextLost ||
       !this.document ||
-      !this.requestFrame
+      !this.requestFrame ||
+      this.pendingGpu
     )
       return null;
     // Fault controls delay the actual terrain draw, never fabricate readiness.
@@ -576,40 +664,100 @@ export class WorldRenderer {
         !this.isPresentationReady(tile.bounds, tile.power)
       )
         continue;
-      if (tile.preparedRevision !== tile.revision) {
+      if (
+        tile.preparedRevision !== tile.revision ||
+        tile.field.needsPreparation
+      ) {
         const overview =
           this.overviews.get(`height-overview:${tile.key}`) ?? null;
-        tile.field.update(overview === tile.overview ? undefined : overview);
+        tile.field.update(
+          overview === tile.overview ? undefined : overview,
+          tile.dirty,
+        );
         tile.overview = overview;
         tile.preparedRevision = tile.revision;
       }
       prepared.push(tile);
     }
+    // Complete the actual tool footprint before spending cold work elsewhere.
+    // Every visible tile remains queued; this changes order, never readiness.
+    const targetX =
+      this.camera.x +
+      ((this.cursor?.x ?? this.width / 2) - this.width / 2) / this.camera.scale;
+    const targetY =
+      this.camera.y +
+      ((this.cursor?.y ?? this.height / 2) - this.height / 2) /
+        this.camera.scale;
+    const distance = (tile: DisplayTile) =>
+      Math.hypot(
+        Math.max(tile.bounds[0] - targetX, 0, targetX - tile.bounds[2]),
+        Math.max(tile.bounds[1] - targetY, 0, targetY - tile.bounds[3]),
+      );
+    prepared.sort((a, b) => distance(a) - distance(b));
     this.checkBudgets();
     const uploadStart = performance.now();
     const uploaded = this.field.flush(editorBudgets.uploadBytesPerFrame);
     const uploadedAt = performance.now();
     const pending = this.field.metrics().pendingUploadBytes > 0;
     let composedSamples = 0;
+    const composition: HeightCompositionStats = {
+      canonicalSamples: 0,
+      deltaSamples: 0,
+      colourSamples: 0,
+      anchorCopySamples: 0,
+    };
     // Cached GPU colour tiles remain safe to draw while new numeric resources
     // upload across frames. Only a complete resource set may replace them.
-    if (pending) prepared.length = 0;
-    else
-      for (const tile of prepared)
-        composedSamples += tile.field.drawDirty(this.renderer);
+    let work = 0;
+    const drawable = prepared.filter((tile) => {
+      if (!tile.field.uploadReady) return false;
+      const cost = tile.field.compositionWork;
+      if (cost > editorBudgets.compositionWorkPerFrame)
+        throw new Error(
+          "Eine Höhenkachel überschreitet das Grafik-Arbeitspaket.",
+        );
+      if (work + cost > editorBudgets.compositionWorkPerFrame) return false;
+      work += cost;
+      return true;
+    });
+    prepared.splice(0, prepared.length, ...drawable);
+    for (const tile of prepared) {
+      const samples = tile.field.drawDirty(this.renderer);
+      composedSamples += samples;
+      if (samples) {
+        for (const key of Object.keys(
+          composition,
+        ) as (keyof HeightCompositionStats)[])
+          composition[key] += tile.field.compositionStats[key];
+      }
+    }
     // Preparation/upload alone cannot change local readiness. Leave dirty state
     // intact if GL drawing fails; an unchanged retry uses these same sources.
     for (const tile of prepared) tile.field.mesh.visible = true;
     this.drawOverlay(new Set(prepared));
     this.renderer.render(this.stage);
+    const gl = this.renderer.gl;
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    if (!sync) {
+      this.invalidateGpuSubmission();
+      throw new Error("Der Grafikabschluss konnte nicht verfolgt werden.");
+    }
+    gl.flush();
     const submittedAt = performance.now();
     this.frame++;
     this.lastSubmittedViewGeneration = this.viewGeneration;
-    this.requestFrame = pending;
     for (const tile of prepared) {
       tile.paintedRevision = tile.revision;
       tile.dirty = null;
     }
+    this.requestFrame =
+      pending ||
+      [...this.tiles.values()].some(
+        (tile) =>
+          tile.visible &&
+          tile.dirty &&
+          this.isPresentationReady(tile.bounds, tile.power),
+      );
     for (const tile of this.tiles.values()) {
       if (!tile.visible || tile.paintedRevision < 0) continue;
       tile.submittedRevision = tile.paintedRevision;
@@ -637,9 +785,11 @@ export class WorldRenderer {
       uploadedBytes: uploaded,
       updatedTiles: prepared.length,
       composedSamples,
+      ...composition,
+      compositionWork: work,
       ...this.field.metrics(),
     });
-    return {
+    const submission: FrameSubmission = {
       sessionId: this.sessionId,
       frame: this.frame,
       viewGeneration: this.viewGeneration,
@@ -648,6 +798,51 @@ export class WorldRenderer {
       at: submittedAt,
       uploadedBytes: uploaded,
     };
+    this.pendingGpu = {
+      sync,
+      submission,
+      tiles: [...this.tiles.values()]
+        .filter((tile) => tile.visible && tile.paintedRevision >= 0)
+        .map((tile) => ({ tile, revision: tile.paintedRevision })),
+    };
+    return submission;
+  }
+
+  /** Poll once on a later animation frame. Never wait or spin on the GPU. */
+  pollCompletion(): FrameSubmission | null {
+    const pending = this.pendingGpu;
+    if (!pending || this.contextLost || this.destroyed) return null;
+    const gl = this.renderer.gl;
+    const status = gl.clientWaitSync(pending.sync, 0, 0);
+    if (status === gl.TIMEOUT_EXPIRED) return null;
+    this.releaseFence();
+    if (status !== gl.ALREADY_SIGNALED && status !== gl.CONDITION_SATISFIED) {
+      this.invalidateGpuSubmission();
+      throw new Error(
+        "Der Grafikabschluss ist fehlgeschlagen; Darstellung wird neu aufgebaut.",
+      );
+    }
+    const submission = pending.submission;
+    this.lastCompletedFrame = submission.frame;
+    this.lastCompletedViewGeneration = submission.viewGeneration;
+    for (const { tile, revision } of pending.tiles) {
+      tile.completedRevision = revision;
+      tile.completedFrame = submission.frame;
+    }
+    this.observation.event("gpu-completed", {
+      sessionId: submission.sessionId,
+      frame: submission.frame,
+      viewGeneration: submission.viewGeneration,
+      revision: submission.revision,
+      submittedAt: submission.at,
+    });
+    return submission;
+  }
+
+  private releaseFence(): void {
+    if (!this.pendingGpu) return;
+    this.renderer.gl.deleteSync(this.pendingGpu.sync);
+    this.pendingGpu = null;
   }
 
   private drawOverlay(prepared: ReadonlySet<DisplayTile> = new Set()): void {
@@ -722,11 +917,24 @@ export class WorldRenderer {
       );
   }
 
+  private pruneOverviews(requested: readonly string[]): void {
+    const keep = new Set([
+      ...requested,
+      ...[...this.tiles.keys()].map((key) => `height-overview:${key}`),
+    ]);
+    for (const key of this.knownOverviews) {
+      if (keep.has(key)) continue;
+      this.knownOverviews.delete(key);
+      this.overviews.delete(key);
+    }
+  }
+
   private destroyTile(tile: DisplayTile): void {
     tile.field.destroy();
   }
 
   destroy(): void {
+    this.releaseFence();
     this.destroyed = true;
     this.canvas?.removeEventListener(
       "webglcontextlost",

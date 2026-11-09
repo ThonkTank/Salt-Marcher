@@ -73,6 +73,7 @@ export const P0_FUNCTIONAL_CHECKS = Object.freeze([
   "large-brush-live",
   "large-brush-dose",
   "consecutive-author-levels",
+  "curved-stroke-content",
   "cold-edit-content",
   "cold-blocked-inputs",
   "world-detail-roundtrip",
@@ -254,11 +255,8 @@ function releaseRuns(report, fail) {
   return [...groups.values()];
 }
 
-/**
- * The laboratory gate also fails closed: passing timings cannot replace behavior.
- * @param {Requirements} [requirements]
- */
-export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
+/** Validate reported facts once; selected and native gates add their own coverage. */
+function functionalFacts(report) {
   /** @type {EvaluationIssue[]} */
   const failures = [];
   const fail = (code, detail = {}) => failures.push({ code, ...detail });
@@ -270,18 +268,20 @@ export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
   const checks = Array.isArray(report.functional?.checks)
     ? report.functional.checks
     : [];
-  const required = requirements.requiredChecks ?? [];
   const runIds = new Set(runs.map((run) => run.id));
-  if (required.length && !runs.length) fail("FUNCTIONAL_RUN_MISSING");
-  const identities = new Set();
+  const checksByIdentity = new Map();
   for (const check of checks) {
     const detail = { run: check.independentRunId, check: check.id };
     if (!nonempty(check.id)) fail("FUNCTIONAL_CHECK_ID_MISSING", detail);
     if (!runIds.has(check.independentRunId))
       fail("FUNCTIONAL_RUN_IDENTITY_MISSING", detail);
     const identity = `${check.independentRunId}:${check.id}`;
-    if (identities.has(identity)) fail("DUPLICATE_FUNCTIONAL_CHECK", detail);
-    identities.add(identity);
+    const previous = checksByIdentity.get(identity);
+    if (previous) fail("DUPLICATE_FUNCTIONAL_CHECK", detail);
+    checksByIdentity.set(identity, {
+      check,
+      count: (previous?.count ?? 0) + 1,
+    });
     if (check.passed !== true) fail("FUNCTIONAL_CHECK_FAILED", detail);
     if (
       check.id === "continuous-stroke-live" &&
@@ -295,18 +295,38 @@ export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
     )
       fail("CONTINUOUS_STROKE_LIVE_EVIDENCE_MISSING", detail);
   }
+  const controls = Array.isArray(report.negativeControls)
+    ? report.negativeControls
+    : [];
+  for (const control of controls)
+    if (control.passed !== true)
+      fail("FAULT_CONTROL_FAILED", { fault: control.fault });
+  return {
+    failures,
+    runs,
+    checksByIdentity,
+    controls,
+    scaling: report.scaling,
+  };
+}
+
+/** @param {Requirements} requirements */
+function functionalVerdict(facts, requirements) {
+  const failures = [...facts.failures];
+  const fail = (code, detail = {}) => failures.push({ code, ...detail });
+  const { runs, checksByIdentity, controls } = facts;
+  const required = requirements.requiredChecks ?? [];
+  if (required.length && !runs.length) fail("FUNCTIONAL_RUN_MISSING");
   for (const run of runs)
     for (const id of required) {
-      const matches = checks.filter(
-        (check) => check.id === id && check.independentRunId === run.id,
-      );
-      if (matches.length !== 1 || matches[0].passed !== true)
+      const match = checksByIdentity.get(`${run.id}:${id}`);
+      if (match?.count !== 1 || match.check.passed !== true)
         fail("FUNCTIONAL_CHECK_MISSING_OR_FAILED", { run: run.id, check: id });
     }
 
   const scalingSpec = requirements.scaling;
   if (scalingSpec) {
-    const scaling = report.scaling ?? {};
+    const scaling = facts.scaling ?? {};
     const cases = Array.isArray(scaling.cases) ? scaling.cases : [];
     const minimums = scalingSpec.minimumSourceTiles;
     if (scaling.passed !== true) fail("SCALING_FAILED_OR_MISSING");
@@ -395,12 +415,6 @@ export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
       });
   }
 
-  const controls = Array.isArray(report.negativeControls)
-    ? report.negativeControls
-    : [];
-  for (const control of controls)
-    if (control.passed !== true)
-      fail("FAULT_CONTROL_FAILED", { fault: control.fault });
   for (const spec of requirements.requiredFaultControls ?? []) {
     const matches = controls.filter((control) => control.fault === spec.fault);
     if (matches.length !== 1) {
@@ -428,6 +442,14 @@ export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
     passed: failures.length === 0,
     failures,
   };
+}
+
+/**
+ * The laboratory gate also fails closed: passing timings cannot replace behavior.
+ * @param {Requirements} [requirements]
+ */
+export function evaluateFunctional(report, requirements = P0_REQUIREMENTS) {
+  return functionalVerdict(functionalFacts(report), requirements);
 }
 
 /** A package must identify its executed code; workspace metadata is no fallback. */
@@ -1908,8 +1930,8 @@ function strokesFromSamples(samples) {
   return strokes;
 }
 
-/** The collector and final evaluator use this same decision for an attempt. */
-export function evaluateAttempt(attempt, samples) {
+/** Content and timing claims use the already interpreted gesture. */
+function attemptVerdict(attempt, live) {
   const failures = [];
   if (attempt.error || attempt.observationError)
     failures.push({
@@ -1931,14 +1953,22 @@ export function evaluateAttempt(attempt, samples) {
     );
   if (attempt.overlapRequired && attempt.overlapProven !== true)
     failures.push({ code: "BUSY_OVERLAP_UNPROVEN" });
-  const live = strokeEvidence({ samples, timedOut: attempt.timedOut });
-  if (!live.passed) failures.push({ code: "ATTEMPT_LIVE_FEEDBACK_FAILED" });
+  if (!live?.passed || attempt.timedOut)
+    failures.push({ code: "ATTEMPT_LIVE_FEEDBACK_FAILED" });
   return {
-    passed: failures.length === 0 && live.passed,
+    passed: failures.length === 0,
     failures,
     content,
     live,
   };
+}
+
+/** The collector and final evaluator use this same decision for an attempt. */
+export function evaluateAttempt(attempt, samples) {
+  return attemptVerdict(
+    attempt,
+    strokeEvidence({ samples, timedOut: attempt.timedOut }),
+  );
 }
 
 /** Evaluate the selected scenario now, independently of a later complete run. */
@@ -1988,6 +2018,24 @@ export function evaluateScenario(scenario) {
     };
   }
   const attempts = scenario.attempts ?? [];
+  if (!attempts.length && scenario.contentObserved !== false)
+    missing.push({ code: "SCENARIO_CONTENT_EVIDENCE_MISSING" });
+  // Interpret every recorded input, including any omitted from an attempt's
+  // index. Attempts reference complete gestures; they do not choose samples.
+  const strokes = strokesFromSamples(samples);
+  const live = strokes.map((stroke, attempt) => ({
+    attempt,
+    ...strokeEvidence({ samples: stroke }),
+  }));
+  const gestureKey = (ids) => JSON.stringify([...ids].sort((a, b) => a - b));
+  const gestures = new Map(
+    strokes.map((stroke, index) => [
+      gestureKey(stroke.map((sample) => sample.inputId)),
+      { evidence: live[index], attempts: 0 },
+    ]),
+  );
+  if (new Set(samples.map((sample) => sample.inputId)).size !== samples.length)
+    fail("DUPLICATE_INPUT_SAMPLES");
   if (scenario.kind === "cold" && scenario.contentObserved !== false) {
     const cases = scenario.blockedInputs?.cases ?? [];
     if (
@@ -2008,23 +2056,24 @@ export function evaluateScenario(scenario) {
       requested: scenario.requestedAttempts,
       observed: attempts.length,
     });
-  const attemptResults = attempts.map((attempt) =>
-    evaluateAttempt(
-      attempt,
-      samples.filter((sample) => attempt.inputIds?.includes(sample.inputId)),
-    ),
-  );
+  const attemptResults = attempts.map((attempt) => {
+    const gesture = Array.isArray(attempt.inputIds)
+      ? gestures.get(gestureKey(attempt.inputIds))
+      : undefined;
+    if (!gesture || gesture.attempts++)
+      fail("ATTEMPT_INPUT_ASSIGNMENT_INVALID", { attempt: attempt.attempt });
+    return attemptVerdict(attempt, gesture?.evidence);
+  });
+  if (attempts.length)
+    for (const { evidence, attempts: assigned } of gestures.values())
+      if (assigned === 0)
+        fail("UNASSIGNED_GESTURE_INPUTS", { attempt: evidence.attempt });
   attemptResults.forEach((result, index) => {
     for (const issue of result.failures)
       fail(issue.code, { ...issue, attempt: attempts[index].attempt });
   });
   if (scenario.contentObserved === false)
     missing.push({ code: "CONTENT_CHECKS_UNAVAILABLE_FROM_JOURNAL" });
-  // Cold and warm retain and evaluate the entire same ordinary gesture.
-  const live = strokesFromSamples(samples).map((stroke, attempt) => ({
-    attempt,
-    ...strokeEvidence({ samples: stroke }),
-  }));
   for (const stroke of live)
     if (!stroke.passed) {
       if (!stroke.continuity.passed)
@@ -2133,12 +2182,24 @@ export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
   });
 }
 
+/** Each collected case is interpreted once, independently of the selected gate. */
+function scenarioResults(runs) {
+  const results = new Map();
+  for (const run of runs) {
+    if (run.role === "control") continue;
+    for (const scenario of run.scenarios ?? [])
+      results.set(scenario, evaluateScenario(scenario));
+  }
+  return results;
+}
+
 /**
- * Pure fail-closed evaluator. The CLI always uses the fixed P0 requirements above.
- * @param {Requirements} [requirements]
+ * Native reference, presentation and sampling requirements extend the same
+ * functional and case results; they never reinterpret recorded gestures.
+ * @param {Requirements} requirements
  * @returns {AcceptanceReport}
  */
-export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
+function nativeVerdict(report, requirements, facts, functional, cases) {
   /** @type {EvaluationIssue[]} */
   const failures = [];
   /** @type {EvaluationIssue[]} */
@@ -2181,10 +2242,8 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
     mapping.clock?.calibrated !== true
   )
     block("EXACT_PRESENTATION_MAPPING_UNAVAILABLE");
-  failures.push(...evaluateFunctional(report, requirements).failures);
-  // evaluateFunctional records malformed identities once. Reuse exactly the
-  // same release grouping for timing coverage, excluding all control launches.
-  const runs = releaseRuns(report, () => {});
+  failures.push(...functional.failures);
+  const { runs } = facts;
   if (runs.length < requirements.independentRuns)
     fail("INSUFFICIENT_INDEPENDENT_RUNS", {
       actual: runs.length,
@@ -2205,7 +2264,7 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
       if (requirements === P0_REQUIREMENTS && spec.kind !== "navigation") {
         if (!Array.isArray(scenario.attempts) || !scenario.attempts.length)
           fail("SCENARIO_CONTENT_EVIDENCE_MISSING", context);
-        const evaluated = evaluateScenario(scenario);
+        const evaluated = cases.get(scenario);
         for (const issue of evaluated.failures)
           fail(issue.code, { ...issue, ...context });
         for (const issue of evaluated.missing)
@@ -2478,6 +2537,22 @@ export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
 }
 
 /**
+ * Pure fail-closed evaluator. The CLI always uses the fixed P0 requirements above.
+ * @param {Requirements} [requirements]
+ * @returns {AcceptanceReport}
+ */
+export function evaluateAcceptance(report, requirements = P0_REQUIREMENTS) {
+  const facts = functionalFacts(report);
+  return nativeVerdict(
+    report,
+    requirements,
+    facts,
+    functionalVerdict(facts, requirements),
+    requirements === P0_REQUIREMENTS ? scenarioResults(facts.runs) : new Map(),
+  );
+}
+
+/**
  * Collection did not start: missing samples are neither measured failures nor passes.
  * @param {{errors?: EvaluationIssue[], blockers?: EvaluationIssue[], [detail: string]: unknown} | null | undefined} preflight
  * @param {EvaluationIssue[]} [runnerErrors]
@@ -2518,28 +2593,30 @@ export function evaluateRun(report) {
     selection,
     report.diagnosticSelection?.scenarioId ?? null,
   );
-  const scopedRequirements = {
-    ...P0_REQUIREMENTS,
-    requiredChecks: scope.requiredChecks,
-    scaling: scope.scaling ? P0_REQUIREMENTS.scaling : undefined,
-    requiredFaultControls: scope.controls
-      ? P0_REQUIREMENTS.requiredFaultControls
-      : [],
-  };
+  const scopedRequirements =
+    selection === "all"
+      ? P0_REQUIREMENTS
+      : {
+          ...P0_REQUIREMENTS,
+          requiredChecks: scope.requiredChecks,
+          scaling: scope.scaling ? P0_REQUIREMENTS.scaling : undefined,
+          requiredFaultControls: scope.controls
+            ? P0_REQUIREMENTS.requiredFaultControls
+            : [],
+        };
   /** @type {EvaluationIssue[]} */
   const failures = [];
   /** @type {EvaluationIssue[]} */
   const missing = [];
-  const functional = evaluateFunctional(
-    {
-      ...report,
-      errors: (report.errors ?? []).filter(
-        (error) => error.code !== "NO_NATIVE_DISPLAY",
-      ),
-    },
-    scopedRequirements,
-  );
+  const facts = functionalFacts(report);
+  const functional = functionalVerdict(facts, scopedRequirements);
+  const cases = scenarioResults(report.runs ?? []);
   for (const issue of functional.failures) {
+    if (
+      issue.code === "RUNNER_OR_PRODUCT_FAILURE" &&
+      issue.error?.code === "NO_NATIVE_DISPLAY"
+    )
+      continue;
     const missingCheck =
       issue.code === "FUNCTIONAL_CHECK_MISSING_OR_FAILED" &&
       !(report.functional?.checks ?? []).some(
@@ -2568,7 +2645,7 @@ export function evaluateRun(report) {
   for (const run of report.runs ?? []) {
     if (run.role === "control") continue;
     for (const scenario of run.scenarios ?? []) {
-      const evaluated = evaluateScenario(scenario);
+      const evaluated = cases.get(scenario);
       const detail = { run: run.id, scenario: scenario.id };
       failures.push(
         ...evaluated.failures.map((issue) => ({ ...issue, ...detail })),
@@ -2586,7 +2663,15 @@ export function evaluateRun(report) {
         scenario: entry.id,
         state: entry.state,
       });
-  const acceptance = evaluateAcceptance(report);
+  const acceptance = nativeVerdict(
+    report,
+    P0_REQUIREMENTS,
+    facts,
+    scopedRequirements === P0_REQUIREMENTS
+      ? functional
+      : functionalVerdict(facts, P0_REQUIREMENTS),
+    cases,
+  );
   const scopePassed = failures.length === 0 && missing.length === 0;
   return {
     purpose: report.purpose ?? "acceptance",

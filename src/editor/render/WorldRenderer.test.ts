@@ -24,6 +24,7 @@ import {
   heightOverviewBounds,
   HEIGHT_SUM_SCALE,
   heightFromScaledSum,
+  heightTileSupport,
   type Bounds,
   type HeightOverviewTile,
   type HeightTile,
@@ -60,66 +61,135 @@ vi.mock("./HeightField", () => ({
     draws = 0;
     restores = 0;
     private changedBytes = 0;
-    private tileCount = 0;
+    private gestureId: number | string | null = null;
+    private tiles = new Set<{
+      bytes: number;
+      dirty: boolean;
+      pixels: number;
+      needsPreparation: boolean;
+    }>();
     constructor() {
       fields.push(this);
     }
     init() {}
+    beginGesture(context: { id: number | string }) {
+      if (this.gestureId === context.id) return;
+      this.gestureId = context.id;
+      for (const tile of this.tiles) tile.needsPreparation = true;
+    }
     rebuildAfterContextRestore() {
       this.restores++;
-      this.changedBytes =
-        [...this.sources.values()].reduce(
-          (bytes, tile) => bytes + tile.values.byteLength,
-          0,
-        ) +
-        this.tileCount * 128 * 128 * 2 * 4;
+      this.changedBytes = [...this.sources.values()].reduce(
+        (bytes, tile) => bytes + tile.values.byteLength,
+        0,
+      );
+      for (const tile of this.tiles) {
+        tile.bytes = 128 * 128 * 8;
+        tile.dirty = true;
+      }
     }
     drawDirty() {
       this.draws++;
       return 128 * 128;
     }
-    replaceSources(tiles: readonly HeightTile[]) {
-      this.sources.clear();
-      this.updateSources(tiles);
-    }
     updateSources(
       tiles: readonly HeightTile[],
       removed: readonly string[] = [],
     ) {
-      for (const key of removed) this.sources.delete(key);
+      const changed: Bounds[] = [];
+      for (const key of removed) {
+        const before = this.sources.get(key);
+        if (before) changed.push(heightTileSupport(before));
+        this.sources.delete(key);
+      }
       for (const tile of tiles) {
+        const before = this.sources.get(tile.key);
+        if (
+          before &&
+          before.values.every((value, i) => value === tile.values[i])
+        )
+          continue;
         this.sources.set(tile.key, { ...tile, values: tile.values.slice() });
         this.changedBytes += tile.values.byteLength;
+        changed.push(heightTileSupport(tile));
       }
+      return changed;
     }
     createTile(bounds: Bounds, power: number, overview?: HeightOverviewTile) {
-      this.tileCount++;
+      const state = {
+        bytes: 0,
+        dirty: true,
+        pixels: 128 * 128,
+        needsPreparation: false,
+      };
+      this.tiles.add(state);
       const span = 128 * 2 ** power;
       const key = heightOverviewKey(power, bounds[0] / span, bounds[1] / span);
-      const update = (next?: HeightOverviewTile | null) => {
+      const update = (
+        next?: HeightOverviewTile | null,
+        rect?: [number, number, number, number],
+      ) => {
+        state.pixels = rect
+          ? (rect[2] - rect[0]) * (rect[3] - rect[1])
+          : 128 * 128;
         this.updates++;
+        state.needsPreparation = false;
         if (next)
           this.overviews.set(key, { ...next, values: next.values.slice() });
         else if (next === null) this.overviews.delete(key);
-        this.changedBytes +=
+        state.bytes +=
           HEIGHT_DESCRIPTOR_WIDTH * HEIGHT_DESCRIPTOR_HEIGHT * 4 * 4;
-        if (next !== undefined) this.changedBytes += 128 * 128 * 2 * 4;
+        if (next !== undefined) state.bytes += 128 * 128 * 8;
+        state.dirty = true;
       };
       update(overview ?? null);
+      const field = this;
       return {
         mesh: { position: { set() {} }, visible: false, destroy() {} },
         update,
-        drawDirty: () => this.drawDirty(),
+        invalidateAnchor() {},
+        get needsPreparation() {
+          return state.needsPreparation;
+        },
+        get uploadReady() {
+          return (
+            !state.needsPreparation &&
+            state.bytes === 0 &&
+            field.changedBytes === 0
+          );
+        },
+        get compositionWork() {
+          return state.dirty ? state.pixels : 0;
+        },
+        get compositionStats() {
+          return {
+            canonicalSamples: state.pixels,
+            deltaSamples: 0,
+            colourSamples: state.pixels,
+            anchorCopySamples: 0,
+          };
+        },
+        drawDirty: () => {
+          if (!state.dirty) return 0;
+          this.drawDirty();
+          state.dirty = false;
+          return state.pixels;
+        },
         destroy: () => {
-          this.tileCount--;
+          this.tiles.delete(state);
           this.overviews.delete(key);
         },
       };
     }
     flush(maxBytes = Infinity) {
-      const bytes = Math.min(this.changedBytes, maxBytes);
-      this.uploads++;
+      let bytes = Math.min(this.changedBytes, maxBytes);
       this.changedBytes -= bytes;
+      this.uploads++;
+      for (const tile of this.tiles) {
+        const count = Math.min(tile.bytes, maxBytes - bytes);
+        tile.bytes -= count;
+        bytes += count;
+      }
       return bytes;
     }
     metrics() {
@@ -138,14 +208,19 @@ vi.mock("./HeightField", () => ({
         cpuBytes: sourceBytes + overviewBytes,
         fallbackTiles: 0,
         fallbackSamples: 0,
-        pendingUploadBytes: this.changedBytes,
+        pendingUploadBytes:
+          this.changedBytes +
+          [...this.tiles].reduce((sum, tile) => sum + tile.bytes, 0),
+        pendingCompositionTiles: [...this.tiles].filter((tile) => tile.dirty)
+          .length,
       };
     }
     reset() {
       this.sources.clear();
       this.overviews.clear();
       this.changedBytes = 0;
-      this.tileCount = 0;
+      this.gestureId = null;
+      this.tiles.clear();
     }
     destroy() {
       this.reset();
@@ -176,6 +251,17 @@ vi.mock("pixi.js", () => ({
   },
   WebGLRenderer: class {
     canvas: HTMLCanvasElement | undefined;
+    gl = {
+      SYNC_GPU_COMMANDS_COMPLETE: 0x9117,
+      ALREADY_SIGNALED: 0x911a,
+      TIMEOUT_EXPIRED: 0x911b,
+      CONDITION_SATISFIED: 0x911c,
+      WAIT_FAILED: 0x911d,
+      fenceSync: vi.fn(() => ({})),
+      clientWaitSync: vi.fn(() => 0x911a),
+      deleteSync: vi.fn(),
+      flush: vi.fn(),
+    };
     async init(options: { canvas: HTMLCanvasElement }) {
       this.canvas = options.canvas;
     }
@@ -218,7 +304,6 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
     document.snapshot(detail).tiles,
     [],
     heightOverviewKeys(detail, world.presentationPower()),
-    true,
   );
   const rendered = () =>
     prepareHeightSampler([...field.sources.values()])(320, 0);
@@ -269,12 +354,13 @@ async function readyRenderer({
     [],
     [],
     heightOverviewKeys(world.sourceBounds(), world.presentationPower()),
-    true,
   );
   world.refresh();
   const frame = (afterSubmit?: () => void) => {
+    world.pollCompletion();
     const submitted = world.renderFrame(performance.now());
     afterSubmit?.();
+    world.pollCompletion();
     return submitted;
   };
   if (rendered) {
@@ -328,6 +414,107 @@ it("requires the actual local draw after numeric data are ready and uploaded", a
   });
 });
 
+it("waits for GPU completion, keeps submission timestamps, and never queues a second draw", async () => {
+  const { world, change, document } = await readyRenderer();
+  const update = change([200, 200]);
+  const gl = world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  const render = vi.spyOn(world.renderer, "render");
+  const submission = world.renderFrame(performance.now())!;
+  expect(submission.revision).toBe(document.revision);
+  expect(world.inspectSubmittedRegion(update.bounds).status).toBe("current");
+  expect(world.inspectRegion(update.bounds).status).toBe("stale");
+  world.redraw();
+  expect(world.renderFrame(performance.now())).toBeNull();
+  expect(world.pollCompletion()).toBeNull();
+  expect(render).toHaveBeenCalledTimes(1);
+  expect(wait).toHaveBeenCalledWith(expect.anything(), 0, 0);
+  wait.mockReturnValue(gl.CONDITION_SATISFIED);
+  expect(world.pollCompletion()).toEqual(submission);
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+  expect(world.state().gpuPending).toBe(false);
+  expect(gl.deleteSync).toHaveBeenCalled();
+});
+
+it("reprepares a budget-queued tile when a new gesture releases its source bindings", async () => {
+  const { world, frame, change } = await readyRenderer({
+    width: 256,
+    height: 128,
+    x: 512,
+    y: 256,
+    rendered: false,
+  });
+  world.cursor = { x: 64, y: 64, radius: 1 };
+  for (const tile of world["tiles"].values())
+    vi.spyOn(tile.field, "compositionWork", "get").mockReturnValue(
+      editorBudgets.compositionWorkPerFrame,
+    );
+  const queued = world["tiles"].get("2:1:0")!;
+  const prepare = vi.spyOn(queued.field, "update");
+  frame();
+  expect(queued.dirty).not.toBeNull();
+  expect(queued.preparedRevision).toBe(queued.revision);
+  expect(prepare).toHaveBeenCalledTimes(1);
+  const previousRevision = queued.revision;
+  change([200, 200]);
+  expect(queued.revision).toBe(previousRevision);
+  expect(queued.preparedRevision).toBe(previousRevision);
+  expect(queued.field.needsPreparation).toBe(true);
+  frame();
+  expect(prepare).toHaveBeenCalledTimes(2);
+  expect(queued.field.needsPreparation).toBe(false);
+  for (let index = 0; index < 10 && queued.dirty; index++) frame();
+  expect(queued.dirty).toBeNull();
+  expect(queued.completedRevision).toBe(previousRevision);
+});
+
+it("invalidates failed GPU fences and redraws from retained document data", async () => {
+  const { world, change, document, frame } = await readyRenderer();
+  const update = change([200, 200]);
+  const height = document.sampleHeight(200, 200);
+  world.renderFrame(performance.now());
+  vi.spyOn(world.renderer.gl, "clientWaitSync").mockReturnValueOnce(
+    world.renderer.gl.WAIT_FAILED,
+  );
+  expect(() => world.pollCompletion()).toThrow("Grafikabschluss");
+  expect(world.inspectRegion(update.bounds).status).toBe("missing");
+  expect(world.state().gpuPending).toBe(false);
+  frame();
+  expect(world.inspectRegion(update.bounds).status).toBe("current");
+  expect(document.sampleHeight(200, 200)).toBe(height);
+});
+
+it("keeps identical reads current and does not recompose unrelated overview changes", async () => {
+  const { world, field, frame } = await readyRenderer();
+  const area: Bounds = [200, 200, 240, 240];
+  const updates = field.updates;
+  const draws = field.draws;
+  const sources = [...field.sources.values()];
+  world.updatePresentation(
+    sources,
+    [],
+    heightOverviewKeys(world.sourceBounds(), world.presentationPower()),
+  );
+  expect(world.inspectRegion(area).status).toBe("current");
+  frame();
+  expect(field.updates).toBe(updates);
+  expect(field.draws).toBe(draws);
+  const overview: HeightOverviewTile = {
+    key: heightOverviewKey(2, 100, 100),
+    power: 2,
+    tileX: 100,
+    tileY: 100,
+    values: new Float64Array(128 * 128).fill(1),
+  };
+  world.updatePresentation([], [overview], [overview.key]);
+  expect(world.inspectRegion(area).status).toBe("current");
+  frame();
+  expect(field.updates).toBe(updates);
+  expect(field.draws).toBe(draws);
+});
+
 it.each(["upload", "compose", "draw"] as const)(
   "never certifies a %s failure and recovers without losing the edit",
   async (failure) => {
@@ -368,13 +555,14 @@ it("keeps partial numeric uploads visibly incomplete and resumes without rebuild
     editorBudgets.uploadBytesPerFrame,
   );
   expect(world.state().pendingUploadBytes).toBeGreaterThan(0);
-  expect(field.draws).toBe(0);
+  expect(field.draws).toBeGreaterThan(0);
   expect(first.exactRevision).toBe(-1);
   expect(world.inspectRegion(world.bounds()).status).toBe("missing");
   const updates = field.updates;
   for (
     let step = 0;
-    step < 20 && world.state().pendingUploadBytes > 0;
+    step < 20 &&
+    (world.state().pendingUploadBytes > 0 || world.state().queuedTiles > 0);
     step++
   ) {
     const receipt = frame()!;
@@ -383,7 +571,7 @@ it("keeps partial numeric uploads visibly incomplete and resumes without rebuild
     );
     expect(field.updates).toBe(updates);
     if (world.state().pendingUploadBytes > 0) {
-      expect(field.draws).toBe(0);
+      expect(field.draws).toBeGreaterThan(0);
       expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
     }
   }
@@ -447,15 +635,20 @@ it("invalidates lost GPU submissions and requires bounded uploads plus a new dra
     editorBudgets.uploadBytesPerFrame,
   );
   expect(partial.exactRevision).toBe(-1);
-  expect(field.draws).toBe(composed);
-  expect(world.inspectRegion(update.bounds).status).toBe("missing");
-  for (let step = 0; step < 20 && world.state().pendingUploadBytes; step++) {
+  expect(field.draws).toBeGreaterThan(composed);
+  expect(world.inspectRegion(world.bounds()).status).toBe("missing");
+  for (
+    let step = 0;
+    step < 20 &&
+    (world.state().pendingUploadBytes || world.state().queuedTiles);
+    step++
+  ) {
     const receipt = frame()!;
     expect(receipt.uploadedBytes).toBeLessThanOrEqual(
       editorBudgets.uploadBytesPerFrame,
     );
     if (world.state().pendingUploadBytes)
-      expect(world.inspectRegion(update.bounds).status).toBe("missing");
+      expect(world.inspectRegion(world.bounds()).status).not.toBe("current");
   }
   expect(world.inspectRegion(update.bounds).status).toBe("current");
   expect(world.inspectRegion(update.bounds).frame).toBeGreaterThan(
@@ -541,12 +734,12 @@ it("refreshes retained numeric tiles when a presentation read replaces sources o
     tileY: 0,
     values: new Float64Array(128 * 128).fill(2),
   };
-  world.updatePresentation([], [overview], [key], true);
+  world.updatePresentation([], [overview], [key]);
   expect(world.inspectRegion([200, 200, 240, 240]).status).not.toBe("current");
   frame();
   expect(field.overviews.get(key)?.values[0]).toBe(2);
   expect(world.inspectRegion([200, 200, 240, 240]).status).toBe("current");
-  world.updatePresentation([], [], [key], true);
+  world.updatePresentation([], [], [key]);
   expect(world.inspectRegion([200, 200, 240, 240]).status).not.toBe("current");
   frame();
   expect(field.overviews.has(key)).toBe(false);
@@ -564,18 +757,19 @@ it("keeps a drawn foundation stale until the new numeric terrain is actually dra
 });
 
 it("checks the entire visible sweep without requiring unrelated unavailable tiles", async () => {
-  const { world, frame, change } = await readyRenderer({
+  const { world, frame, change, document } = await readyRenderer({
     width: 320,
     x: 768,
     rendered: false,
   });
   const left: Bounds = [240, 240, 272, 272];
   const right: Bounds = [1264, 240, 1296, 272];
+  world.reset(document);
+  world.refresh();
   world.updatePresentation(
     [],
     [],
     [heightOverviewKey(2, 0, 0), heightOverviewKey(2, 2, 0)],
-    true,
   );
   frame();
   expect(world.inspectRegion(left).status).toBe("current");
@@ -717,6 +911,10 @@ it("keeps visible progress and the frame loop after a slow or failed brush decis
   expect(controller.state.error).toBe("input failed");
   decision.mockImplementation(() => advance(5));
   frame();
+  expect(
+    controller.world.inspectSubmittedRegion(controller.world.bounds()).status,
+  ).toBe("current");
+  frame(0); // The next real controller tick observes the completed GPU fence.
   expect(controller.world.inspectRegion(controller.world.bounds()).status).toBe(
     "current",
   );
@@ -995,6 +1193,8 @@ it.each(["drop-render", "delay-render", "pointerup-render"] as const)(
         .read()
         .filter((event) => event.kind === "brush-submit"),
     ).toHaveLength(1);
+    expect(controller.observe().readiness.ready).toBe(false);
+    frame(0);
     expect(controller.observe().readiness.ready).toBe(true);
     controller.destroy();
   },
@@ -1348,7 +1548,9 @@ it.each(["pointerup", "cancel", "blur", "visibility", "escape", "destroy"])(
     expect(controller.observe().gesture).toBeNull();
     expect(controller.observe().document!.revision).toBe(0);
     frame();
-    for (let step = 0; step < 5; step++) await Promise.resolve();
+    for (let step = 0; step < 8; step++) await Promise.resolve();
+    frame(0); // The current tool read follows the completed presentation read.
+    for (let step = 0; step < 8; step++) await Promise.resolve();
     advance(200);
     if (ending === "pointerup") pointer("pointerup");
     else if (ending === "cancel") pointer("pointercancel");
@@ -1392,7 +1594,9 @@ it("never resumes a held early press; release and a new press are required after
   );
   pointer("pointerdown");
   frame(200);
-  for (let step = 0; step < 5; step++) await Promise.resolve();
+  for (let step = 0; step < 8; step++) await Promise.resolve();
+  frame(0);
+  for (let step = 0; step < 8; step++) await Promise.resolve();
   advance(500);
   const request = bridge.readRegion.mock.calls.at(-1)![0];
   resume({ ...request, sequence: 0, tiles: [] });
@@ -1922,6 +2126,7 @@ it("edits a submitted warm local area while the outer presentation read is still
   frame();
   for (let step = 0; step < 8; step++) await Promise.resolve();
   expect(resume).toBeTypeOf("function");
+  frame(0); // Local GPU completion does not wait for the unrelated outer read.
   expect(controller.observe().readiness.ready).toBe(true);
   expect(controller.state.loading).toBe(false);
   pointer("pointerdown");
@@ -2047,7 +2252,10 @@ it.each([16, 512])(
     const original = controller.observe([endpoint]).samples[0]!;
     pointer("pointerdown", 190, 372);
     frame(0);
-    expect(controller.observe().readiness.ready).toBe(true);
+    expect(controller.observe().readiness).toMatchObject({
+      ready: false,
+      reason: "feedback",
+    });
 
     advance(24);
     pointer("pointermove", endX, 372);
@@ -2088,7 +2296,7 @@ it("shows a newly accepted held dose in the same frame while preserving one pend
   const held = controller.observe([point]);
   expect(held.samples[0]).toBeGreaterThan(press.samples[0]!);
   expect(held.renderer.submittedRevision).toBe(held.document!.revision);
-  expect(held.readiness.ready).toBe(true);
+  expect(held.readiness).toMatchObject({ ready: false, reason: "feedback" });
 
   controller.world.fault = "drop-render";
   frame(16);
@@ -2507,3 +2715,142 @@ it("keeps release unconfirmed until its outstanding dose actually draws", async 
   ).toHaveLength(1);
   controller.destroy();
 });
+
+it("preserves a normal queued corner when the GPU completes between input events", async () => {
+  const { controller, bridge, pointer, frame, advance } = await readyController(
+    0,
+    {
+      width: 256,
+      height: 256,
+    },
+  );
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 64, 128);
+  frame(0);
+  const gl = controller.world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  advance(8);
+  pointer("pointermove", 128, 64);
+  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().renderer.gpuPending).toBe(true);
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  advance(8);
+  pointer("pointermove", 192, 128);
+  expect(controller.observe().document!.revision).toBe(2);
+  pointer("pointerup", 192, 128);
+  await Promise.resolve();
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  const reference = new EditorDocument("input-fence-reference", {
+    empty: true,
+  });
+  reference.beginGesture(controller.currentBrush());
+  reference.applySegment([-256, 0], [-256, 0], 1000 / 60);
+  reference.applySegment([-256, 0], [0, -256], 8);
+  reference.applySegment([0, -256], [256, 0], 8);
+  reference.finishGesture();
+  const actual = prepareHeightSampler(
+    bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
+      patch.after ? [patch.after] : [],
+    ),
+  );
+  for (const point of [
+    [-256, 0],
+    [0, -256],
+    [0, 0],
+    [256, 0],
+  ] as const)
+    expect(actual(point[0], point[1])).toBeCloseTo(
+      reference.sampleHeight(point[0], point[1]),
+      10,
+    );
+  expect(
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-discard"),
+  ).toHaveLength(0);
+  expect(
+    wait.mock.calls.every(([, flags, timeout]) => flags === 0 && timeout === 0),
+  ).toBe(true);
+  controller.destroy();
+});
+
+it("never queues a second dose during GPU timeout and discards failed-frame travel without catch-up", async () => {
+  const { controller, pointer, frame, advance } = await readyController();
+  controller.setBrush(16, 400);
+  pointer("pointerdown", 20, 20);
+  frame(0);
+  const gl = controller.world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  const submitted = controller.observe().renderer.lastSubmittedFrame;
+  advance(16);
+  pointer("pointermove", 52, 20);
+  frame(0);
+  frame(200);
+  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().renderer.lastSubmittedFrame).toBe(submitted);
+  expect(controller.observe().renderer.gpuPending).toBe(true);
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  advance(16);
+  pointer("pointermove", 56, 20);
+  const accepted = controller.observe([
+    [0, -48],
+    [88, -48],
+  ]);
+  expect(accepted.document!.revision).toBe(2);
+  expect(accepted.samples[0]).toBe(-100);
+  expect(accepted.samples[1]).toBeGreaterThan(-100);
+  expect(
+    accepted.events.filter((event) => event.kind === "brush-interval").at(-1),
+  ).toMatchObject({
+    from: [80, -48],
+    to: [96, -48],
+    acceptedElapsedMs: 16,
+  });
+  pointer("pointerup", 56, 20);
+  frame(1000);
+  expect(
+    controller.observe([
+      [0, -48],
+      [88, -48],
+    ]).samples,
+  ).toEqual(accepted.samples);
+  expect(
+    wait.mock.calls.every(([, flags, timeout]) => flags === 0 && timeout === 0),
+  ).toBe(true);
+  controller.destroy();
+});
+
+it.each(["pointerdown", "pointermove", "pointerup"])(
+  "reports a failed fence during %s without accepting that input or losing its prior dose",
+  async (type) => {
+    const { controller, bridge, pointer, frame } = await readyController();
+    controller.setBrush(16, 400);
+    pointer("pointerdown", 20, 20);
+    if (type === "pointerdown") pointer("pointerup", 20, 20);
+    frame(0);
+    const inputs = controller.observation
+      .read()
+      .filter((event) => event.kind === "input").length;
+    const gl = controller.world.renderer.gl;
+    vi.spyOn(gl, "clientWaitSync").mockReturnValueOnce(gl.WAIT_FAILED);
+    pointer(type, 56, 56);
+    expect(controller.state.error).toContain("Grafikabschluss");
+    expect(controller.observe().document!.revision).toBe(1);
+    expect(controller.observe().renderer.gpuPending).toBe(false);
+    expect(
+      controller.observation.read().filter((event) => event.kind === "input"),
+    ).toHaveLength(inputs);
+    frame(0);
+    frame(0);
+    pointer("pointerup", 20, 20);
+    await Promise.resolve();
+    expect(controller.observe().document!.historyActions).toBe(1);
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    expect(controller.observe([[-48, -48]]).samples[0]).toBeGreaterThan(-100);
+    controller.destroy();
+  },
+);

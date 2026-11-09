@@ -39,8 +39,13 @@ function sourceDigest(tiles) {
 }
 
 async function createFixtures(directory) {
-  const { ProjectStore, heightTilesFromControls, heightSpacing, WORLD_LIMIT } =
-    dependencies();
+  const {
+    ProjectStore,
+    heightTilesFromControls,
+    heightSpacing,
+    WORLD_LIMIT,
+    HEIGHT_LIMIT,
+  } = dependencies();
   await mkdir(directory, { recursive: true });
   const field = (level, bounds, value) => {
     const step = heightSpacing(level),
@@ -78,10 +83,20 @@ async function createFixtures(directory) {
     ...offsets.map((value) => 12 + value),
     200,
     600,
+    HEIGHT_LIMIT - 1e-6,
+    HEIGHT_LIMIT + 1e-6,
+    HEIGHT_LIMIT - 10,
+    HEIGHT_LIMIT + 10,
+    HEIGHT_LIMIT * 2,
+    -HEIGHT_LIMIT + 1e-6,
+    -HEIGHT_LIMIT - 1e-6,
+    -HEIGHT_LIMIT + 10,
+    -HEIGHT_LIMIT - 10,
+    -HEIGHT_LIMIT * 2,
   ];
   const thresholdPoints = thresholds.map((_value, index) => [
     -1600 + (index % 5) * 800,
-    -900 + Math.floor(index / 5) * 600,
+    -1000 + Math.floor(index / 5) * 400,
   ]);
   const fixtures = [
     {
@@ -94,7 +109,7 @@ async function createFixtures(directory) {
       thresholdHeights: thresholds,
       tiles: field(2, [-2200, -1500, 2200, 1500], (x, y) => {
         const column = Math.max(0, Math.min(4, Math.floor((x + 2000) / 800)));
-        const row = Math.max(0, Math.min(3, Math.floor((y + 1200) / 600)));
+        const row = Math.max(0, Math.min(5, Math.floor((y + 1200) / 400)));
         return 100 + thresholds[row * 5 + column];
       }),
       regional: false,
@@ -109,7 +124,13 @@ async function createFixtures(directory) {
         [320, 0],
       ],
       tiles: Array.from({ length: 22 }, (_, level) =>
-        field(level, [-640, -320, 640, 320], () => 4 + level / 5),
+        field(level, [-640, -320, 640, 320], (x, y) =>
+          level === 0
+            ? -30.2 +
+              (x < 0 ? 0 : 12) +
+              (y < 0 ? -0.5 : 0.5) * DISPLAY_BOUNDARY_EPSILON_FT
+            : 4 + level / 5,
+        ),
       ).flat(),
       regional: true,
       fallback: false,
@@ -220,81 +241,123 @@ function colour(height) {
 }
 
 /** Existing CPU reconstruction and real stored fine overviews form the reference. */
-async function references(requestFile) {
-  const { file, power, points, pixelWorlds } = JSON.parse(
-    await readFile(requestFile, "utf8"),
-  );
+function reconstructReference(
+  { power, points, pixelWorlds },
+  readSources,
+  readDisplay,
+) {
   const {
-    ProjectStore,
     prepareHeightSampler,
     prepareHeightGrid,
     heightFromScaledSum,
     WORLD_LIMIT,
   } = dependencies();
-  const store = new ProjectStore(join(dirname(requestFile), "reference-work"));
-  try {
-    const project = await store.openProject(file);
-    const inside = ([x, y]) =>
-      Math.abs(x) <= WORLD_LIMIT && Math.abs(y) <= WORLD_LIMIT;
-    const region = (point) => [
-      Math.max(-WORLD_LIMIT, point[0] - 1),
-      Math.max(-WORLD_LIMIT, point[1] - 1),
-      Math.min(WORLD_LIMIT, point[0] + 1),
-      Math.min(WORLD_LIMIT, point[1] + 1),
+  const inside = ([x, y]) =>
+    Math.abs(x) <= WORLD_LIMIT && Math.abs(y) <= WORLD_LIMIT;
+  const region = (point) => [
+    Math.max(-WORLD_LIMIT, point[0] - 1),
+    Math.max(-WORLD_LIMIT, point[1] - 1),
+    Math.min(WORLD_LIMIT, point[0] + 1),
+    Math.min(WORLD_LIMIT, point[1] + 1),
+  ];
+  const numeric = points.map((point) => {
+    if (!inside(point)) return null;
+    const read = readSources(region(point));
+    return prepareHeightSampler(read.tiles)(...point);
+  });
+  const pixelReferences = pixelWorlds.map((point) => {
+    const spacing = 2 ** power;
+    const grid = point.map((value) => Math.floor(value / spacing));
+    const centre = grid.map((value) => (value + 0.5) * spacing);
+    if (!inside(centre))
+      return { centre, height: null, rgba: [41, 78, 99, 255], outside: true };
+    const tile = grid.map((value) => Math.floor(value / 128));
+    const pixel = grid.map((value, index) => value - tile[index] * 128);
+    const span = spacing * 128;
+    const bounds = [
+      tile[0] * span,
+      tile[1] * span,
+      (tile[0] + 1) * span,
+      (tile[1] + 1) * span,
     ];
-    const numeric = points.map((point) => {
-      if (!inside(point)) return null;
-      const read = store.readRegion({
-        sessionId: project.sessionId,
-        minLevel: 0,
-        bounds: region(point),
+    const read = readDisplay(region(centre));
+    const coarse = prepareHeightGrid(read.tiles)(bounds, 128, [
+      pixel[0],
+      pixel[1],
+      pixel[0] + 1,
+      pixel[1] + 1,
+    ])[0];
+    const overview = read.overviews.find(
+      (value) => value.key === `height-overview:${power}:${tile[0]}:${tile[1]}`,
+    );
+    const fine = overview?.values[pixel[1] * 128 + pixel[0]] ?? 0;
+    const height = heightFromScaledSum(coarse + fine);
+    return {
+      centre,
+      height,
+      rgba: colour(height),
+      fineOverview: Boolean(overview),
+      sourceLevels: [...new Set(read.tiles.map((value) => value.level))],
+    };
+  });
+  return { numeric, pixels: pixelReferences };
+}
+
+async function references(requestFile) {
+  const input = JSON.parse(await readFile(requestFile, "utf8"));
+  const results = [];
+  for (const request of Array.isArray(input) ? input : [input]) {
+    if (request.storeSnapshot) {
+      const revive = (read) => ({
+        ...read,
+        tiles: read.tiles.map((tile) => ({
+          ...tile,
+          values: new Float64Array(tile.values),
+        })),
+        overviews: read.overviews?.map((tile) => ({
+          ...tile,
+          values: new Float64Array(tile.values),
+        })),
       });
-      return prepareHeightSampler(read.tiles)(...point);
-    });
-    const pixelReferences = pixelWorlds.map((point) => {
-      const spacing = 2 ** power;
-      const grid = point.map((value) => Math.floor(value / spacing));
-      const centre = grid.map((value) => (value + 0.5) * spacing);
-      if (!inside(centre))
-        return { centre, height: null, rgba: [41, 78, 99, 255], outside: true };
-      const tile = grid.map((value) => Math.floor(value / 128));
-      const pixel = grid.map((value, index) => value - tile[index] * 128);
-      const span = spacing * 128;
-      const bounds = [
-        tile[0] * span,
-        tile[1] * span,
-        (tile[0] + 1) * span,
-        (tile[1] + 1) * span,
-      ];
-      const read = store.readPresentation({
-        sessionId: project.sessionId,
-        power,
-        bounds: region(centre),
-      });
-      const coarse = prepareHeightGrid(read.tiles)(bounds, 128, [
-        pixel[0],
-        pixel[1],
-        pixel[0] + 1,
-        pixel[1] + 1,
-      ])[0];
-      const overview = read.overviews.find(
-        (value) =>
-          value.key === `height-overview:${power}:${tile[0]}:${tile[1]}`,
+      const sources = revive(request.storeSnapshot.sources);
+      const display = revive(request.storeSnapshot.presentation);
+      results.push(
+        reconstructReference(
+          request,
+          () => sources,
+          () => display,
+        ),
       );
-      const fine = overview?.values[pixel[1] * 128 + pixel[0]] ?? 0;
-      const height = heightFromScaledSum(coarse + fine);
-      return {
-        centre,
-        height,
-        rgba: colour(height),
-        fineOverview: Boolean(overview),
-        sourceLevels: [...new Set(read.tiles.map((value) => value.level))],
-      };
-    });
-    return { numeric, pixels: pixelReferences };
-  } finally {
-    store.close();
+      continue;
+    }
+    const { ProjectStore } = dependencies();
+    const store = new ProjectStore(
+      join(dirname(requestFile), "reference-work"),
+    );
+    try {
+      const project = await store.openProject(request.file);
+      results.push(
+        reconstructReference(
+          request,
+          (bounds) =>
+            store.readRegion({
+              sessionId: project.sessionId,
+              minLevel: 0,
+              bounds,
+            }),
+          (bounds) =>
+            store.readPresentation({
+              sessionId: project.sessionId,
+              power: request.power,
+              bounds,
+            }),
+        ),
+      );
+    } finally {
+      store.close();
+    }
   }
+  return Array.isArray(input) ? results : results[0];
 }
 
 function child(...args) {
@@ -314,8 +377,335 @@ function child(...args) {
 
 async function run(directory) {
   const { launchAtlasDesktop } = await import("./atlas-p0-desktop.mjs");
-  const { button, exact, capture, navigateTo, stateSnapshot } =
-    await import("./atlas-p0-interactions.mjs");
+  const {
+    brush,
+    button,
+    exact,
+    capture,
+    movingStroke,
+    navigateTo,
+    position,
+    snapshot,
+    stateSnapshot,
+  } = await import("./atlas-p0-interactions.mjs");
+  // Ordinary editor actions, with sparse read-only checkpoints outside inputs.
+  // All actions reuse one document; the independent CPU oracle runs once per batch.
+  async function mutations(session, fixture) {
+    const { page } = session;
+    const result = {
+      actions: [],
+      checkpoints: [],
+      fineOverview: [],
+      passed: false,
+    };
+    const requests = [];
+    const settled = async () => {
+      await exact(page);
+      await page.waitForFunction(() => {
+        const o = window.atlasObserve([], { events: false });
+        if (o.state.error || o.state.persistenceError)
+          throw new Error(o.state.error ?? o.state.persistenceError);
+        return (
+          !o.document.active &&
+          !o.state.writing &&
+          o.document.pendingBytes === 0 &&
+          !o.renderer.gpuPending
+        );
+      });
+    };
+    const checkpoint = async (id, points) => {
+      await page.mouse.move(10, 10);
+      await settled();
+      const state = await stateSnapshot(page, points);
+      const image = await capture(session, id, points);
+      const power = state.renderer.presentationPower;
+      const pixelWorlds = image.screenPoints.map(({ x, y }) => [
+        state.camera.x + (x + 0.5 - image.size.width / 2) / state.camera.scale,
+        state.camera.y + (y + 0.5 - image.size.height / 2) / state.camera.scale,
+      ]);
+      const all = [...points, ...pixelWorlds];
+      const halo = 2 ** power + 1;
+      const bounds = [
+        Math.min(...all.map(([x]) => x)) - halo,
+        Math.min(...all.map(([, y]) => y)) - halo,
+        Math.max(...all.map(([x]) => x)) + halo,
+        Math.max(...all.map(([, y]) => y)) + halo,
+      ];
+      const storeSnapshot = await page.evaluate(
+        async ({ bounds, power, sessionId, sequence }) => {
+          const sources = await window.atlasDesktop.readRegion({
+            sessionId,
+            bounds,
+            minLevel: 0,
+          });
+          const presentation = await window.atlasDesktop.readPresentation({
+            sessionId,
+            bounds,
+            power,
+          });
+          if (
+            [sources, presentation].some(
+              (read) =>
+                read.sessionId !== sessionId || read.sequence !== sequence,
+            )
+          )
+            throw new Error(
+              "GPU checkpoint and stored oracle have different boundaries",
+            );
+          const serialize = (read) => ({
+            ...read,
+            tiles: read.tiles.map((tile) => ({
+              ...tile,
+              values: Array.from(tile.values),
+            })),
+            overviews: read.overviews?.map((tile) => ({
+              ...tile,
+              values: Array.from(tile.values),
+            })),
+          });
+          return {
+            sources: serialize(sources),
+            presentation: serialize(presentation),
+          };
+        },
+        {
+          bounds,
+          power,
+          sessionId: state.sessionId,
+          sequence: state.document.sequence,
+        },
+      );
+      requests.push({ points, pixelWorlds, power, storeSnapshot });
+      result.checkpoints.push({
+        id,
+        image,
+        power,
+        actualHeights: state.samples,
+        renderer: state.renderer,
+        sequence: state.document.sequence,
+      });
+    };
+    const action = async (kind, point = [100, 100], diameter = 16) => {
+      if (kind === "raise" || kind === "lower") {
+        await brush(page, diameter, 4000);
+        if (kind === "lower") await button(page, /Absenken/);
+        const at = await position(page, point);
+        await page.mouse.move(at.x, at.y);
+        await settled();
+      }
+      const before = await stateSnapshot(page);
+      let stroke;
+      if (kind === "undo" || kind === "redo")
+        await button(page, kind === "undo" ? /Rückgängig/ : /Wiederholen/);
+      else
+        stroke = await movingStroke(session, [point, point, point], {
+          intervalMs: 64,
+        });
+      await settled();
+      const after = await snapshot(page, [], { sinceEvent: before.eventCount });
+      const draws = after.events.filter(
+        (event) => event.kind === "height-draw",
+      );
+      const complete = draws.length > 0 && after.droppedEvents === 0;
+      const work = Object.fromEntries(
+        [
+          "canonicalSamples",
+          "deltaSamples",
+          "colourSamples",
+          "anchorCopySamples",
+        ].map((key) => [
+          key,
+          complete && draws.every((event) => Number.isFinite(event[key]))
+            ? draws.reduce((sum, event) => sum + event[key], 0)
+            : null,
+        ]),
+      );
+      result.actions.push({
+        kind,
+        diameter,
+        level: before.brush.level,
+        sequence: after.document.sequence,
+        draws: draws.length,
+        droppedEvents: after.droppedEvents,
+        work,
+        passed:
+          complete &&
+          after.document.sequence === before.document.sequence + 1 &&
+          (!stroke || (!stroke.timedOut && stroke.time.passed)),
+      });
+    };
+    if (fixture.id === "all-22-levels") {
+      const points = [
+        [100, 100],
+        [84, 100],
+        [132, 116],
+        [-100, 100],
+        [100, -100],
+        [-100, -100],
+        [400, 100],
+      ];
+      await checkpoint("chain-initial", points);
+      for (let index = 0; index < 24; index++) {
+        await action(
+          index % 2 ? "lower" : "raise",
+          points[0],
+          [16, 64, 32, 128][index % 4],
+        );
+        if (index === 0) await checkpoint("chain-first-raised", points);
+        await action("undo");
+        if ((index + 1) % 3 === 0) {
+          await action("redo");
+          await action("undo");
+        }
+        if ([16, 32, 48, 64].includes(result.actions.length))
+          await checkpoint(`chain-${result.actions.length}`, points);
+      }
+      result.chain = {
+        transactions: result.actions.length,
+        deltaSamples: result.actions.reduce(
+          (sum, entry) => sum + (entry.work.deltaSamples ?? 0),
+          0,
+        ),
+        laterCanonicalSamples: result.actions
+          .slice(32)
+          .reduce((sum, entry) => sum + (entry.work.canonicalSamples ?? 0), 0),
+        factsComplete: result.actions.every((entry) =>
+          Object.values(entry.work).every(Number.isFinite),
+        ),
+      };
+      await action("lower", [-100, 100]);
+      await checkpoint("zero-lowered", points);
+      await action("undo");
+      await checkpoint("zero-undone", points);
+      // These author levels are already part of the displayed fine overview.
+      for (const [scale, diameter, level, power] of [
+        [0.125, 8, 0, 3],
+        [0.0625, 16, 1, 4],
+      ]) {
+        const before = await stateSnapshot(page);
+        const at = await position(page, [before.camera.x, before.camera.y]);
+        await page.mouse.move(at.x, at.y);
+        // Native wheel deltas are rounded to Float32. Approach the requested
+        // power from just inside its scale interval, never from the coarser side.
+        const targetScale = scale * 1.000001;
+        await page.mouse.wheel(
+          0,
+          Math.log(before.camera.scale / targetScale) / 0.0018,
+        );
+        await page.waitForFunction(
+          (scale) =>
+            Math.abs(
+              window.atlasObserve([], { events: false }).camera.scale - scale,
+            ) < 1e-6,
+          scale,
+        );
+        await action("raise", points[0], diameter);
+        const state = await stateSnapshot(page);
+        result.fineOverview.push({
+          requestedScale: scale,
+          targetScale,
+          scale: state.camera.scale,
+          diameter,
+          level: state.brush.level,
+          power: state.renderer.presentationPower,
+          passed:
+            state.camera.scale >= scale &&
+            state.camera.scale < scale * 1.000003 &&
+            state.brush.level === level &&
+            state.renderer.presentationPower === power,
+        });
+        await checkpoint(`fine-overview-${power}-raised`, points.slice(0, 3));
+        await action("undo");
+        await checkpoint(`fine-overview-${power}-undone`, points.slice(0, 3));
+      }
+      await button(page, "Nahansicht");
+      await settled();
+      // Context restoration discards derived anchors and rebuilds from authors.
+      const context = await page.evaluateHandle(() => {
+        const gl = document.querySelector("canvas").getContext("webgl2");
+        const extension = gl.getExtension("WEBGL_lose_context");
+        if (!extension)
+          throw new Error("Required WEBGL_lose_context extension unavailable");
+        return extension;
+      });
+      try {
+        await context.evaluate((extension) => extension.loseContext());
+        await page.waitForFunction(
+          () => window.atlasObserve([], { events: false }).renderer.contextLost,
+        );
+        await context.evaluate((extension) => extension.restoreContext());
+        await settled();
+        await checkpoint("chain-canonical-restored", points);
+      } finally {
+        await context.dispose();
+      }
+    } else {
+      const points =
+        fixture.id === "thresholds-negative-seams"
+          ? fixture.points
+          : [
+              [100, 100],
+              [84, 100],
+              [132, 116],
+            ];
+      const point = points[0];
+      await action("raise", point);
+      await checkpoint("live-raised", points);
+      await action("undo");
+      await checkpoint("live-undone", points);
+      await action("redo");
+      await checkpoint("live-redone", points);
+    }
+    const requestFile = join(session.directory, "live-references.json");
+    await writeFile(requestFile, JSON.stringify(requests));
+    const expected = child("--reference", requestFile);
+    for (const [index, entry] of result.checkpoints.entries()) {
+      entry.reference = expected[index];
+      entry.pixelsPassed = entry.image.pixels.every(
+        (pixel, i) =>
+          pixel &&
+          pixel.every(
+            (value, channel) =>
+              Math.abs(value - entry.reference.pixels[i].rgba[channel]) <= 1,
+          ),
+      );
+      entry.authorsPassed = entry.actualHeights.every((value, i) =>
+        value === null
+          ? entry.power > 2
+          : Number.isFinite(value) &&
+            Math.abs(value - entry.reference.numeric[i]) <= 1e-7,
+      );
+      entry.fineOverviewPassed =
+        !entry.id.startsWith("fine-overview-") ||
+        entry.reference.pixels.some((pixel) => pixel.fineOverview);
+      entry.passed =
+        entry.pixelsPassed && entry.authorsPassed && entry.fineOverviewPassed;
+    }
+    if (result.chain) {
+      const baseline = result.checkpoints[0];
+      const restored = result.checkpoints.at(-1);
+      result.chain.restoredPixels =
+        JSON.stringify(restored.image.pixels) ===
+        JSON.stringify(baseline.image.pixels);
+      result.chain.restoredAuthors = restored.actualHeights.every(
+        (value, index) =>
+          Number.isFinite(value) &&
+          Math.abs(value - baseline.actualHeights[index]) <= 1e-7,
+      );
+    }
+    result.passed =
+      result.actions.every((entry) => entry.passed) &&
+      result.checkpoints.every((entry) => entry.passed) &&
+      result.fineOverview.every((entry) => entry.passed) &&
+      (!result.chain ||
+        (result.chain.transactions === 64 &&
+          result.chain.factsComplete &&
+          result.chain.deltaSamples > 0 &&
+          result.chain.laterCanonicalSamples > 0 &&
+          result.chain.restoredPixels &&
+          result.chain.restoredAuthors));
+    return result;
+  }
   async function sourceIdentity(session, fixture, sessionId) {
     const read = await session.page.evaluate(
       async ({ sessionId, bounds }) => {
@@ -581,12 +971,21 @@ async function run(directory) {
           await context.dispose();
         }
       }
+      if (
+        [
+          "all-22-levels",
+          "ordinary-22-level-cancellation",
+          "thresholds-negative-seams",
+        ].includes(fixture.id)
+      )
+        result.live = await mutations(session, fixture);
       result.fileUnchanged =
         sha256(await readFile(fixture.file)) === fixture.fileSha256;
       result.passed =
         result.views.every((view) => view.passed) &&
         (fixture.id !== "thresholds-negative-seams" ||
           result.contextRestore?.passed === true) &&
+        (!result.live || result.live.passed) &&
         result.fileUnchanged &&
         session.errors.length === 0;
     } catch (error) {

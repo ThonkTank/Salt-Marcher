@@ -36,6 +36,129 @@ const writeJson = (file, data) =>
   writeFile(file, JSON.stringify(data, null, 2) + "\n");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
+function compositionWork(draws) {
+  if (!draws.length)
+    throw new Error("Missing actual terrain draw observations");
+  const names = [
+    "canonicalSamples",
+    "deltaSamples",
+    "colourSamples",
+    "anchorCopySamples",
+    "compositionWork",
+  ];
+  for (const draw of draws) {
+    if (
+      names.some(
+        (name) => !Number.isSafeInteger(draw[name]) || draw[name] < 0,
+      ) ||
+      draw.colourSamples !== draw.composedSamples ||
+      draw.canonicalSamples + draw.deltaSamples > draw.composedSamples
+    )
+      throw new Error("Missing or inconsistent numeric composition facts");
+  }
+  return Object.fromEntries(
+    names.map((name) => [
+      name,
+      {
+        total: draws.reduce((sum, draw) => sum + draw[name], 0),
+        perDraw: distribution(draws.map((draw) => draw[name])),
+      },
+    ]),
+  );
+}
+
+/** Attribute all measured GL calls to actual draws; never infer pixels from call count. */
+function gpuWork(draws, timers) {
+  if (!timers.enabled) return { available: false };
+  const valid =
+    !timers.disjoint &&
+    !timers.truncated &&
+    timers.droppedEvents === 0 &&
+    Number.isFinite(timers.startedAt) &&
+    Number.isFinite(timers.stoppedAt) &&
+    timers.stoppedAt >= timers.startedAt &&
+    draws.every(
+      (draw) =>
+        Number.isSafeInteger(draw.frame) &&
+        draw.frame > 0 &&
+        Number.isFinite(draw.uploadStart) &&
+        Number.isFinite(draw.submittedAt) &&
+        draw.submittedAt >= draw.uploadStart,
+    ) &&
+    timers.samples.length > 0 &&
+    timers.samples.every(
+      (sample) =>
+        sample.available &&
+        Number.isFinite(sample.gpuMs) &&
+        sample.gpuMs >= 0 &&
+        Number.isFinite(sample.at) &&
+        sample.at >= timers.startedAt &&
+        sample.at <= timers.stoppedAt &&
+        ["canvas", "offscreen"].includes(sample.target),
+    );
+  const frames = draws
+    .filter(
+      (draw) =>
+        draw.uploadStart >= timers.startedAt &&
+        draw.submittedAt <= timers.stoppedAt,
+    )
+    .map((draw) => ({
+      frame: draw.frame,
+      composedSamples: draw.composedSamples,
+      samples: timers.samples.filter(
+        (sample) =>
+          sample.at >= draw.uploadStart && sample.at <= draw.submittedAt,
+      ),
+    }));
+  const assigned = frames.flatMap((frame) => frame.samples);
+  const covered = (frame) =>
+    frame.samples.some((sample) => sample.target === "canvas") &&
+    (frame.composedSamples === 0 ||
+      frame.samples.some((sample) => sample.target === "offscreen"));
+  const complete =
+    frames.length > 0 &&
+    frames.every(covered) &&
+    assigned.length === timers.samples.length &&
+    new Set(assigned).size === assigned.length;
+  const sum = (frame, target) =>
+    frame.samples
+      .filter((sample) => sample.target === target)
+      .reduce((total, sample) => total + (sample.gpuMs ?? 0), 0);
+  const changed = frames.filter((frame) => frame.composedSamples > 0);
+  const totalSamples = changed.reduce(
+    (total, frame) => total + frame.composedSamples,
+    0,
+  );
+  return {
+    available: true,
+    valid: valid && complete,
+    measuredFrames: frames.length,
+    unmeasuredFrames: frames.filter((frame) => !covered(frame)).length,
+    unmatchedCalls: timers.samples.filter(
+      (sample) => !assigned.includes(sample),
+    ).length,
+    offscreenMsPerTerrainDraw:
+      valid && complete
+        ? distribution(changed.map((frame) => sum(frame, "offscreen")))
+        : null,
+    canvasMsPerFrame:
+      valid && complete
+        ? distribution(frames.map((frame) => sum(frame, "canvas")))
+        : null,
+    offscreenMsPerMillionChangedSamples:
+      valid && complete && totalSamples > 0
+        ? (changed.reduce(
+            (total, frame) => total + sum(frame, "offscreen"),
+            0,
+          ) /
+            totalSamples) *
+          1e6
+        : null,
+    interpretation:
+      "Offscreen includes numeric and colour passes plus any anchor copy; changed samples come from product facts, not GL call count. GPU completion is not native presentation.",
+  };
+}
+
 async function createFixtures(directory) {
   if (!process.versions.electron) throw new Error("Fixture needs Electron ABI");
   const { ProjectStore } = require(
@@ -113,6 +236,8 @@ async function installTimers(page, enabled) {
       enabled: Boolean(extension && enabled),
     };
     if (!info.enabled) return info;
+    const startedAt = performance.now();
+    const startEvent = window.atlasObserve([], { events: false }).eventCount;
     const records = [],
       originals = {};
     let framebuffer = gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING);
@@ -146,9 +271,15 @@ async function installTimers(page, enabled) {
         }
       };
     }
-    window.atlasGraphicsProbe = async () => {
+    window.atlasGraphicsProbe = async (points = []) => {
       for (const [name, original] of Object.entries(originals))
         gl[name] = original;
+      const stoppedAt = performance.now();
+      // GL wrappers and this journal stop in one renderer task. Later frames
+      // during asynchronous query readback do not enter either measurement.
+      const observation = window.atlasObserve(points, {
+        sinceEvent: startEvent,
+      });
       const deadline = performance.now() + 3000;
       while (
         records.some(
@@ -171,9 +302,19 @@ async function installTimers(page, enabled) {
         return { ...record, available, gpuMs };
       });
       delete window.atlasGraphicsProbe;
-      return { ...info, disjoint, truncated: records.length >= 4096, samples };
+      return {
+        ...info,
+        startedAt,
+        stoppedAt,
+        startEvent,
+        droppedEvents: observation.droppedEvents,
+        observation,
+        disjoint,
+        truncated: records.length >= 4096,
+        samples,
+      };
     };
-    return info;
+    return { ...info, startedAt, startEvent };
   }, enabled);
 }
 
@@ -194,6 +335,8 @@ async function runCase({ directory, name, fixture, lab, timers }) {
     nativePresentation: false,
   };
   let tracing = false;
+  let terrainDraws = [];
+  let droppedEvents;
   const tracePath = join(directory, "chromium-trace.json");
   try {
     await page.waitForFunction(() => typeof window.atlasObserve === "function");
@@ -302,6 +445,8 @@ async function runCase({ directory, name, fixture, lab, timers }) {
           .map((e) => e.interval),
       );
       const draws = observed.events.filter((e) => e.kind === "height-draw");
+      terrainDraws = draws;
+      droppedEvents = observed.droppedEvents;
       result.staticControl = {
         draws: draws.length,
         updatedTiles: draws.reduce((n, e) => n + e.updatedTiles, 0),
@@ -343,6 +488,8 @@ async function runCase({ directory, name, fixture, lab, timers }) {
       };
       result.submission = summarizeSubmissionTiming(stroke.after.events);
       const draws = stroke.after.events.filter((e) => e.kind === "height-draw");
+      terrainDraws = draws;
+      droppedEvents = stroke.after.droppedEvents;
       result.work = {
         draws: draws.length,
         updatedTiles: distribution(draws.map((e) => e.updatedTiles)),
@@ -352,8 +499,31 @@ async function runCase({ directory, name, fixture, lab, timers }) {
       await writeJson(join(directory, "observation.json"), stroke.after);
       if (stroke.timedOut) throw new Error("Stroke observer timed out");
     }
-    if (result.gpuTimers.enabled)
-      result.gpuTimers = await page.evaluate(() => window.atlasGraphicsProbe());
+    if (result.gpuTimers.enabled) {
+      const { observation, ...measured } = await page.evaluate(
+        (points) => window.atlasGraphicsProbe(points),
+        probes,
+      );
+      result.gpuTimers = measured;
+      droppedEvents = observation.droppedEvents;
+      terrainDraws = observation.events.filter(
+        (event) =>
+          event.kind === "height-draw" &&
+          event.uploadStart >= measured.startedAt &&
+          event.submittedAt <= measured.stoppedAt,
+      );
+      // Keep the complete journal underlying timer attribution, including any
+      // final cursor/terrain draw after the stroke's own submission snapshot.
+      await writeJson(join(directory, "observation.json"), observation);
+    }
+    if (droppedEvents !== 0)
+      throw new Error("Graphics observation journal is incomplete");
+    result.composition = compositionWork(terrainDraws);
+    result.gpuWork = gpuWork(terrainDraws, result.gpuTimers);
+    if (result.gpuWork.available && !result.gpuWork.valid)
+      throw new Error(
+        "GPU queries are incomplete or cannot be assigned to actual terrain draws",
+      );
     await page.waitForTimeout(500);
     await app.evaluate(
       (_, file) => globalThis.__atlasHost.stopTrace(file),

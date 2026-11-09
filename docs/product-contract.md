@@ -1115,7 +1115,10 @@ Höhenabfragen, Undo und gespeicherte Daten behalten ihre `Float64`-Werte.
 **Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
 gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
 bestätigt leer sein; der sichtbare Wirkbereich muss zum aktuellen Ausschnitt
-passen und tatsächlich gezeichnet sein. Bei Bewegung gehört das angenommene
+passen und von der GPU fertig gezeichnet sein. Das bloße Einreichen eines Frames
+genügt für die nächste Dosis nicht; die Prüfung blockiert den Eingabethread nicht.
+Diese Rückmeldung ist kein Nachweis der ersten physischen Bildschirmpräsentation.
+Bei Bewegung gehört das angenommene
 Segment dazu. Eine reguläre numerische Übersicht auf dem gewählten Maßstab und
 ein gezeichneter leerer Ozean sind gültige Grundlagen. Ein alter Ersatzframe,
 eine Ladefläche oder bloß vorhandene Daten genügen nicht.

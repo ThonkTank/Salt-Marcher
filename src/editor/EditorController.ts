@@ -1,11 +1,11 @@
 import type {
   AtlasDesktop,
-  CommitReceipt,
   PreparedDocument,
   ProjectInfo,
   SourceBoundary,
 } from "./bridge";
 import { editorBudgets } from "./budgets";
+import { ProjectSession } from "./ProjectSession";
 import {
   brushTarget,
   brushPathBounds,
@@ -24,7 +24,6 @@ import {
   heightSpacing,
   intersectsBounds,
   type Bounds,
-  type ChangeSet,
   type HeightBrush,
   type HeightSegment,
   type Point,
@@ -68,6 +67,23 @@ interface LocalReadiness {
   frame: number;
   viewGeneration: number;
 }
+interface SourceDemand {
+  document: EditorDocument;
+  viewGeneration: number;
+  bounds: Bounds;
+  power: number;
+  minLevel: number;
+  toolBounds: Bounds;
+  toolLevel: number;
+  key: string;
+}
+
+type SourceReadState =
+  | { kind: "idle" }
+  | { kind: "ready"; key: string }
+  | { kind: "loading"; promise: Promise<void> }
+  | { kind: "failed"; key: string };
+
 const brushBounds = (point: Point, radius: number): Bounds =>
   clipBounds([
     point[0] - radius,
@@ -80,18 +96,12 @@ export class EditorController {
   readonly observation: Observation;
   readonly world: WorldRenderer;
   private doc!: EditorDocument;
-  private project!: ProjectInfo;
+  private readonly session: ProjectSession;
   private brushState: BrushState = { kind: "idle" };
   private pan: { x: number; y: number; camera: Camera } | null = null;
-  private writeQueue: Promise<void> = Promise.resolve();
-  // These are the existing bounded ChangeSets, not another work queue or copy.
-  // Keep them until an authoritative receipt also makes retry/reconciliation safe.
-  private readonly unconfirmedWrites = new Map<number, ChangeSet>();
-  private writeError: Error | null = null;
-  private recovering = false;
   private releaseFileAction: () => void;
-  private pendingWrites = 0;
-  private loadToken = 0;
+  private desiredNeed: SourceDemand | null = null;
+  private readState: SourceReadState = { kind: "idle" };
   private awaitingDose: {
     sessionId: string;
     bounds: Bounds;
@@ -101,15 +111,11 @@ export class EditorController {
   } | null = null;
   private intervalId = 0;
   private inputId = 0;
-  private loadRequested = false;
   private animation = 0;
   private lastFrameAt = 0;
-  private viewRead: Promise<void> | null = null;
-  private viewLoadPending = false;
   private resizeObserver: ResizeObserver;
   private work: Worker | null = null;
   private disposed = false;
-  private fileActionOwner: "renderer" | "native" | null = null;
   private pointer: Point = [0, 0];
   private backgroundStats: Record<string, unknown> = { active: false };
   private backgroundStarting = false;
@@ -143,11 +149,17 @@ export class EditorController {
   ) {
     this.observation = new Observation(bridge.diagnostics);
     this.world = new WorldRenderer(this.observation);
+    this.session = new ProjectSession(bridge, {
+      changed: () => this.publish(),
+      persisted: (receipt) =>
+        this.observation.event("persisted", { ...receipt }),
+      failed: this.fail,
+    });
     this.releaseFileAction = bridge.onFileAction(async (request) => {
       if (request.kind === "prepare") return this.prepareFileAction("native");
       if (request.kind === "recover") {
         await this.recoverWrites();
-        return this.preparedDocument();
+        return this.session.preparedDocument();
       }
       this.resumeFileAction("native");
       if (request.error) this.fail(new Error(request.error));
@@ -155,7 +167,6 @@ export class EditorController {
     });
     this.resizeObserver = new ResizeObserver(() => {
       this.finishGesture(undefined, "resize");
-      this.loadToken++;
       const bounds = (
         this.canvas.parentElement ?? this.canvas
       ).getBoundingClientRect();
@@ -210,8 +221,6 @@ export class EditorController {
   }
 
   private setProject(info: ProjectInfo): void {
-    this.loadToken++;
-    this.project = info;
     this.doc = new EditorDocument(info.sessionId, {
       sequence: info.sequence,
       empty: info.sourceTiles === 0,
@@ -222,11 +231,10 @@ export class EditorController {
     });
     this.brushState = { kind: "idle" };
     this.awaitingDose = null;
-    this.loadRequested = false;
+    this.desiredNeed = null;
+    this.readState = { kind: "idle" };
     this.observation.reset();
-    this.writeQueue = Promise.resolve();
-    this.unconfirmedWrites.clear();
-    this.writeError = null;
+    this.session.attach(this.doc, info);
     this.backgroundStats = { active: false };
     this.work?.postMessage({ cancel: true });
     this.world.reset(this.doc);
@@ -234,10 +242,7 @@ export class EditorController {
     this.world.refresh();
     this.publish({
       title: info.title,
-      saved: info.savedSequence === info.sequence,
       error: null,
-      loading: true,
-      message: "Kartenausschnitt wird geladen …",
       background: false,
     });
   }
@@ -247,42 +252,41 @@ export class EditorController {
   }
 
   private publish(
-    change: Partial<EditorState> = {},
+    change: Partial<
+      Pick<
+        EditorState,
+        | "mode"
+        | "diameter"
+        | "amount"
+        | "grid"
+        | "title"
+        | "error"
+        | "background"
+      >
+    > = {},
     readiness = this.localReadiness(),
   ): void {
     const previous = this.state;
     this.state = { ...this.state, ...change };
     this.state = {
       ...this.state,
-      canUndo:
-        !this.writeError &&
-        !this.changingProject &&
-        !this.recovering &&
-        (this.doc?.canUndo ?? false),
-      canRedo:
-        !this.writeError &&
-        !this.changingProject &&
-        !this.recovering &&
-        (this.doc?.canRedo ?? false),
-      persistenceError: this.writeError?.message ?? null,
-      recovering: this.recovering,
-      fileAction: this.changingProject,
+      canUndo: this.session.editable && (this.doc?.canUndo ?? false),
+      canRedo: this.session.editable && (this.doc?.canRedo ?? false),
+      persistenceError: this.session.error?.message ?? null,
+      recovering: this.session.recovering,
+      fileAction: this.session.changingProject,
       scale: this.world.camera.scale,
       sequence: this.doc?.sequence ?? 0,
       level: this.currentBrush().level,
-      writing: this.pendingWrites > 0,
-      saved: Boolean(
-        this.doc &&
-        this.project?.savedSequence === this.doc.sequence &&
-        !this.doc.active,
-      ),
+      writing: this.session.writing,
+      saved: this.session.saved,
       loading:
         readiness.reason === "sources" ||
         readiness.reason === "terrain" ||
         (readiness.reason === "feedback" && !this.stroke),
       needsPress: this.brushState.kind === "blocked",
     };
-    this.state.message = this.recovering
+    this.state.message = this.session.recovering
       ? "Speicherstand wird geprüft …"
       : this.state.persistenceError
         ? "Speicherfehler: Änderungen bleiben im Editor erhalten"
@@ -294,7 +298,7 @@ export class EditorController {
               ? "Zeiger außerhalb des sichtbaren Kartenbereichs"
               : this.state.needsPress
                 ? "Zum Bearbeiten loslassen und erneut drücken"
-                : this.changingProject
+                : this.session.changingProject
                   ? "Projekt wird geöffnet …"
                   : "Bereit";
     if (
@@ -308,7 +312,7 @@ export class EditorController {
   private fail = (error: unknown): void => {
     const message = error instanceof Error ? error.message : String(error);
     this.observation.event("error", { message });
-    this.publish({ error: message, message });
+    this.publish({ error: message });
   };
 
   run(operation: () => void | Promise<void>): void {
@@ -384,7 +388,6 @@ export class EditorController {
 
   private navigate(camera: Camera, input: number): void {
     this.finishGesture(undefined, "navigation");
-    this.loadToken++;
     this.world.moveCamera(this.clampedCamera(camera));
     this.world.refresh();
     this.releaseOffscreenFeedback();
@@ -417,40 +420,63 @@ export class EditorController {
     this.navigate({ x, y, scale }, this.input(event, "navigation"));
   }
 
+  /** One current demand, not a queue of camera/hover requests. */
   private scheduleLoad(): void {
-    this.loadRequested = true;
+    if (!this.doc || this.disposed) return;
+    const local = this.localReadiness();
+    const viewGeneration = this.world.state().viewGeneration;
+    const power = this.world.presentationPower();
+    const bounds = this.world.sourceBounds();
+    const key = [
+      this.doc.sessionId,
+      viewGeneration,
+      power,
+      ...bounds,
+      local.brush.level,
+      ...local.bounds,
+    ].join(":");
+    if (this.desiredNeed?.key === key) return;
+    this.desiredNeed = {
+      document: this.doc,
+      viewGeneration,
+      bounds,
+      power,
+      minLevel: minimumCoarseHeightLevel(power),
+      toolBounds: local.bounds,
+      toolLevel: local.brush.level,
+      key,
+    };
+    this.retainViewSources();
   }
 
-  /** Apply at most one ready dose before drawing it in this same frame. */
+  /** Apply one ready dose, then draw; completion is polled before accepting more. */
   private frame = (now: number): void => {
     if (this.disposed) return;
     const start = performance.now();
+    let doseSubmitted = false;
     try {
-      if (this.loadRequested) {
-        this.loadRequested = false;
-        void this.loadView().catch(this.fail);
-      }
+      if (!this.pollCompletedFeedback()) return;
+      const read = this.pumpRead();
+      if (read) void read.catch(this.fail);
       this.advanceHeldBrush(performance.now());
       const submission = this.world.renderFrame(now);
       if (submission) {
         this.observation.submitted(submission, (bounds) =>
-          this.world.inspectRegion(bounds),
+          this.world.inspectSubmittedRegion(bounds),
         );
-        if (
-          this.awaitingDose?.sessionId === submission.sessionId &&
-          this.world.inspectRegion(this.awaitingDose.bounds).status ===
-            "current"
-        )
-          this.awaitingDose = null;
+        this.releaseCompletedDose();
+        doseSubmitted = Boolean(
+          this.awaitingDose &&
+          this.world.inspectSubmittedRegion(this.awaitingDose.bounds).status ===
+            "current",
+        );
         this.checkLocalReady();
       }
     } catch (error) {
       this.fail(error);
     } finally {
-      // A normal pending dose may draw on this attempt without losing its next
-      // interval to pointer-event frequency. Only an unsuccessful draw consumes
-      // waiting time and travel; this phase can never create another dose.
-      if (this.awaitingDose)
+      // Waiting time and travel never become catch-up work after a slow draw.
+      if (this.awaitingDose && !doseSubmitted)
         this.advanceHeldBrush(performance.now(), "after-draw");
       if (this.lastFrameAt)
         this.observation.event("frame", {
@@ -462,9 +488,72 @@ export class EditorController {
     }
   };
 
-  private async ensure(bounds: Bounds, minLevel: number): Promise<boolean> {
-    if (this.doc.isReady(bounds, HEIGHT_LEVELS.slice(minLevel))) return true;
-    const document = this.doc;
+  /** Input between RAFs may use a completed fence; this never waits or paints. */
+  private pollCompletedFeedback(): boolean {
+    try {
+      if (this.world.pollCompletion()) {
+        this.releaseCompletedDose();
+        this.checkLocalReady();
+      }
+      return true;
+    } catch (error) {
+      this.fail(error);
+      return false;
+    }
+  }
+
+  private releaseCompletedDose(): void {
+    if (
+      this.awaitingDose?.sessionId === this.doc.sessionId &&
+      this.world.inspectRegion(this.awaitingDose.bounds).status === "current"
+    )
+      this.awaitingDose = null;
+  }
+
+  private currentView(
+    document: EditorDocument,
+    viewGeneration: number,
+  ): boolean {
+    return (
+      !this.disposed &&
+      document === this.doc &&
+      viewGeneration === this.world.state().viewGeneration
+    );
+  }
+
+  /** Reads may pass a queued write; acknowledged state must never regress. */
+  private async readCurrent<T extends SourceBoundary>(
+    document: EditorDocument,
+    read: () => Promise<T>,
+    consume: (reply: T) => void,
+    viewGeneration = this.world.state().viewGeneration,
+  ): Promise<boolean> {
+    const current = () => this.currentView(document, viewGeneration);
+    while (current()) {
+      const reply = await read().catch((error: unknown) => {
+        if (!current()) return null;
+        throw error;
+      });
+      if (!reply || !current() || reply.sessionId !== document.sessionId)
+        return false;
+      if (!Number.isSafeInteger(reply.sequence) || reply.sequence < 0)
+        throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
+      if (reply.sequence >= document.persistedSequence) {
+        // Import and local projection are one synchronous boundary. An ACK must
+        // not release their required patches between validation and projection.
+        consume(reply);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private readRegion(
+    document: EditorDocument,
+    bounds: Bounds,
+    minLevel: number,
+    viewGeneration: number,
+  ): Promise<boolean> {
     return this.readCurrent(
       document,
       () =>
@@ -488,133 +577,154 @@ export class EditorController {
           bytes: reply.tiles.reduce((n, tile) => n + tile.values.byteLength, 0),
         });
       },
+      viewGeneration,
     );
   }
 
-  /** Reads may pass a queued write; an acknowledged newer state must never regress. */
-  private async readCurrent<T extends SourceBoundary>(
-    document: EditorDocument,
-    read: () => Promise<T>,
-    consume: (reply: T) => void,
-    token = this.loadToken,
-  ): Promise<boolean> {
-    const current = () =>
-      !this.disposed && document === this.doc && token === this.loadToken;
-    while (current()) {
-      const reply = await read().catch((error: unknown) => {
-        if (!current()) return null;
+  private startRead(key: string, read: () => Promise<void>): Promise<void> {
+    const pending = read()
+      .catch((error: unknown) => {
+        if (
+          this.readState.kind === "loading" &&
+          this.readState.promise === pending
+        )
+          this.readState = { kind: "failed", key };
         throw error;
+      })
+      .finally(() => {
+        if (
+          this.readState.kind === "loading" &&
+          this.readState.promise === pending
+        )
+          this.readState = { kind: "idle" };
       });
-      if (!reply || !current() || reply.sessionId !== document.sessionId)
-        return false;
-      // The acknowledgement released its local patches. Read the actual store
-      // again rather than trying to project a response older than those patches.
-      if (!Number.isSafeInteger(reply.sequence) || reply.sequence < 0)
-        throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
-      if (reply.sequence >= document.persistedSequence) {
-        // Validation and projection are synchronous together: an ack must not
-        // release the patches in an extra await between these two steps.
-        consume(reply);
-        return true;
-      }
-    }
-    return false;
+    this.readState = { kind: "loading", promise: pending };
+    return pending;
   }
 
-  private loadView(): Promise<void> {
-    this.viewLoadPending = true;
-    if (!this.viewRead) {
-      this.viewRead = (async () => {
-        while (this.viewLoadPending && !this.disposed) {
-          this.viewLoadPending = false;
-          await this.readView();
-        }
-      })().finally(() => {
-        this.viewRead = null;
-        // A newer hover/brush request can arrive after the loop ended but before
-        // this promise settled. It still represents the current need, not a queue.
-        if (this.viewLoadPending && !this.disposed)
-          void this.loadView().catch(this.fail);
-      });
+  /** Start just the next missing part. The next frame considers the newest need. */
+  private pumpRead(): Promise<void> | null {
+    if (this.readState.kind === "loading") return null;
+    const need = this.desiredNeed;
+    if (!need || !this.currentView(need.document, need.viewGeneration))
+      return null;
+    if (this.readState.kind === "ready" && this.readState.key === need.key)
+      return null;
+    const { document, bounds, power, minLevel, viewGeneration } = need;
+    const presentation = !this.world.isPresentationReady(bounds, power);
+    const tool = !document.isReady(
+      need.toolBounds,
+      HEIGHT_LEVELS.slice(need.toolLevel),
+    );
+    if (!presentation && !tool) {
+      this.readState = { kind: "ready", key: need.key };
+      return null;
     }
-    return this.viewRead;
-  }
-
-  private retainViewSources(bounds: Bounds, minLevel: number): void {
-    const local = this.localReadiness();
-    const removed = this.doc.retainSources([
-      { bounds, minLevel },
-      { bounds: local.bounds, minLevel: local.brush.level },
-    ]);
-    this.world.forgetSources(removed);
-  }
-
-  private async readView(): Promise<void> {
-    const token = ++this.loadToken;
-    const document = this.doc;
-    const power = this.world.presentationPower();
-    const minLevel = minimumCoarseHeightLevel(power);
-    const bounds = this.world.sourceBounds();
-    this.retainViewSources(bounds, minLevel);
-    if (!this.world.isPresentationReady(bounds, power)) {
-      this.checkLocalReady();
-      const loaded = await this.readCurrent(
-        document,
-        () =>
-          this.bridge.readPresentation({
-            sessionId: document.sessionId,
-            bounds,
-            power,
-          }),
-        (reply) => {
-          document.acceptCoverage(
-            bounds,
-            reply.tiles,
-            reply.sequence,
-            reply.sessionId,
-            minLevel,
-          );
-          const projected = projectHeightOverviewPatches(
-            reply.overviews,
-            reply.overviewKeys,
-            document.presentationPatchesAfter(reply.sequence),
-          );
-          this.world.updatePresentation(
-            document.snapshot(bounds, HEIGHT_LEVELS.slice(minLevel)).tiles,
-            projected,
-            reply.overviewKeys,
-            true,
-          );
-          this.observation.event("sources", {
-            sessionId: reply.sessionId,
-            bounds,
-            power,
-            tiles: reply.tiles.length,
-            bytes: reply.tiles.reduce(
-              (n, tile) => n + tile.values.byteLength,
-              0,
-            ),
-            overviewTiles: reply.overviews.length,
-            overviewBytes: reply.overviews.reduce(
-              (n, tile) => n + tile.values.byteLength,
-              0,
-            ),
-          });
-        },
-        token,
-      );
-      if (!loaded) return;
-    }
-    if (this.disposed || token !== this.loadToken || document !== this.doc)
-      return;
-    // Hover/brush settings may have changed during the presentation read. Keep
-    // the current complete tool halo before loading it, not the earlier one.
-    this.retainViewSources(bounds, minLevel);
-    const { bounds: needed, brush } = this.localReadiness();
-    await this.ensure(needed, brush.level);
-    if (this.disposed || token !== this.loadToken || document !== this.doc)
-      return;
+    const key = `${need.key}:${presentation ? "presentation" : "tool"}`;
+    if (this.readState.kind === "failed" && this.readState.key === key)
+      return null;
     this.checkLocalReady();
+    return this.startRead(key, async () => {
+      if (presentation) {
+        await this.readCurrent(
+          document,
+          () =>
+            this.bridge.readPresentation({
+              sessionId: document.sessionId,
+              bounds,
+              power,
+            }),
+          (reply) => {
+            document.acceptCoverage(
+              bounds,
+              reply.tiles,
+              reply.sequence,
+              reply.sessionId,
+              minLevel,
+            );
+            const projected = projectHeightOverviewPatches(
+              reply.overviews,
+              reply.overviewKeys,
+              document.presentationPatchesAfter(reply.sequence),
+            );
+            this.world.updatePresentation(
+              document.snapshot(bounds, HEIGHT_LEVELS.slice(minLevel)).tiles,
+              projected,
+              reply.overviewKeys,
+            );
+            this.observation.event("sources", {
+              sessionId: reply.sessionId,
+              bounds,
+              power,
+              tiles: reply.tiles.length,
+              bytes: reply.tiles.reduce(
+                (n, tile) => n + tile.values.byteLength,
+                0,
+              ),
+              overviewTiles: reply.overviews.length,
+              overviewBytes: reply.overviews.reduce(
+                (n, tile) => n + tile.values.byteLength,
+                0,
+              ),
+            });
+          },
+          viewGeneration,
+        );
+      } else {
+        await this.readRegion(
+          document,
+          need.toolBounds,
+          need.toolLevel,
+          viewGeneration,
+        );
+      }
+      if (document === this.doc && !this.disposed) {
+        this.retainViewSources();
+        this.checkLocalReady();
+      }
+    });
+  }
+
+  /** Initial/project loading waits on the same single read state used by RAF. */
+  private async loadView(): Promise<void> {
+    this.scheduleLoad();
+    while (!this.disposed) {
+      const pending =
+        this.readState.kind === "loading"
+          ? this.readState.promise
+          : this.pumpRead();
+      if (!pending) return;
+      await pending;
+    }
+  }
+
+  private retainViewSources(): void {
+    const need = this.desiredNeed;
+    if (!need || need.document !== this.doc) return;
+    this.world.forgetSources(
+      this.doc.retainSources([
+        { bounds: need.bounds, minLevel: need.minLevel },
+        { bounds: need.toolBounds, minLevel: need.toolLevel },
+      ]),
+    );
+  }
+
+  /** The optional diagnostic sampler shares the same bounded read slot. */
+  private async ensure(bounds: Bounds, minLevel: number): Promise<boolean> {
+    const document = this.doc;
+    while (this.readState.kind === "loading") await this.readState.promise;
+    if (document !== this.doc || this.disposed) return false;
+    if (document.isReady(bounds, HEIGHT_LEVELS.slice(minLevel))) return true;
+    let loaded = false;
+    await this.startRead(`diagnostic:${document.sessionId}`, async () => {
+      loaded = await this.readRegion(
+        document,
+        bounds,
+        minLevel,
+        this.world.state().viewGeneration,
+      );
+    });
+    return loaded;
   }
 
   private toolPoint(): Point {
@@ -667,7 +777,7 @@ export class EditorController {
     const reason =
       !inWorld || !visible
         ? "outside"
-        : this.writeError || this.changingProject || this.recovering
+        : !this.session.editable
           ? "busy"
           : !sourcesReady
             ? "sources"
@@ -720,6 +830,7 @@ export class EditorController {
   }
 
   retryLoad(): void {
+    if (this.readState.kind !== "loading") this.readState = { kind: "idle" };
     this.publish({ error: null });
     this.scheduleLoad();
     this.world.refresh();
@@ -728,6 +839,7 @@ export class EditorController {
 
   private down = (event: PointerEvent): void => {
     if (event.button !== 0 && event.button !== 1) return;
+    if (!this.pollCompletedFeedback()) return;
     this.canvas.focus();
     this.canvas.setPointerCapture(event.pointerId);
     const input = this.input(
@@ -815,6 +927,7 @@ export class EditorController {
   }
 
   private move = (event: PointerEvent): void => {
+    if (!this.pollCompletedFeedback()) return;
     this.updatePointer(event);
     if (this.pan) {
       const camera = {
@@ -863,6 +976,7 @@ export class EditorController {
   };
 
   private up = (event: PointerEvent): void => {
+    if (!this.pollCompletedFeedback()) return;
     if (this.pan) {
       this.pan = null;
       return;
@@ -1126,39 +1240,16 @@ export class EditorController {
           sequence: change.sequence,
           revision: change.revision,
         },
-        (bounds) => this.world.inspectRegion(bounds),
+        (bounds) => this.world.inspectSubmittedRegion(bounds),
       );
     // Applied terrain already requests its own draw. Finalizing unchanged
     // pixels needs no extra frame; pending terrain and cursor changes still do.
-    this.persist(change);
+    this.persist();
   }
 
-  private persist(change: ChangeSet): void {
-    this.unconfirmedWrites.set(change.sequence, change);
-    this.pendingWrites++;
-    this.publish({ saved: false });
-    const document = this.doc;
-    this.writeQueue = this.writeQueue
-      .then(async () => {
-        const receipt = await this.bridge.commit(change);
-        if (document === this.doc) this.acceptReceipt(change, receipt);
-        this.observation.event("persisted", {
-          sequence: receipt.sequence,
-          sessionId: receipt.sessionId,
-        });
-      })
-      .catch((error: unknown) => {
-        this.writeError =
-          error instanceof Error ? error : new Error(String(error));
-        this.fail(this.writeError);
-        throw error;
-      })
-      .finally(() => {
-        this.pendingWrites--;
-        this.publish();
-      });
-    // The queue preserves rejection; this handler only prevents an unhandled rejection.
-    void this.writeQueue.catch(() => {});
+  private persist(): void {
+    this.session.persist();
+    this.publish();
   }
 
   undo(): void {
@@ -1168,7 +1259,12 @@ export class EditorController {
     this.history(true);
   }
   private history(redo: boolean): void {
-    if (this.writeError || this.changingProject || this.recovering) return;
+    if (
+      this.session.error ||
+      this.session.changingProject ||
+      this.session.recovering
+    )
+      return;
     this.finishGesture(undefined, "history");
     try {
       const change = redo ? this.doc.redo() : this.doc.undo();
@@ -1179,7 +1275,7 @@ export class EditorController {
       for (const bounds of change.dirtyBounds) {
         this.world.invalidate(bounds);
       }
-      this.persist(change);
+      this.persist();
       this.publish();
     } catch (error) {
       this.fail(error);
@@ -1187,34 +1283,10 @@ export class EditorController {
   }
 
   async save(saveAs = false): Promise<void> {
-    if (this.changingProject) return;
+    if (this.session.changingProject) return;
     this.finishGesture(undefined, "save");
-    const document = this.doc;
-    if (this.writeError) await this.recoverWrites();
-    // Include writes accepted while an earlier write was still being acknowledged.
-    for (;;) {
-      const queue = this.writeQueue;
-      await queue;
-      if (queue === this.writeQueue) break;
-    }
-    if (document !== this.doc)
-      throw new Error("Das Projekt wurde inzwischen gewechselt.");
-    const result = await this.bridge.saveProject({
-      sessionId: document.sessionId,
-      sequence: document.sequence,
-      saveAs,
-    });
-    if (result && document === this.doc) {
-      this.project.savedSequence = result.savedSequence;
-      this.project.path = result.path;
-      this.publish({
-        saved:
-          this.doc.sequence === result.savedSequence &&
-          !this.doc.active &&
-          !this.stroke,
-        message: "Projektdatei gespeichert",
-      });
-    }
+    await this.session.save(saveAs);
+    this.publish();
   }
 
   async open(): Promise<void> {
@@ -1224,12 +1296,10 @@ export class EditorController {
     await this.changeProject(true);
   }
   private async changeProject(empty: boolean): Promise<void> {
-    if (this.changingProject) return;
+    if (this.session.changingProject) return;
     try {
-      const prepared = await this.prepareFileAction();
-      const next = empty
-        ? await this.bridge.newProject(prepared)
-        : await this.bridge.openProject(prepared);
+      await this.prepareFileAction();
+      const next = await this.session.changeProject(empty);
       if (next) {
         this.setProject(next);
         await this.loadView();
@@ -1239,105 +1309,32 @@ export class EditorController {
     }
   }
 
-  private preparedDocument(): PreparedDocument {
-    return {
-      sessionId: this.doc.sessionId,
-      sequence: this.doc.sequence,
-      persistenceError: this.writeError?.message ?? null,
-    };
-  }
-
-  private get changingProject(): boolean {
-    return this.fileActionOwner !== null;
-  }
-
-  /** Shared by native close and the renderer's New/Open commands. */
+  /** The input owner ends the gesture; the session owns its file/write boundary. */
   private async prepareFileAction(
     owner: "renderer" | "native" = "renderer",
   ): Promise<PreparedDocument> {
-    if (this.changingProject || this.recovering)
-      throw new Error(
-        "Ein Datei- oder Wiederherstellungsvorgang ist bereits offen.",
-      );
-    this.fileActionOwner = owner;
+    this.session.beginFileAction(owner);
     try {
       this.finishGesture(undefined, "file-action");
-      this.publish();
-      await this.writeQueue.catch(() => {});
-      return this.preparedDocument();
+      return await this.session.prepareFileAction();
     } catch (error) {
-      this.resumeFileAction(owner);
+      this.session.endFileAction(owner);
       throw error;
     }
   }
 
   private resumeFileAction(owner: "renderer" | "native" = "renderer"): void {
-    // A rejected native close must not unlock an already running New/Open.
-    if (this.fileActionOwner !== owner) return;
-    this.fileActionOwner = null;
+    this.session.endFileAction(owner);
     this.checkLocalReady();
   }
 
-  private acceptReceipt(change: ChangeSet, receipt: CommitReceipt): void {
-    if (
-      receipt.sessionId !== change.sessionId ||
-      receipt.sequence !== change.sequence ||
-      receipt.transactionId !== change.transactionId
-    )
-      throw new Error(
-        "Die Speicherbestätigung gehört nicht zur ausstehenden Änderung.",
-      );
-    this.doc.acceptPersistence(receipt.sequence);
-    this.unconfirmedWrites.delete(change.sequence);
-  }
-
-  /** Explicit recovery first checks the authoritative store, then verifies/replays IDs. */
   async recoverWrites(): Promise<void> {
-    if (this.recovering)
+    if (this.session.recovering)
       throw new Error("Der Speicherstand wird bereits geprüft.");
-    this.recovering = true;
     this.finishGesture(undefined, "recovery");
-    this.publish();
-    try {
-      await this.writeQueue.catch(() => {});
-      const actual = await this.bridge.status();
-      if (
-        actual.sessionId !== this.doc.sessionId ||
-        actual.sequence < this.doc.persistedSequence ||
-        actual.sequence > this.doc.sequence
-      )
-        throw new Error(
-          "Die Arbeitskopie passt nicht zum erhaltenen Editorstand. Änderungen bleiben im Editor; sie wurden nicht verworfen.",
-        );
-      let checkedSequence = actual.sequence;
-      for (const change of this.unconfirmedWrites.values()) {
-        if (change.sequence > checkedSequence + 1)
-          throw new Error(
-            "Die ausstehenden Änderungen sind nicht lückenlos wiederherstellbar.",
-          );
-        // At/below checkedSequence this only accepts the existing identical
-        // transaction+payload receipt. At +1 the authoritative status proved
-        // absence. ProjectStore checks identity/order again in either case.
-        const receipt = await this.bridge.commit(change);
-        this.acceptReceipt(change, receipt);
-        checkedSequence = Math.max(checkedSequence, receipt.sequence);
-      }
-      if (checkedSequence !== this.doc.sequence)
-        throw new Error(
-          "Die Arbeitskopie enthält noch nicht alle angenommenen Änderungen.",
-        );
-      this.writeQueue = Promise.resolve();
-      this.writeError = null;
-      this.publish({ error: null });
-    } catch (error) {
-      this.writeError =
-        error instanceof Error ? error : new Error(String(error));
-      this.fail(this.writeError);
-      throw error;
-    } finally {
-      this.recovering = false;
-      this.checkLocalReady();
-    }
+    await this.session.recover();
+    this.publish({ error: null });
+    this.checkLocalReady();
   }
 
   async background(): Promise<void> {
@@ -1473,9 +1470,8 @@ export class EditorController {
   destroy(): void {
     this.finishGesture(undefined, "destroy");
     this.disposed = true;
-    this.loadToken++;
     cancelAnimationFrame(this.animation);
-    this.loadRequested = false;
+    this.desiredNeed = null;
     this.resizeObserver.disconnect();
     this.releaseFileAction();
     this.world.destroy();

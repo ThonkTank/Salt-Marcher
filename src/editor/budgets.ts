@@ -8,6 +8,8 @@ export const editorBudgets = Object.freeze({
   pendingWriteBytes: 32 * 1024 * 1024,
   computeWorkers: 2,
   uploadBytesPerFrame: 4 * 1024 * 1024,
+  /** One dense 22-level tile plus its colour pass, or equivalent local work. */
+  compositionWorkPerFrame: 23 * 128 * 128,
   retainedTiles: 96,
   observationEvents: 120_000,
 });

@@ -1863,6 +1863,27 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       ],
     };
   }
+  function probeReport(collected = scenario()) {
+    return {
+      schemaVersion: 5,
+      purpose: "probe",
+      selection: "collection",
+      mode: "lab",
+      // A native preflight marker must not bypass the laboratory's checks.
+      collectionStarted: false,
+      errors: [],
+      functional: { checks: [] },
+      planned: [{ run: "probe-1", id: "M03-height-large", state: "completed" }],
+      runs: [
+        {
+          id: "probe-large",
+          independentRunId: "probe-1",
+          instanceId: "one-process",
+          scenarios: [collected],
+        },
+      ],
+    };
+  }
   it("rejects the saved large-brush failure despite a claimed successful collection", () => {
     const result = evaluateObservation(journal(true), {
       id: "M03-height-large",
@@ -2001,25 +2022,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     ).toBe(false);
   });
   it("keeps a passing selected probe distinct from the fixed native manifest", () => {
-    const report = {
-      schemaVersion: 5,
-      purpose: "probe",
-      selection: "collection",
-      mode: "lab",
-      // A native preflight marker must not bypass the laboratory's checks.
-      collectionStarted: false,
-      errors: [],
-      functional: { checks: [] },
-      planned: [{ run: "probe-1", id: "M03-height-large", state: "completed" }],
-      runs: [
-        {
-          id: "probe-large",
-          independentRunId: "probe-1",
-          instanceId: "one-process",
-          scenarios: [scenario()],
-        },
-      ],
-    };
+    const report = probeReport();
     const result = evaluateRun(report);
     expect(result.scopePassed).toBe(true);
     expect(result.passed).toBe(false);
@@ -2038,6 +2041,99 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
       state: "planned",
     });
     expect(evaluateRun(report).status).toBe("INCOMPLETE");
+  });
+  it("fails the aggregate for a missing draw or input, without accepting a stale cached result", () => {
+    const report = probeReport();
+    const collected = report.runs[0].scenarios[0];
+    expect(evaluateRun(report)).toMatchObject({
+      status: "BLOCKED",
+      scopePassed: true,
+    });
+    collected.samples[1].submissionAt = NaN;
+    expect(evaluateRun(report)).toMatchObject({
+      status: "FAIL",
+      scopePassed: false,
+      failures: expect.arrayContaining([
+        expect.objectContaining({ code: "MISSING_SUBMISSION", inputId: 2 }),
+      ]),
+    });
+    report.runs[0].scenarios = [scenario()];
+    report.runs[0].scenarios[0].samples.splice(1, 1);
+    expect(evaluateRun(report)).toMatchObject({
+      status: "FAIL",
+      failures: expect.arrayContaining([
+        expect.objectContaining({ code: "ATTEMPT_INPUT_ASSIGNMENT_INVALID" }),
+      ]),
+    });
+    report.runs[0].scenarios = [scenario()];
+    expect(evaluateRun(report)).toMatchObject({
+      status: "BLOCKED",
+      scopePassed: true,
+    });
+    report.runs[0].scenarios[0].attempts = [];
+    report.runs[0].scenarios[0].requestedAttempts = 0;
+    expect(evaluateRun(report)).toMatchObject({
+      status: "INCOMPLETE",
+      scopePassed: false,
+      missing: expect.arrayContaining([
+        expect.objectContaining({ code: "SCENARIO_CONTENT_EVIDENCE_MISSING" }),
+      ]),
+    });
+    expect(evaluateRun(probeReport()).scopePassed).toBe(true);
+  });
+  it("keeps duplicate and unassigned gestures in the aggregate even when the indexed attempt passes", () => {
+    const duplicate = probeReport();
+    const collected = duplicate.runs[0].scenarios[0];
+    collected.samples.push(...stroke());
+    expect(evaluateRun(duplicate)).toMatchObject({
+      status: "FAIL",
+      failures: expect.arrayContaining([
+        expect.objectContaining({ code: "DUPLICATE_INPUT_SAMPLES" }),
+      ]),
+    });
+
+    const unassigned = probeReport();
+    unassigned.runs[0].scenarios[0].samples.push(
+      ...stroke().map((entry) => ({
+        ...entry,
+        inputId: entry.inputId + 10,
+        createdAt: entry.createdAt + 200,
+        handlerAt: entry.handlerAt + 200,
+        modelAt: entry.modelAt + 200,
+        submissionAt: entry.submissionAt + 200,
+      })),
+    );
+    expect(evaluateRun(unassigned)).toMatchObject({
+      status: "FAIL",
+      failures: expect.arrayContaining([
+        expect.objectContaining({ code: "UNASSIGNED_GESTURE_INPUTS" }),
+      ]),
+    });
+
+    const doubleAssignment = probeReport();
+    const indexed = doubleAssignment.runs[0].scenarios[0];
+    indexed.attempts.push({ ...indexed.attempts[0], attempt: 1 });
+    indexed.requestedAttempts = 2;
+    expect(evaluateRun(doubleAssignment)).toMatchObject({
+      status: "FAIL",
+      failures: expect.arrayContaining([
+        expect.objectContaining({ code: "ATTEMPT_INPUT_ASSIGNMENT_INVALID" }),
+      ]),
+    });
+    const missingIdentity = probeReport();
+    missingIdentity.runs[0].independentRunId = "";
+    missingIdentity.runs[0].scenarios[0].samples[1].submissionAt = Number.NaN;
+    expect(evaluateRun(missingIdentity)).toMatchObject({
+      status: "FAIL",
+      failures: expect.arrayContaining([
+        expect.objectContaining({ code: "INDEPENDENT_RUN_ID_MISSING" }),
+        expect.objectContaining({ code: "MISSING_SUBMISSION" }),
+      ]),
+    });
+    expect(evaluateRun(probeReport())).toMatchObject({
+      status: "BLOCKED",
+      scopePassed: true,
+    });
   });
 });
 

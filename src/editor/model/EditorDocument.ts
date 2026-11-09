@@ -90,6 +90,7 @@ interface HistoryAction {
 }
 
 interface Gesture {
+  id: number;
   brush: HeightBrush;
   before: Map<string, HeightTile | null>;
   cells: Map<string, Set<number>>;
@@ -97,6 +98,13 @@ interface Gesture {
   /** Reserved before/after payloads if this live action finishes now. */
   retainedBytes: number;
   bounds: Bounds | null;
+}
+
+/** Borrowed immutable before-images. Consumers must not mutate or transfer buffers. */
+export interface HeightGestureAnchor {
+  id: number;
+  level: number;
+  before: ReadonlyMap<string, HeightTile | null>;
 }
 
 export class SourcesNotReadyError extends Error {
@@ -198,11 +206,12 @@ export class EditorDocument {
   private readonly entries = new Map<string, Entry>();
   private coverage: SourceNeed[] = [];
   private gesture: Gesture | null = null;
+  private gestureId = 0;
   private history: HistoryAction[] = [];
   private historyPosition = 0;
   private readonly pending = new Map<
     number,
-    { bytes: number; patches: readonly HeightPatch[] }
+    { bytes: number; change: ChangeSet }
   >();
   private sourceBytes = 0;
   private historyBytes = 0;
@@ -238,6 +247,37 @@ export class EditorDocument {
 
   get active(): boolean {
     return this.gesture !== null;
+  }
+
+  activeHeightGesture(): HeightGestureAnchor | null {
+    const gesture = this.gesture;
+    return gesture
+      ? { id: gesture.id, level: gesture.brush.level, before: gesture.before }
+      : null;
+  }
+
+  /** The one accepted-change journal, borrowed read-only by the ordered writer. */
+  pendingChanges(): readonly ChangeSet[] {
+    return [...this.pending.values()].map(({ change }) => change);
+  }
+
+  /** Receipts release both retry data and projection data at one boundary. */
+  acknowledge(receipt: {
+    sessionId: string;
+    sequence: number;
+    transactionId: string;
+  }): void {
+    const change = this.pending.values().next().value?.change;
+    if (
+      !change ||
+      receipt.sessionId !== this.sessionId ||
+      receipt.sequence !== change.sequence ||
+      receipt.transactionId !== change.transactionId
+    )
+      throw new Error(
+        "Die Speicherbestätigung gehört nicht zur ausstehenden Änderung.",
+      );
+    this.acceptPersistence(receipt.sequence);
   }
   get canUndo(): boolean {
     return !this.active && this.historyPosition > 0;
@@ -516,6 +556,7 @@ export class EditorDocument {
         "Höhenpinsel zu groß; eine gröbere Autorenstufe wählen.",
       );
     this.gesture = {
+      id: ++this.gestureId,
       brush: { ...brush },
       before: new Map(),
       cells: new Map(),
@@ -783,17 +824,25 @@ export class EditorDocument {
   ): ChangeSet {
     this.sequence++;
     const bytes = retainedPatchBytes(patches);
-    this.pending.set(this.sequence, { bytes, patches });
-    this.pendingBytes += bytes;
-    return {
+    const change: ChangeSet = {
       sessionId: this.sessionId,
       transactionId: `${this.sessionId}:${this.sequence}`,
       sequence: this.sequence,
       revision: this.revision,
       label,
-      patches: patches.map(copyPatch),
+      // These immutable snapshots are also owned by history. Live sources never
+      // mutate them; the writer and overview projection borrow this one record.
+      patches,
       dirtyBounds: dirtyBounds.map((b) => [...b]),
     };
+    for (const patch of patches) Object.freeze(patch);
+    Object.freeze(patches);
+    for (const bounds of change.dirtyBounds) Object.freeze(bounds);
+    Object.freeze(change.dirtyBounds);
+    Object.freeze(change);
+    this.pending.set(this.sequence, { bytes, change });
+    this.pendingBytes += bytes;
+    return change;
   }
 
   undo(): ChangeSet | null {
@@ -835,8 +884,10 @@ export class EditorDocument {
       const target = forward ? patch.after : patch.before;
       return {
         key: patch.key,
-        before: expected && cloneHeightTile(expected),
-        after: target ? { ...cloneHeightTile(target), revision } : null,
+        // History snapshots are immutable. Only their descriptor needs the new
+        // revision; the separately cloned live source remains mutable below.
+        before: expected,
+        after: target ? { ...target, revision } : null,
       };
     });
     const nextSourceBytes =
@@ -908,7 +959,7 @@ export class EditorDocument {
     )
       throw new Error("Die gelesene Übersicht ist nicht mehr aktuell.");
     const patches: HeightPatch[] = [];
-    for (const [pendingSequence, change] of this.pending)
+    for (const [pendingSequence, { change }] of this.pending)
       if (pendingSequence > sequence)
         patches.push(...change.patches.map(copyPatch));
     for (const [key, before] of this.gesture?.before ?? []) {

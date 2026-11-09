@@ -22,10 +22,12 @@ uniform sampler2D uAuthors;
 uniform sampler2D uDescriptor;
 uniform sampler2D uOverview;
 uniform sampler2D uWeights;
-uniform sampler2D uFallbackPixels;
+uniform sampler2D uAnchor;
 uniform int uLevelCount;
-uniform int uFallback;
 uniform int uHasOverview;
+uniform int uDelta;
+uniform int uPageStride;
+uniform vec4 uDirty;
 uniform vec4 uClip;
 
 // A non-overlapping high/low pair keeps coefficient residuals, fractional
@@ -66,11 +68,11 @@ void main() {
     finalColor = vec4(0.0);
     return;
   }
-  if (uFallback != 0) {
-    finalColor = texelFetch(uFallbackPixels, pixel, 0);
+  vec2 total = uDelta != 0 ? texelFetch(uAnchor, pixel, 0).rg : vec2(-3.125, 0.0);
+  if (uDelta != 0 && (float(pixel.x) < uDirty.x || float(pixel.y) < uDirty.y || float(pixel.x) >= uDirty.z || float(pixel.y) >= uDirty.w)) {
+    finalColor = vec4(total, 0.0, 1.0);
     return;
   }
-  vec2 total = vec2(-3.125, 0.0);
   int atlasWidth = textureSize(uAuthors, 0).x;
   for (int level = 0; level < 22; level++) {
     if (level >= uLevelCount) break;
@@ -78,7 +80,7 @@ void main() {
     int iy = int(texelFetch(uWeights, ivec2(pixel.y * 5, level * 2 + 1), 0).r);
     int pageX = ix / 64;
     int pageY = iy / 64;
-    int tableIndex = pageY * 3 + pageX;
+    int tableIndex = pageY * uPageStride + pageX;
     vec4 pages = texelFetch(uDescriptor, ivec2(tableIndex / 4, level), 0);
     int page = int(pages[tableIndex % 4]);
     if (page < 0) continue;
@@ -102,7 +104,31 @@ void main() {
   }
   if (uHasOverview != 0)
     total = addPair(total, texelFetch(uOverview, pixel, 0).rg);
-  vec2 height = scalePair(total, 32.0);
+  finalColor = vec4(total, 0.0, 1.0);
+}`;
+
+/** Colour classification is a separate cheap pass over the unclamped result. */
+export const heightColourFragment = `#version 300 es
+precision highp float;
+precision highp int;
+in vec2 vUV;
+out vec4 finalColor;
+uniform sampler2D uHeights;
+uniform sampler2D uFallbackPixels;
+uniform int uFallback;
+uniform vec4 uClip;
+${heightFragment.slice(heightFragment.indexOf("vec2 addPair"), heightFragment.indexOf("void main()"))}
+void main() {
+  ivec2 pixel = clamp(ivec2(floor(vUV * 128.0)), ivec2(0), ivec2(127));
+  if (float(pixel.x) < uClip.x || float(pixel.y) < uClip.y || float(pixel.x) >= uClip.z || float(pixel.y) >= uClip.w) {
+    finalColor = vec4(0.0);
+    return;
+  }
+  if (uFallback != 0) {
+    finalColor = texelFetch(uFallbackPixels, pixel, 0);
+    return;
+  }
+  vec2 height = scalePair(texelFetch(uHeights, pixel, 0).rg, 32.0);
   float h = clamp(height.x + height.y, -100000.0, 100000.0);
   if (nearBoundary(height, 0.0)) {
     h = 0.0;

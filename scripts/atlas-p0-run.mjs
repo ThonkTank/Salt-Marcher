@@ -46,6 +46,7 @@ import {
   heldStroke,
   brushDoseBehavior,
   largeBrushBehavior,
+  curvedStroke,
   waitForSaveCompletion,
   storeActivityPosition,
   storeIntervalReference,
@@ -980,6 +981,7 @@ async function coastJourney(fixture) {
       rateBehavior.movement,
     );
     const largeBehavior = await largeBrushBehavior(session);
+    const curve = await curvedStroke(session);
     // These independent probes have already completed and restored the fixture.
     // Retain every result, including a timing failure, so it cannot hide the
     // dose/history evidence or prevent the following file/region checks. The
@@ -988,6 +990,7 @@ async function coastJourney(fixture) {
       ["large-brush-live", largeBehavior.live],
       ["large-brush-dose", largeBehavior.dose],
       ["consecutive-author-levels", largeBehavior.levels],
+      ["curved-stroke-content", curve],
     ])
       report.functional.checks.push({ id, independentRunId, ...result });
     await button(session.page, "Weltansicht");

@@ -54,7 +54,7 @@ function samplePacked(
 ): number {
   let result = -100 / HEIGHT_SUM_SCALE;
   for (let level = 0; level < descriptor.levelCount; level++) {
-    const at = level * 12;
+    const at = level * descriptor.width * 4;
     const data = descriptor.data;
     const axisX = (level * 2 * axes.width + x * 5) * 2;
     const axisY = ((level * 2 + 1) * axes.width + y * 5) * 2;
@@ -62,7 +62,7 @@ function samplePacked(
       iy = axes.data[axisY];
     const px = Math.floor(ix / 64),
       py = Math.floor(iy / 64);
-    const page = data[at + py * 3 + px];
+    const page = data[at + py * descriptor.pageStride + px];
     if (page < 0) continue;
     const wx = Array.from(
       { length: 4 },
@@ -97,7 +97,7 @@ describe("retained numeric height sources", () => {
       source(0, -1, 0, (x, y) => 40 + x / 13 - y / 3),
     ];
     const atlas = new HeightSourceAtlas();
-    atlas.replaceSources(tiles);
+    atlas.updateSources(tiles);
     const bounds: Bounds = [-256, -256, 256, 256];
     const descriptor = atlas.descriptor(bounds, 2);
     const axes = createHeightAxes(bounds, 2, descriptor.levels);
@@ -123,7 +123,7 @@ describe("retained numeric height sources", () => {
       source(level, 0, 0, (x, y) => level + 1 + x / 100 + y / 50),
     );
     const atlas = new HeightSourceAtlas();
-    atlas.replaceSources(tiles);
+    atlas.updateSources(tiles);
     const descriptor = atlas.descriptor([0, 0, 512, 512], 2);
     const axes = createHeightAxes([0, 0, 512, 512], 2, descriptor.levels);
     expect(descriptor.levelCount).toBe(22);
@@ -142,6 +142,30 @@ describe("retained numeric height sources", () => {
     expect(atlas.data.byteLength).toBeLessThan(32 * 1024 * 1024);
   });
 
+  it("projects a finer active level on the overview's unchanged output lattice", () => {
+    const tiles = Array.from({ length: 16 }, (_, index) =>
+      source(0, index % 4, Math.floor(index / 4), (x, y) => x / 100 + y / 50),
+    );
+    const atlas = new HeightSourceAtlas();
+    atlas.updateSources(tiles);
+    const bounds: Bounds = [0, 0, 1024, 1024];
+    const descriptor = atlas.descriptor(bounds, 3, 0);
+    const axes = createHeightAxes(bounds, 3, descriptor.levels);
+    expect(descriptor.pageStride).toBeGreaterThan(3);
+    expect(descriptor.levels).toEqual([0]);
+    const canonical = prepareHeightSampler(tiles);
+    for (const [x, y] of [
+      [0, 0],
+      [39, 40],
+      [79, 100],
+      [127, 127],
+    ])
+      expect(samplePacked(atlas, descriptor, x, y, axes)).toBeCloseTo(
+        canonical(4 + x * 8, 4 + y * 8),
+        10,
+      );
+  });
+
   it("retains canonical cached axis weights at large signed world coordinates", () => {
     for (const sign of [-1, 1]) {
       const originX = sign * 90_000_000;
@@ -158,7 +182,7 @@ describe("retained numeric height sources", () => {
         );
       });
       const atlas = new HeightSourceAtlas();
-      atlas.replaceSources(tiles);
+      atlas.updateSources(tiles);
       const descriptor = atlas.descriptor(bounds, 2);
       const axes = createHeightAxes(bounds, 2, descriptor.levels);
       const canonical = prepareHeightSampler(tiles);
@@ -179,7 +203,7 @@ describe("retained numeric height sources", () => {
     const left = source(0, -1, 0, 120);
     const right = source(0, 0, 0, 80);
     const atlas = new HeightSourceAtlas();
-    atlas.replaceSources([left, right]);
+    atlas.updateSources([left, right]);
     const descriptor = atlas.descriptor([-256, 0, 256, 512], 2);
     const axes = createHeightAxes([-256, 0, 256, 512], 2, descriptor.levels);
     atlas.takeUpdates();
@@ -205,7 +229,7 @@ describe("retained numeric height sources", () => {
   it("owns source copies and reuses released GPU page slots", () => {
     const original = source(0, 0, 0, 50);
     const atlas = new HeightSourceAtlas();
-    atlas.replaceSources([original]);
+    atlas.updateSources([original]);
     original.values.fill(500);
     const first = atlas.descriptor([0, 0, 512, 512], 2);
     const axes = createHeightAxes([0, 0, 512, 512], 2, first.levels);
@@ -223,7 +247,7 @@ describe("retained numeric height sources", () => {
   it("clips display samples and source controls independently at the world edge", () => {
     const edge = source(0, Math.floor(WORLD_LIMIT / 320), 0, 250);
     const atlas = new HeightSourceAtlas();
-    atlas.replaceSources([edge]);
+    atlas.updateSources([edge]);
     const bounds: Bounds = [99_999_744, 0, 100_000_256, 512];
     const descriptor = atlas.descriptor(bounds, 2);
     expect(descriptor.clip).toEqual([0, 0, 64, 128]);
@@ -241,7 +265,7 @@ describe("retained numeric height sources", () => {
     expect(high + low).toBeCloseTo(value, 14);
     const atlas = new HeightSourceAtlas();
     const enormous = source(0, 0, 0, Number.MAX_VALUE);
-    atlas.replaceSources([enormous]);
+    atlas.updateSources([enormous]);
     expect(atlas.descriptor([0, 0, 512, 512], 2).fallback).toBe(true);
     expect(atlas.sources.get(enormous.key)?.values[0]).toBe(Number.MAX_VALUE);
     const overview = new Float64Array(128 ** 2);

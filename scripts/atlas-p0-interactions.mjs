@@ -872,6 +872,74 @@ export async function largeBrushBehavior(session) {
   };
 }
 
+/** Real bent input: the corner must change while the straight shortcut stays intact. */
+export async function curvedStroke(session) {
+  const { page } = session;
+  await button(page, "Nahansicht");
+  await page.getByLabel("Raster anzeigen").uncheck();
+  await brush(page, 16, 4000);
+  await exact(page);
+  const corner = [-800, -400],
+    shortcut = [-800, 0];
+  const probes = [corner, shortcut];
+  // Both arms and the untouched diagonal are inside the analytic coast. The
+  // shortcut is farther from each arm than the complete 16px brush support.
+  const points = Array.from({ length: 41 }, (_, index) => [
+    -1000 + index * 10,
+    -400 + Math.abs(index - 20) * 20,
+  ]);
+  const before = await stateSnapshot(page, probes);
+  const beforeImage = await capture(session, "curve-before", probes);
+  const stroke = await movingStroke(session, points);
+  await exact(page);
+  // These content captures are outside the measured gesture; two frame
+  // opportunities do not establish a presentation timestamp.
+  const settle = () =>
+    page.evaluate(async () => {
+      for (let frame = 0; frame < 2; frame++)
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+  await settle();
+  const after = await stateSnapshot(page, probes);
+  const changedImage = await capture(session, "curve-changed", probes);
+  await button(page, /Rückgängig/);
+  await exact(page);
+  await settle();
+  const undone = await stateSnapshot(page, probes);
+  const restoredImage = await capture(session, "curve-undone", probes);
+  const contentPassed =
+    beforeImage.pixels.every(waterPixel) &&
+    after.samples[0] > before.samples[0] &&
+    landPixel(changedImage.pixels[0]) &&
+    near(after.samples[1], before.samples[1], 1e-7) &&
+    JSON.stringify(changedImage.pixels[1]) ===
+      JSON.stringify(beforeImage.pixels[1]);
+  const historyPassed =
+    after.document.sequence === before.document.sequence + 1 &&
+    before.samples.every((value, index) =>
+      near(undone.samples[index], value, 1e-7),
+    ) &&
+    JSON.stringify(restoredImage.pixels) === JSON.stringify(beforeImage.pixels);
+  return {
+    passed:
+      !stroke.timedOut && stroke.time.passed && contentPassed && historyPassed,
+    contentPassed,
+    historyPassed,
+    diameterPx: 16,
+    intervalMs: 24,
+    points,
+    probes,
+    before: before.samples,
+    after: after.samples,
+    undone: undone.samples,
+    beforeImage,
+    changedImage,
+    restoredImage,
+    time: stroke.time,
+    presentationProven: false,
+  };
+}
+
 /** Ordinary native UI navigation; readiness is observed, never assigned by tests. */
 export async function navigateTo(page, point) {
   const details = page.locator("details");

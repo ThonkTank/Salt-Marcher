@@ -35,13 +35,14 @@ export interface HeightPatch {
 }
 
 export interface ChangeSet {
-  sessionId: string;
-  transactionId: string;
-  sequence: number;
-  revision: number;
-  label: string;
-  patches: HeightPatch[];
-  dirtyBounds: Bounds[];
+  readonly sessionId: string;
+  readonly transactionId: string;
+  readonly sequence: number;
+  readonly revision: number;
+  readonly label: string;
+  /** Shared immutable snapshots. Never mutate values or transfer these buffers. */
+  readonly patches: HeightPatch[];
+  readonly dirtyBounds: Bounds[];
 }
 
 export interface HeightSnapshot {

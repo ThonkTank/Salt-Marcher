@@ -16,8 +16,9 @@ Electron/Pixi und bietet bislang einen begrenzten Höheneditor.
 
 Die vier Dokumente zum aktuellen Produkt werden aktualisiert, nicht als Chronik
 fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand.
-Die laufende P0-Fortsetzung behebt Quellen- und Latenzgrenzen und untersucht die
-Präsentationsmessung; der vollständige Ausbau bleibt an das native P0-Gate gebunden.
+Die P0-Fortsetzung bündelt Dokument, Eingabe, Darstellung und Projektsitzung in
+vier Zuständigkeiten und begrenzt die laufende Höhenkomposition auf lokale
+Änderungen. Der vollständige Ausbau bleibt an das native P0-Gate gebunden.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
@@ -71,8 +72,10 @@ Kandidaten tatsächlich bestanden haben, steht im [Status](docs/implementation/s
 ## Optionaler Atlas-P0-Versuch
 
 P0 startet einen eigenen Electron-44-Desktop mit PixiJS-8-Darstellung und SQLite
-im Utility-Prozess. Numerische Höhenquellen werden auf der GPU zusammengesetzt;
-beibehaltene Farbkacheln dienen der laufenden Kamera- und Cursorzeichnung. Der
+im Utility-Prozess. Numerische Höhenquellen werden auf der GPU zusammengesetzt.
+Während eines Strichs ergänzt die aktuelle Autoränderung einen festen numerischen
+Ausgangsstand; beibehaltene Farbkacheln dienen der Kamera- und Cursorzeichnung.
+Eine nicht blockierende GPU-Rückmeldung begrenzt ausstehende Zeichenarbeit. Der
 [P0-Produktvertrag](docs/product-contract.md#optionaler-atlas-p0-versuch)
 beschreibt Funktionen und Grenzen; die
 [Architektur](docs/architecture.md#optionaler-atlas-p0-versuch) die Zuständigkeiten.
@@ -124,11 +127,15 @@ beschreibt den früheren Rasterpfad. Historische Messgrößen werden nicht als n
 Abschluss-, Upload- oder Drawzeiten umgedeutet.
 
 `--only interactions` umfasst auch einen mehrere Sekunden gezogenen
-512-Pixel-Pinsel, getrennte Live-Pixelproben, Halten, langsame/schnelle Züge,
-einen echten UI-Hänger und aufeinanderfolgende feine/grobe Gesten. Der unveränderte
+512-Pixel-Pinsel, getrennte Live-Pixelproben, einen geknickten Strich, Halten,
+langsame/schnelle Züge, einen echten UI-Hänger und aufeinanderfolgende feine/grobe
+Gesten. Der unveränderte
 kurze 512-Pixel-Fall bleibt über `--only collection --case M03-height-max --runs 1`
 anwählbar. Die GPU-Referenzprüfung verwendet denselben gebauten Editor und echte
-Projektdateien; ihre Pixelbilder belegen Inhalt, keine Präsentationslatenz.
+Projektdateien. Sie prüft auch 64 aufeinanderfolgende Änderungen einschließlich
+Undo/Redo, feine Autoren unter groben Übersichten und Kontextwiederherstellung.
+Ihre Pixelbilder und gespeicherten Autorenwerte belegen Inhalt, keine
+Präsentationslatenz.
 
 Ein Headless-Funktionslauf belegt keine native Leistung; Submission und RAF sind
 keine Präsentationszeitpunkte. Fehlende Messanbindung und Umgebungsqualifizierung
@@ -148,7 +155,11 @@ node scripts/atlas-p0-graphics-probe.mjs --hardware --runs 3 --gpu-timers --out 
 `--lab` verwendet ausdrücklich Softwaregrafik. Jeder Fall startet in einem
 frischen Prozess; der vorhandene lange Strich behält 101 Positionen mit
 24-ms-Abständen. Die Diagnose erhält alle Fallfehler, Quellen-/Buildidentität,
-Kompositionsarbeit und Swap-Spannen. Optionale asynchrone GPU-Zeitabfragen werden
+Kompositionsarbeit und Swap-Spannen. Kanonisch rekonstruierte Samples, lokale
+Delta-Samples, Farbarbeit und Kopien des numerischen Ausgangsstands werden
+getrennt gezählt. Tatsächliche GPU-Zeit wird auf die gemeldeten geänderten Samples
+bezogen; die Anzahl der GL-Aufrufe ist kein Ersatz für Pixelarbeit.
+Optionale asynchrone GPU-Zeitabfragen werden
 nur bei vorhandener Erweiterung ausgewertet; fehlende oder ungültige Ergebnisse
 bleiben offen. Trace und Zeitabfragen können die Laufzeit beeinflussen.
 
