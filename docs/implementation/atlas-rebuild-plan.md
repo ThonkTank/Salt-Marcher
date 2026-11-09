@@ -19,15 +19,16 @@ die Grafikarbeit. Normale Rundungsreste bleiben im GPU-Pfad.
 
 Die Vorbilder und ihre Beweisgrenzen stehen in Abschnitt 9. Sie stützen die
 gewählten Prinzipien, qualifizieren aber weder diesen PR noch die konkreten
-Zeitziele. R1 legt C1 und seine unabhängige Referenz für die nächste Integration
-fest; R2–R4 müssen gemeinsam Inhalt, normale Wirkung, Latenz und Ressourcen belegen.
+Zeitziele. R1 wählt C1 samt unabhängiger Referenz; R2 integriert den ausgewählten
+Höhenweg. R2–R4 müssen gemeinsam Inhalt, normale Wirkung, Latenz und Ressourcen belegen.
 
-R1 ist als isoliertes Eingabe-/Reservierungsmodell mit unabhängiger Referenz
-umgesetzt. Der **integrierte Zielzustand bleibt geplant und nicht positiv
-qualifiziert**; R2–R5 sind offen. Aktuelle Architektur und Produktvertrag beschreiben
-bis zur Umsetzung weiter den laufenden Code. Abschnitt 2 benennt die bewusste
-Änderung des D10-Zielvertrags und der D11-Umsetzung. Abschnitt 6 trennt Korrektheit,
-begrenzte Hardware-Richtungsentscheidung und vollständige Freigabe.
+**R2 ist funktional integriert; seine vollständige Abnahme bleibt offen.**
+Der aktuelle Produktvertrag beschreibt C1 mit Reservierungen, begrenzter
+Fortsetzung und gemeinsamem Aktionsabschluss. Der [Status](status.md) nennt die
+neu geprüften Belege und das weiterhin offene CPU-Ziel. R3–R5 sind nicht
+abgeschlossen; der Gesamtzielzustand ist nicht positiv qualifiziert.
+Abschnitt 2 dokumentiert die gewählte D10-Änderung und D11-Umsetzung.
+Abschnitt 6 trennt Korrektheit, Hardware-Richtungsentscheidung und Freigabe.
 K1–K6 werden nicht erneut umgesetzt.
 
 [Status](status.md) nennt allein den geprüften Commit, Messergebnisse, offene
@@ -173,11 +174,11 @@ Testanzahl und exakte Canvas-Antialiasingpixel müssen nicht erhalten werden.
 ### D10/D11: gezielte Änderung der Eingabeverarbeitung
 
 Der [P0-Produktvertrag](../product-contract.md#optionaler-atlas-p0-versuch)
-beschreibt den aktuellen Code. Diese Planung ändert dessen künftige Dosierungs-
-und Abschlussregel ausdrücklich. Die beobachtbaren Anforderungen stehen fest;
-ihre konkrete, möglichst einfache Umsetzung wird in R1–R4 positiv geprüft.
+beschreibt den integrierten R2-Code. Die Gegenüberstellung dokumentiert die
+gezielte Änderung des ursprünglichen Dosierungs- und Abschlussvertrags.
+Die Leistungsqualifikation bleibt trotz funktionaler Integration offen.
 
-| Aktueller Mechanismus                                                     | Geplanter Mechanismus                                                                                                                                       |
+| Ausgangsmechanismus vor R2                                                | In R2 integrierter Mechanismus                                                                                                                              |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Eine ausstehende Dosis sperrt jede weitere Annahme.                       | Erfasste Geometrie, angenommene Wirkung und Darstellung haben getrennte Fortschrittsgrenzen; die lokale unquittierte Wirkung bleibt begrenzt.               |
 | Jede Wirkung benötigt noch unverbrauchte Zeit.                            | Ein einmaliger räumlicher Mindestauftrag erhält die Bahn auch ohne neue Zeit; die darauf angerechnete Zeitwirkung erhält Halten und stärkere langsame Züge. |
@@ -348,7 +349,7 @@ dieselbe native Datei-, Paket- und Präsentationsabnahme ermöglichen.
 
 **Auswahl des Pinselverfahrens:** R1 hat C0 am unten fixierten begrenzten
 GPU-/Wiederbesuchsfall widerlegt und genau einen Gegenkandidaten C1 geprüft.
-C1 ist für R2 ausgewählt. Verfeinerung der Rückmeldebelege allein war kein
+C1 ist durch R2 in den Höhenweg integriert. Verfeinerung der Rückmeldebelege allein war kein
 Dosierungswechsel: Schon der reine C0-Wegauftrag überschritt das feste Limit.
 Der gemeinsame Höhenkern, die positive Splineprojektion und der Renderpfad
 bleiben Grundlage. Die geprüften C1-Inhalts-/Reservierungsregeln sind noch keine
@@ -1129,7 +1130,7 @@ nachgeholt. Materialisierung verbraucht dieselbe Reserve, statt neu zu buchen.
   Zeitauftrag. Die Normalreferenz erhält zusätzlich das **ungekappte** Angebot.
   Die örtliche Begrenzung zählt schon angenommene Restarbeit mit. 127 offene
   Punkte lassen den 128. Platz für Up frei; ein terminales Fenster erlaubt
-  genau 128. Die gemeinsame wartende Menge ist in R2 daran zu binden.
+  genau 128. R2 bindet die gemeinsame wartende Menge an diese Grenze.
 - `scripts/atlas-p0-brush-reference.mjs` berechnet Sollwerte ausschließlich aus
   Rohpunkten und beobachteten Zeitfenstern. Es importiert keinen Produktcode.
   Manifest und Prüfpositionen sind vor dem Kandidatenlauf festgelegt und gegen
@@ -1163,9 +1164,9 @@ kurze zeitliche Plateauphase des vorausbezahlten Anfangs bleibt Gegenstand der
 unveränderten 20-/50-ms-Abnahme.
 
 Der verworfene C0 bleibt nur als unabhängige negative Inhaltsreferenz erhalten,
-nicht als zweiter Produktpfad. Der aktive Editor verwendet bis R2 weiterhin
-seinen bisherigen Vertrag. Die bestehenden Controller-, Datei- und
-Lifecycleprüfungen werden erst bei der tatsächlichen Integration ersetzt.
+nicht als zweiter Produktpfad. Der aktive P0-Editor verwendet C1. Die
+Controller-, Datei- und Lifecycleprüfungen wurden zusammen mit der Integration
+umgestellt; die unabhängige Inhaltsreferenz und ihre Schwellen bleiben erhalten.
 
 #### Aufnahme, Zeitkonto und geordneter Abschluss
 
@@ -1249,16 +1250,18 @@ Arbeitslast.
 
 #### Minimale Zustände und entfallende Mechanik
 
-| Besitzer                  | Geplanter Zustand                                                                                                                     | Entfällt                                                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| EditorDocument            | Livequellen, Vorherbilder, eine aktive/abschließende Geste mit angenommener begrenzter Fortsetzung, History/Pending                   | Kopien je Live-Dosis, soweit Gestenvorherbilder und unveränderliche Nachherstände sie ersetzen                        |
-| Controller mit brush.ts   | idle/active/finishing/blocked; Polylinie, feste Parameter, kausale Uhr, C1-Mindest-/Zeitkonto und begrenzte Wirkungs-/Rückmeldebelege | awaitingDose als globale Eingabesperre, Wegverlust nach erfolgloser Zeichenrunde, Stempelrestkonto des verworfenen C0 |
-| WorldRenderer/HeightField | Neueste Quellen je Schlüssel, Dirtyunion, ein eingefrorener Stand, kleine Aufgaben, höchstens zwei GL-Slots                           | Ganze Vorbereitung aller dirty Tiles vor Budgetwahl, Renderjob pro Dosis, normale synchrone CPU-Rasterung             |
-| ProjectSession            | Ein geordneter Writer, Datei-/Saved-/Recoveryzustand und vorhandene Aktionsgrenze                                                     | Keine neue Schreibqueue oder Autorenautorität                                                                         |
+| Besitzer                  | Geplanter Zustand                                                                                                                  | Entfällt                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| EditorDocument            | Livequellen, Vorherbilder, C1-Konto/Reservierungen und eine aktive/abschließende Geste mit begrenzter Fortsetzung, History/Pending | Kopien je Live-Dosis, soweit Gestenvorherbilder und unveränderliche Nachherstände sie ersetzen                        |
+| Controller mit brush.ts   | idle/active/finishing/blocked; Polylinie, feste Parameter, kausale Uhr, lokale Grundlage und authentifizierte Renderbestätigungen  | awaitingDose als globale Eingabesperre, Wegverlust nach erfolgloser Zeichenrunde, Stempelrestkonto des verworfenen C0 |
+| WorldRenderer/HeightField | Neueste Quellen je Schlüssel, Dirtyunion, ein eingefrorener Stand, kleine Aufgaben, höchstens zwei GL-Slots                        | Ganze Vorbereitung aller dirty Tiles vor Budgetwahl, Renderjob pro Dosis, normale synchrone CPU-Rasterung             |
+| ProjectSession            | Ein geordneter Writer, Datei-/Saved-/Recoveryzustand und vorhandene Aktionsgrenze                                                  | Keine neue Schreibqueue oder Autorenautorität                                                                         |
 
 Unter src/editor/brush.ts bleiben reine Entscheidungen, unter model/ Integration
 und fachliche Grenzen. Der Fachkern erhält begrenzte erlaubte Wirkung, keine
 GPU- oder Framekenntnis. Die spätere Ausführung ist Teil derselben Dokumentgeste.
+C1-Konto und Quellen-/Arbeitsreserve liegen im Dokument; der Controller besitzt
+die kausale Eingabeuhr und authentifiziert Grafikbelege.
 Dateiformat, Quellenmathematik, Journalquittung und Save/Discard/Cancel werden
 erweitert, soweit die Abschlussbarriere es benötigt; keine zweite Pipeline.
 
@@ -1267,7 +1270,7 @@ erweitert, soweit die Abschlussbarriere es benötigt; keine zweite Pipeline.
 | Paket                                                 | Konkrete Arbeit und Dateien                                                                                                                                                                                                                                                             | Abschlussbeleg                                                                                                                                                                                                                               | Stopkriterium                                                                                                                                    |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | R1 — Kandidatenwahl abgeschlossen; Nachweis im Status | brush.ts/model-Tests und vorhandener Auswerter: C0 am fixierten Wiederbesuchsfall widerlegt; C1 mit kausaler Eingabeuhr, lokalen Reservierungen und unabhängiger Inhaltsreferenz ausgewählt. C0 bleibt allein als negativer räumlicher Gegenbeweis.                                     | Analytische Klick-/Halte-/Geradenfälle, gleicher Weg bei anderer Zustellung, wiederholte Besuche, Up-/Überlastfälle und absichtliche Fehlerkontrollen unterscheiden sich korrekt. Auswahl samt Kosten und offenen Hardwarebelegen begründet. | Kein weiterer Umbau bei widersprüchlicher Semantik oder selbst gesetztem schwächerem Soll; fehlende Widerlegung ist kein Erfolg.                 |
-| R2 — Einen vollständigen Höhenweg integrieren         | EditorController, brush.ts, EditorDocument, WorldRenderer/HeightField: ausgewählten Kandidaten, begrenzte Annahme/Fortsetzung, lokale Belege, eingefrorenen Renderstand und vollständigen Receipt zusammenführen.                                                                       | Weg/Endpunkt bei verzögerter GPU; keine neue Zeitwirkung nach Up; nach tatsächlichem Aktionsabschluss null späte Mutation. Reservierungen, ein Undo, Up→Save/Reopen, Abbruch und alte Receipts stimmen.                                      | Globales Dosisgate, verlorener normaler Endpunkt, unreservierte Restwirkung oder zweite Autorenautorität widerlegen den Kandidaten.              |
+| R2 — Höhenweg integriert; Abnahme im Status offen     | EditorController, brush.ts, EditorDocument, WorldRenderer/HeightField: ausgewählten Kandidaten, begrenzte Annahme/Fortsetzung, lokale Belege, eingefrorenen Renderstand und vollständigen Receipt zusammenführen.                                                                       | Weg/Endpunkt bei verzögerter GPU; keine neue Zeitwirkung nach Up; nach tatsächlichem Aktionsabschluss null späte Mutation. Reservierungen, ein Undo, Up→Save/Reopen, Abbruch und alte Receipts stimmen.                                      | Globales Dosisgate, verlorener normaler Endpunkt, unreservierte Restwirkung oder zweite Autorenautorität widerlegen den Kandidaten.              |
 | R3 — Normalen Renderpfad begrenzen                    | height-field-data, HeightField, WorldRenderer, EditorController, budgets.ts: Kleinstwerte mit Fehlerbudget, Auswahl vor Vorbereitung, lokale Metadaten, 2 GL-Slots und kurze GPU-Pakete. Mit dem ersten produktiven Ausnahmejob die minimale gemeinsame Jobzulassung aus A06 einführen. | Normaler Zoom-/Level-9-Fall hat null CPU-Fallback; alle 22 Stufen stimmen; Ressourcen, Contextloss, Snapshotüberholung und budgetierte Autorenfortsetzung sind geprüft; Abbruch gibt den Rechenslot erst nach tatsächlichem Ende frei.       | Normale Großpinsel erreichen Framedauer nur durch Weg-/Zeitverlust oder unteilbare Aufgaben überschreiten das Budget.                            |
 | R4 — Positive Hardware-Richtungsprobe                 | Bestehende Collection-/Graphics-/Scaling-/Interaktionsrunner prüfen denselben gewählten Produktpfad mit kombiniertem Urteil.                                                                                                                                                            | Feste kleine GPU-Matrix: vollständiger Weg, ≥90 % normale Referenzwirkung, sichtbarer Ergebnisabstand p95 ≤20 ms, CPU-/GPU-/Ressourcenbudgets; Input→Submit p95 ≤50 ms nur als notwendiger Proxy.                                            | Kein Werkzeugausbau bei rotem Normalfall. Kostenursache benennen; ein Verfahrenswechsel muss die bereits festgelegten Kriterien erneut bestehen. |
 | R5 — Gemeinsamer Fall und Freigabe                    | Nur benötigte P1/P2-Schritte mit P3-Rundlauf verbinden; nativen Deadline-Nachweis qualifizieren, danach vollständige Pflichtstichprobe.                                                                                                                                                 | Höhe + Landschaft/Lichtung + Haus/Fundament + vorbereitete Wasserfläche bleiben gemeinsam korrekt und flüssig; native P0-Abnahme und P3-Gate bestehen.                                                                                       | Keine P4–P9-Übertragung bei weltweiter Nachführung, neuem Commitsonderweg oder fehlender gemeinsamer Zeitreserve.                                |
@@ -1286,38 +1289,30 @@ darf R5 den kleinen kombinierten Fall entwickeln, während die vollständige
 Präsentationsabnahme fertiggestellt wird. Dies erlaubt keinen allgemeinen
 P1–P9-Ausbau und keine Absenkung der Zeitziele.
 
-#### Bestehende Ablaufprüfungen gezielt ablösen
+#### Integrierte Prüfzuordnung
 
-**Reihenfolge in R1:** Zuerst die unabhängige räumliche und zeitliche Referenz
-mit Prüfregionen über die vollständige Spur festlegen. Unveränderte Mitte,
-abgeschnittene Ecke und zu schwache Wirkung müssen daran scheitern; der korrekte
-Referenzfall muss bestehen. Erst danach die folgenden alten Ablauferwartungen
-anpassen. Eine Auswerteränderung allein ist kein positiver Produktnachweis.
-Bestehende Schutzprüfungen bleiben wirksam, bis ihre Garantie durch den jeweils
-neuen Nachweis übernommen ist. Produktintegration und Ablösung müssen gemeinsam
-bestehen; keine Tests vorab abschalten.
+Die unabhängige R1-Referenz wurde vor der Produktintegration festgelegt.
+Die früheren Erwartungen eines globalen Dosisgates, des Wegverlusts nach einer
+erfolglosen Zeichenrunde und des sofortigen Modellabschlusses bei Up sind
+abgelöst. Die folgenden Garantien werden im gemeinsamen R2-Pfad geprüft;
+aktuelle Ergebnisse stehen ausschließlich im Status.
 
-| Bestehende Prüfung / Erwartung                                                                                                                                                                                                                                                                                                                                             | Künftige Garantie und Ersatznachweis                                                                                                                                                                                                                                                                                                                                                                                                    | Paket                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| `scripts/atlas-p0-evaluate.mjs`: `evaluateStrokeContent`; `src/editor/performance/evaluator.test.ts`: `requires canonical and visible changes at the first and last positions`. Nur Anfang/Ende und eine positive Höhenänderung reichen für diesen Helper.                                                                                                                 | Unabhängiger Sollinhalt über sämtliche vorab bestimmten Prüfregionen; Raumanker und Zeitwirkung getrennt. Mindestwirkung zusätzlich zu Pixeländerung, Endpunkt und Undo prüfen. Unveränderte Mitte, abgeschnittene Ecke, zu geringe Wirkung und fehlende Proben müssen scheitern. Den Endpunktcheck als Teilgarantie erhalten.                                                                                                          | **R1 zuerst**                   |
-| `MULTIPLE_UNPUBLISHED_BRUSH_STEPS` im Auswerter; `src/editor/render/WorldRenderer.test.ts`: `accepts at most one bounded dose from many queued moves` und `never queues a second dose during GPU timeout and discards failed-frame travel without catch-up`. Höchstens eine unveröffentlichte Dosis.                                                                       | Angewandte **und reservierte** örtliche Wirkung begrenzen; eingefrorener Renderstand und neuere Folgeänderungen dürfen koexistieren. Vollständige Receipts geben nur belegte Wirkung frei. Unreservierte Beiträge, falsche Receipts, unbegrenzte Queues und verstecktes Klickstapeln müssen scheitern. Den Fall mit A und Endbereich B in derselben Autorenkachel erhalten.                                                             | R1 definiert; **R2 integriert** |
-| `BRUSH_DOSE_AFTER_RELEASE` im Auswerter; `src/editor/performance/evaluator.test.ts`: `rejects a dose created in the release handler before brush-end`; `WorldRenderer.test.ts`: `adds no dose on %s or later frames after a ready accepted move`. Kein weiteres `brush-interval` nach Up.                                                                                  | Up stoppt neue Zeitwirkung und versiegelt den Strich samt Endpunkt und Reservierungen vor Handler-Rückkehr. Bereits angenommene Arbeit darf auslaufen. Neue Zeit nach Up, doppelte Reservierungsnutzung, verlorener Endpunkt und Mutation nach tatsächlichem Aktionsabschluss müssen scheitern. Up mit neuem Endpunkt ohne Move ausdrücklich prüfen.                                                                                    | R1-Soll; **R2 Ablauf**          |
-| `src/editor/brush.test.ts`: `discards feedback wait time and travel before continuing at the latest position` und `caps a long window to a stationary 50 ms dose and discards the old path`; `WorldRenderer.test.ts`: `drops the old path and excess time after a stalled ready move`; `BRUSH_CAPPED_PATH_REPLAY` im Auswerter. Wegverwerfen und stationärer Ersatz.       | In den manifestierten begrenzten Überlastfällen bleiben Polylinie, Ecken und Endpunkt vollständig erhalten; überschüssige Zeit verfällt nach der festgelegten Zeitregel. Ecke abkürzen, stationärer Ersatz, nachgeholte Wartezeit, doppelte Zeitbuchung und unbegrenzte Restlisten müssen scheitern. Einen wirklichen Kapazitätsüberlauf vor Annahme gesondert prüfen.                                                                  | **R1 Referenz**, R2 Integration |
-| `WorldRenderer.test.ts`: `confirms release against already submitted terrain without waiting for another frame` und `keeps release unconfirmed until its outstanding dose actually draws`; `scripts/atlas-p0-interactions.mjs`: `exact` und `observeStroke`. Modellabschluss bei Up, spätere Drawbestätigung.                                                              | Vollständige Ausführung, genau eine Historyaktion und passender tatsächlicher Terrainstand belegen. Ein bereits passender Draw darf ohne künstlichen Zusatzframe zählen, sofern keine Restarbeit fehlt. Submit, GPU-Abschluss, Aktionsabschluss und Präsentation getrennt prüfen; eine aktuelle Submitrevision oder `!writing` allein ist kein Abschlussbeleg.                                                                          | **R2**                          |
-| `scripts/atlas-p0-lifecycle.mjs`: `runLifecycleScenarios` mit `active/pending/failed` und `cancel/save/discard`; `src/editor/ProjectSession.test.ts`: `does not mark edits accepted after a reserved save as saved` und `rejects a save receipt for another snapshot without marking local changes saved`. Noch keine Barriere für angenommene auszuführende Pinselarbeit. | Echte Restarbeit im Zustand `finishing` ergänzen. Up→Undo und Up→Save/Reopen umfassen den vollständigen Strich. Cancel und fehlgeschlagenes Open erhalten angenommene Restarbeit; bestätigter Sessionwechsel invalidiert alte Fortsetzungen. Teil-Undo, verkürzter Speicherstand, falsches Saved, alte Sessioncallbacks und doppelte Anwendung nach verlorenem Ack müssen scheitern. Snapshot-, Writer- und Recoveryprüfungen erhalten. | **R2**                          |
+| Garantie                                                                                                                                                     | Produkt- und Prüfpfad                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Vollständige kausale Polylinie, Ecken, Endpunkt, späte Zeitstempel und 128er-Grenze                                                                          | `brush.ts`, `brush.test.ts`, `model/prepaid-height.test.ts`, `render/WorldRenderer.test.ts`                            |
+| Unabhängige räumliche/zeitliche Sollwirkung; keine fehlende Mitte, Abkürzung oder unzureichende Stärke                                                       | `scripts/atlas-p0-brush-reference.mjs`, `scripts/atlas-p0-evaluate.mjs`, `performance/evaluator.test.ts`               |
+| Angewandte plus reservierte lokale Wirkung; atomare Quellen-/Speicherprüfung und genau einmalige Materialisierung                                            | `model/BrushReservations.ts`, `model/PrepaidBrush.ts`, `model/EditorDocument.ts` und ihre Tests; Schema-6-Auswertung   |
+| Up versiegelt vor Handler-Rückkehr; angenommene Arbeit endet mit einer Historyaktion und ohne späte Mutation                                                 | Controller/Document, `render/WorldRenderer.test.ts`, `scripts/atlas-p0-interactions.mjs`, Schema-6-Auswertung          |
+| Vollständige eingefrorene Renderbestätigung trotz neuerem R+1; falsche/alte/teilweise Belege scheitern                                                       | `render/WorldRenderer.ts`, `render/HeightField.ts`, Renderer- und Auswertertests                                       |
+| Up→Undo und Up→Save/Reopen einschließlich echter Restarbeit; Cancel/failed Open erhalten die Aktion; Sessionwechsel/Disposal invalidieren alte Fortsetzungen | `ProjectSession.test.ts`, `scripts/atlas-p0-lifecycle.mjs` mit active/pending/failed/finishing und cancel/save/discard |
 
-Die Grenze von `evaluateStrokeContent` betrifft diesen Helper, nicht das Urteil
-eines vollständig ausgeführten Runners. Controllervergleiche mit einem zweiten
-`EditorDocument.applySegment` bleiben Integrationsprüfungen; sie ersetzen die
-unabhängige R1-Referenz nicht. Der bisherige Lifecycle-Modus `pending` verzögert
-die Storeantwort und ist deshalb noch kein Nachweis für `finishing`.
-
-**Unverändert erhalten:** D11s `never applies a deferred source impulse after %s`
-in `WorldRenderer.test.ts` betrifft eine vor lokaler Freigabe abgewiesene Geste.
-Sie darf nach spätem Laden weiterhin niemals von selbst beginnen. Ebenso bleiben
-keine erfundene Haltezeit, keine falsche Rückmeldung und kein Wiederauftauchen
-rückgängig gemachter Änderungen verbindlich. Die Ablösung globaler Dosissperren
-hebt diese Schutzfunktionen nicht auf.
+Die Angaben unter `src/editor/` sind relativ zu diesem Verzeichnis.
+`evaluateStrokeContent` bleibt eine Teilgarantie für sichtbare Anfangs-/Endpunkte;
+er ersetzt die C1-Referenz nicht. Der Lifecycle-Modus `pending` verzögert eine
+Storeantwort; nur echte reservierte, noch nicht materialisierte Arbeit belegt
+`finishing`. Fehlende Wirkung, doppelte Anwendung, unvollständiger Abschluss
+und falsche Saved-/Receipt-Zuordnung müssen den gemeinsamen Auswerter scheitern lassen.
+Vor D11-Freigabe abgewiesene Gesten dürfen weiterhin niemals nachträglich starten.
 
 #### Vier verpflichtende Gegenabläufe
 
@@ -2047,19 +2042,19 @@ Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
 konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
 Rohbelege werden nicht umgeschrieben.
 
-| Paket | Umfang                                                                  | Status / Nachweis                                                                                                                                          |
-| ----- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                                       |
-| P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1: C0 widerlegt, C1 als isoliertes Modell mit unabhängiger Referenz gewählt. R2/R3-Integration offen; Großpinselbefund bleibt FAIL, native Abnahme offen. |
-| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Offen; nach positivem R4 nur benötigte P3-Erweiterungen, weiterer Ausbau erst nach P0 und P3.                                                              |
-| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                                      |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Offen.                                                                                                                                                     |
-| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                     |
-| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                     |
-| P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                     |
-| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                              | Offen.                                                                                                                                                     |
-| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                       | Offen.                                                                                                                                                     |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.                | Offen.                                                                                                                                                     |
+| Paket | Umfang                                                                  | Status / Nachweis                                                                                                                          |
+| ----- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                       |
+| P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1 wählt C1; R2 ist funktional integriert, seine Leistungsabnahme bleibt offen. Aktuelle Belege im Status; R3–R5 und native Abnahme offen. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Offen; nach positivem R4 nur benötigte P3-Erweiterungen, weiterer Ausbau erst nach P0 und P3.                                              |
+| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                      |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Offen.                                                                                                                                     |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                     |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                     |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                     |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                              | Offen.                                                                                                                                     |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                       | Offen.                                                                                                                                     |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.                | Offen.                                                                                                                                     |
 
 ## 8. Definition von „erledigt“
 

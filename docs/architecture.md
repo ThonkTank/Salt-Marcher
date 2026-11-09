@@ -499,41 +499,60 @@ Nutzerverhalten und Format; [Plan](implementation/atlas-rebuild-plan.md) und
 
 ### Vier Besitzer
 
-| Besitzer                                 | Verantwortung                                                                                                                                                  |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model/EditorDocument`                   | Autoren, Quellenabdeckung, atomare Änderungen, aktive Vorherbilder, History und das einzige Journal angenommener, noch unbestätigter Änderungen.               |
-| `EditorController` mit `brush.ts`        | Wirksame Einstellungen, physische Eingabe, zeitlicher Pinselpfad, aktuelle Quellenanforderung, eine ausstehende Dosis und ein RAF; abgeleiteter React-Zustand. |
-| `render/WorldRenderer` mit `HeightField` | Kamera, begrenzte Darstellungskacheln, numerische Ressourcen, lokale Invalidierung, tatsächliche Submits und GPU-Abschlüsse.                                   |
-| `ProjectSession`                         | Ein geordneter Writer, Projekt-/Savedmetadaten, Schreibfehler/Recovery, Dateisperre und der gemeinsame Dateiablauf.                                            |
+| Besitzer                                 | Verantwortung                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model/EditorDocument`                   | Autoren, Quellenabdeckung, C1-Wirkungskonten und Reservierungen, aktive/abschließende Geste, Vorherbilder, History und das einzige Pendingjournal.                  |
+| `EditorController` mit `brush.ts`        | Wirksame Einstellungen, physische Eingabe, kausaler Pinselpfad, aktueller Quellenbedarf, authentifizierte Renderbestätigungen und ein RAF; abgeleiteter UI-Zustand. |
+| `render/WorldRenderer` mit `HeightField` | Kamera, begrenzte Darstellungskacheln, numerische Ressourcen, lokale Invalidierung, tatsächliche Submits und GPU-Abschlüsse.                                        |
+| `ProjectSession`                         | Ein geordneter Writer, Projekt-/Savedmetadaten, Schreibfehler/Recovery, Dateisperre und der gemeinsame Dateiablauf.                                                 |
 
 Die Projektsitzung hält keine zweite Änderungssammlung. Die Darstellung verändert
 keine Autoren. Das Dokument kennt weder IPC noch Kamera oder eine Eingabeuhr;
-es integriert nur ausdrücklich übergebene Segmente und Zeiten.
+es übernimmt validierte Geometrie und begrenzte Zeitaufträge. Annahmebedingungen,
+C1-Konto und Quellen-/Arbeitsreserve liegen gemeinsam im Dokument, damit ein
+fehlendes Quellen-, History- oder Speicherbudget vor der Wirkungsannahme auffällt.
 `brush.ts` bleibt eine reine Zustandsentscheidung, keine Werkzeug-Servicehierarchie.
-React hält nur noch nicht übernommene Feldtexte; Undo, Saved, Writing, Loading und
+React hält nur noch nicht übernommene Feldtexte; Undo, Saved, Writing, Finishing, Loading und
 Warteanzeige werden aus den Besitzern abgeleitet.
 
 Main und Preload besitzen Fenster, native Dialoge und die typisierte IPC-Brücke.
 Der SQLite-Store liegt im Utility-Prozess. Context Isolation und Sandbox bleiben
 aktiv; der Renderer hat weder Node-Integration noch SQL-Zugriff.
 
-### R1-Auswahlmodell vor der Integration
+### Integrierter C1-Eingabe- und Wirkungspfad
 
-Die reinen Funktionen `beginTimedBrush`/`planTimedBrushWindow` in `brush.ts`
-fixieren die kausale Eingabeuhr, vollständige Polylinie, Zeitkappung und terminale
-Versiegelung. Ein terminales Fenster verlangt das tatsächliche Up-Sample samt
-Ereigniszeit, auch bei unveränderter Position; Handlerverzug erzeugt keine Haltezeit.
-Das isolierte `PrepaidBrush`-Modell berechnet das Maximum aus einer
-einmaligen räumlichen Mindestwirkung und kumulierter Zeitwirkung je Stützstelle.
-`BrushReservations` prüft angewandte plus reservierte Wirkung und versionsgebundene
-Quittungen. Die unabhängige Referenz im vorhandenen Prüfpfad importiert keinen
-Produktcode und kontrolliert Inhalt, Anrechnung und positive räumliche Stärke.
+`beginTimedBrush`/`planTimedBrushWindow` in `brush.ts` verwenden die gemeinsame
+monotone Ereignisuhr und erhalten die gelieferte Polylinie. Coalesced-Einzelpunkte
+ersetzen ihr zusammenfassendes Ereignis. Gleiche Zeitstempel erhalten Geometrie;
+bereits verbuchte Zeit wird nicht zurückgedreht oder nochmals verwendet.
+Das terminale Fenster enthält das tatsächliche Up-Sample und dessen Ereigniszeit;
+Handlerverzug erzeugt keine Haltezeit. Je Fenster bleibt das Zeitangebot auf
+50 ms begrenzt, während der zulässige Weg vollständig erhalten bleibt.
 
-Diese Modelle werden vom aktuellen Controller nicht aufgerufen. Der unten
-beschriebene aktive Frameablauf ist deshalb noch unverändert. R2 integriert
-Annahme, Fortsetzung und Receipt in dieselbe Dokumentgeste; das Auswahlmodell
-ist keine zweite Autorenautorität. Auswahlgrund, feste Regeln und verbleibende
-Leistungsnachweise stehen im [Neubauplan](implementation/atlas-rebuild-plan.md).
+`PrepaidBrush` hält je Stützstelle `max(F, T)`: einmalige räumliche Mindestwirkung
+und kumulierte angenommene Zeitwirkung. Der Anfangsklick ist Teil dieser
+Mindestwirkung. `BrushReservations` begrenzt angewandte plus reservierte noch
+nicht quittierte Wirkung auf 50 ms der fixierten Rate. Materialisierung
+verbraucht die schon gebuchte Reserve; ein Receipt erzeugt keine neue Wirkung.
+Die unabhängige R1-Referenz importiert keinen Produktcode und kontrolliert
+Inhalt, Anrechnung und positive räumliche Stärke.
+
+`EditorDocument.admitBrushBatch` prüft Quellen einschließlich Halo, eindeutige
+Eingabereihenfolge, Zellen, Kacheln und Quellen-/History-/Pendingbudget vor der
+Annahme. Die Enumeration folgt dem Pinselstreifen. Kleine lokale Bereiche
+verwenden höchstens 16.384 direkte Referenzplätze auf dieselben Angebote;
+größere Bereiche behalten eine dünn besetzte Map. Diese begrenzten
+JavaScript-Referenzen sind von den gezählten numerischen Reservierungspuffern
+und einer Messung des gesamten Heaps zu unterscheiden.
+Angenommene Quellen und bestätigte Leere bleiben gepinnt. Höchstens 127 offene
+Punkte lassen den letzten Platz der gemeinsamen 128er-Grenze für Up frei;
+es gibt keine zweite Stempelrestliste.
+
+`advanceBrushGesture` materialisiert pro RAF eine begrenzte Zahl reservierter
+Koeffizienten und kopiert jede dabei geänderte Quellkachel höchstens einmal.
+Livequellen und ausgegebene Nachherpuffer bleiben danach unveränderlich.
+Eine versiegelte Geste endet erst nach ihrer letzten Übernahme mit genau einem
+History-/Pendingeintrag. Der aktive Editor besitzt keine zweite Autorenautorität.
 
 ### Autoren, Übersicht und Quellenbedarf
 
@@ -555,7 +574,8 @@ Das Dokument unterscheidet vorhandene Quellen, bekannte Abwesenheit und unbekann
 Daten. Regionale Abdeckungsbelege bestätigen leere Bereiche, ohne für jeden
 fehlenden Schlüssel einen Eintrag anzulegen. Residency folgt höchstens zwei
 Bedarfen: Darstellungsausschnitt sowie vollständiger aktueller Werkzeugbereich
-mit Halo. Aktive und unbestätigte Änderungen bleiben gepinnt. Nicht benötigte
+mit Halo. Aktive, angenommene noch nicht angewandte und unbestätigte Änderungen bleiben
+einschließlich ihrer geprüften Quellen gepinnt. Nicht benötigte
 bestätigte Quellen samt unnötigen Abdeckungsbelegen werden freigegeben.
 
 Der Controller hält einen aktuellen `SourceDemand` und einen `SourceReadState`.
@@ -582,44 +602,54 @@ begrenzt.
 
 ### Lokale Freigabe und Frameablauf
 
-`localReadiness` kombiniert vollständige Quellen, lokal abgeschlossene Grafik,
-ausstehende eigene Dosis und Projekt-/Fehlerzustand. Eingabe und UI verwenden
-zusammen denselben Wert. `WorldRenderer.inspectRegion` unterscheidet `outside`,
-`missing`, `stale` und `current` anhand der abgeschlossenen GPU-Arbeit derselben
-Session und Ansicht. Für reine Submitbelege verwendet die Diagnose getrennt
-`inspectSubmittedRegion`. Außerhalb der Ansicht entsteht kein Bildbeleg.
+`localReadiness` kombiniert vollständige Quellen, lokal abgeschlossene Grafik
+und Projekt-/Fehlerzustand. Eingabe und UI verwenden denselben Wert.
+`WorldRenderer.inspectRegion` unterscheidet `outside`, `missing`, `stale` und
+`current` anhand abgeschlossener GPU-Arbeit derselben Session und Ansicht.
+Für Submitbelege verwendet die Diagnose getrennt `inspectSubmittedRegion`.
+Außerhalb der Ansicht entsteht kein Bildbeleg.
 
-`BrushState` unterscheidet idle, blocked und active. Der aktive Strich hält
-festgelegte Pinselparameter, Zeit und höchstens 128 wartende Bewegungspunkte.
-Eine Dosis integriert ihre vollständigen Teilstrecken und die Verweilzeit am
-letzten Punkt. Das Dokument prüft Quellen und Budgets des ganzen Fensters vor
-Mutation. Eine Dosis erzeugt einen Patchsatz und eine Revision.
+Eine angenommene Geste hält eine authentische sichtbare Grundlage.
+`inspectFoundation` prüft sie ohne Zustandsänderung; `acceptFoundation` erweitert
+ihre nachgewiesene lokale Abdeckung ausdrücklich. Eigene spätere Autorenänderungen
+entwerten diese Grundlage nicht. Neue kalte Orte, geänderte Ansicht,
+Werkzeugvorbereitung, Session und Kontextverlust bleiben dagegen sperrend.
+Der Controller prüft die einzelnen Rechtecke des aufgenommenen Wegs.
+Nur exakt rechteckige Vereinigungen werden zusammengefasst; ein kaltes Inneres
+einer L-Kurve wird dadurch nicht zusätzlich verlangt oder als gesehen erklärt.
+
+`BrushState` unterscheidet idle, blocked, active und finishing. Down und Move
+reservieren zulässige Arbeit; Up reserviert seinen tatsächlichen Endpunkt und
+versiegelt die Eingabe vor Handler-Rückkehr. Die Autorenfortsetzung gehört
+weiterhin derselben Dokumentaktion. Ihr Status ist sichtbar.
 
 Der einzige Frameablauf ist gerichtet:
 
-1. Den ausstehenden GPU-Fence einmal ohne Wartezeit prüfen und passende lokale
-   Rückmeldung übernehmen.
-2. Den neuesten fehlenden Quellenbedarf starten.
-3. Höchstens eine zulässige zeitabhängige Dosis annehmen.
-4. Begrenzte Uploads und Komposition ausführen, die Szene zeichnen und einen
-   Fence hinter diesem tatsächlichen Paket setzen.
-5. Submitfakten und abgeleitete Anzeige aktualisieren. Eine erfolglose
-   Zeichenchance verwirft alte Wartezeit und alten Weg; danach entsteht keine Dosis.
+1. Den ausstehenden GPU-Fence ohne Wartezeit prüfen und vollständige passende
+   Rückmeldung übernehmen; geänderte Darstellungsidentität synchronisieren.
+2. Den nächsten fehlenden Quellenread starten.
+3. Ein kausales Haltefenster annehmen und höchstens eine begrenzte Autorenscheibe
+   materialisieren.
+4. Den vollständigen sichtbaren Einfluss eines aktuellen Renderstands einfrieren,
+   begrenzte Uploads/Komposition ausführen und die Szene zeichnen.
+5. Submitfakten, eventuellen Aktionsabschluss und abgeleitete Anzeige aktualisieren.
 
-Ein erfolgreicher Submit erhält in diesem Zeichenversuch den wartenden
-Kurvenverlauf und gibt selbst keine weitere Dosis frei. Eine folgende tatsächlich
-erfolglose Zeichenchance verwirft weiterhin alte Wartezeit und alten Weg. Down, Move und Up
-prüfen denselben Fence ebenfalls nicht blockierend; ein bereits fertiges
-Move/Up zwischen zwei RAFs bleibt damit erhalten. `clientWaitSync(..., 0, 0)`
-fragt nur ab; es gibt weder `gl.finish` noch eine Warteschleife. Ein offenes
-Grafikpaket verhindert weitere Draw-Einreichungen, während neueste Kamera- und
-Eingabewünsche erhalten bleiben.
+`freezeRender` hält einen unveränderlichen Quellen-/Übersichtsstand R bis zur
+vollständigen Komposition und dem Fence der gezeichneten Szene. Neuere Änderungen
+werden pro Quellschlüssel zu frühestem Vorherwert, neuestem Nachherwert und
+vereinigtem Dirtybereich zusammengeführt. Ein vollständiger R-Receipt bleibt
+auch bei bereits wartendem R+1 gültig. Der Controller paart ihn mit genau der
+zugehörigen Wirkung: Session, Geste, Ansicht, Vorbereitung und eingefrorene
+Revision müssen stimmen. Eine Teilkomposition, ein alter Beleg oder ein
+anders vorbereiteter Stand gibt keine neue Wirkungsreserve frei.
 
-`awaitingDose` überlebt Pointerup. Passender lokaler GPU-Abschluss gibt sie frei;
-vollständiges Verlassen des Bereichs löst nur diese Rückkopplung, ohne einen
-Submit zu erfinden. Fehlende neue Quellen oder sichtbare Grundlage beenden die
-Geste und verlangen erneutes Drücken. Die genaue D10-/D11-Semantik steht allein
-im Produktvertrag.
+Die lokale Wirkungsschranke ersetzt das frühere globale Dosisgate.
+Ein ausgeschöpfter Ort darf einen anderen zulässigen Ort derselben Autorenkachel
+nicht verwerfen. Bereits angenommene Arbeit geht bei GPU-Verzug nicht verloren.
+`clientWaitSync(..., 0, 0)` fragt nur ab; es gibt keine Warteschleife oder `gl.finish`.
+Ein einzelner GL-Platz bleibt in R2 bestehen. Zwei getrennte Plätze und die
+Auswahl vor teurer Vorbereitung gehören zu R3; Hardwarelatenz ist damit noch
+nicht nachgewiesen.
 
 ### Feste numerische Basis und lokale Änderung
 
@@ -719,10 +749,17 @@ Transaktionskennungen. Der Store erkennt gleiche Wiederholungen am Payloadhash;
 ein verlorenes Ack führt nicht zur doppelten Anwendung. Bei Fehlern bleiben die
 angenommenen Änderungen und der sichtbare Fehler erhalten.
 
-Neu, Öffnen und natives Schließen sperren Eingabe, beenden die aktive Geste und
-warten auf Writes. Der Host bietet danach Save/Discard/Cancel. Die Sperre hat
+`whenActionFinished` ist die gemeinsame Barriere für Undo/Redo, Save, Recovery
+und Dateiaktionen. Sie wartet auf die vollständig materialisierte versiegelte
+Aktion, bevor Writer oder Snapshot ihren Stand auswählen.
+Neu, Öffnen und natives Schließen sperren Eingabe, versiegeln die aktive Geste und
+warten auf diesen Abschluss sowie auf Writes. Der Host bietet danach Save/Discard/Cancel. Die Sperre hat
 einen Besitzer; eine abgewiesene konkurrierende Aktion hebt sie nicht auf.
 Fehlgeschlagener Save oder fehlende Editorbestätigung schließen das Fenster nicht.
+Cancel und fehlgeschlagenes Open erhalten angenommene Arbeit und History.
+Ein erfolgreicher Projektwechsel beziehungsweise Disposal invalidiert die alte
+Fortsetzung; ausstehende Barrieren werden abgewiesen und alte Async-Antworten
+können keine neue Sitzung verändern.
 
 Save pinnt Sequenz S über eine zusätzliche reine SQLite-Leseverbindung,
 schreibt eine synchronisierte temporäre Datei und veröffentlicht atomar.
@@ -737,8 +774,10 @@ Nur `ATLAS_P0_DIAGNOSTICS=1` aktiviert Journal, synthetischen Lastworker,
 Performance-Marks und Störfälle. Der normale Editor verwendet dieselben
 Freigabe- und Renderpfade ohne Diagnoseschnittstellen.
 
-Schema 5 hält Eingabe → Dosis → tatsächlichen Submit sowie Pointerup/Commit
-getrennt. Ein bereits aktueller Endstand darf denselben früheren Submit zum
+Schema 6 hält Eingabe, Annahme/Reservierung, Materialisierung, Versiegelung,
+Aktionsabschluss und tatsächlichen Submit getrennt. Exakte Ordinalbereiche
+belegen jede Reservierungsübernahme genau einmal; vollständige Render-Receipts
+belegen nur ihre eingefrorene Wirkung. Ein bereits aktueller Endstand darf denselben früheren Submit zum
 Abschluss verwenden; seine Zeit wird nicht umgeschrieben. GPU-Abschluss ist ein
 zusätzlicher Produktfakt und ersetzt keine tatsächliche Bildschirmpräsentation.
 

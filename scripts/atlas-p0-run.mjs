@@ -1,3 +1,4 @@
+import { reconstructReferenceC1Stroke } from "./atlas-p0-brush-reference.mjs";
 import { launchAtlasDesktop } from "./atlas-p0-desktop.mjs";
 import { createRequire } from "node:module";
 import { createHash, randomUUID } from "node:crypto";
@@ -160,7 +161,7 @@ else if (native)
     "Native pilot only; use --full for the required repetitions. Acceptance still requires a qualified display and proven exact-frame presentation mapping.",
   );
 const report = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   purpose,
   mode: lab ? "lab" : "native",
   collectionStarted: false,
@@ -243,7 +244,7 @@ function checkpoint() {
     report.evaluation = evaluateRun(report);
     await atomicJson(join(out, "report.json"), report);
     await atomicJson(join(out, "run-index.json"), {
-      schemaVersion: 5,
+      schemaVersion: 6,
       purpose,
       selection: report.selection,
       startedAt: report.startedAt,
@@ -353,10 +354,6 @@ const closeEnough = (actual, expected) =>
     (value, index) =>
       Number.isFinite(value) && Math.abs(value - expected[index]) < 1e-7,
   );
-// Independent fixture constants describe a 1-s stationary dose at their
-// declared rate. The UI's accepted press/hold dose scales those constants.
-const atStationaryDose = (before, afterOneSecond, factor) =>
-  before.map((value, i) => value + (afterOneSecond[i] - value) * factor);
 // A coarse overview may evict fine authors. An unknown canonical sample stays
 // null; known values must still be exact. Detail views and saved files below
 // require every sample, so this never certifies missing fine data as preserved.
@@ -1030,10 +1027,12 @@ async function coastJourney(fixture) {
     if (traceRequested)
       await session.app.evaluate(() => globalThis.__atlasHost.startTrace());
     const coarse = await dab(session);
-    doseExpected = atStationaryDose(
-      fixture.expected.before,
-      fixture.expected.afterCoarseDab,
-      coarse.time.acceptedDoseFt / fixture.expected.brush.amount,
+    const coarseReference = reconstructReferenceC1Stroke(
+      coarse.time.inputManifest,
+      fixture.expected.points,
+    );
+    doseExpected = fixture.expected.before.map(
+      (value, index) => value + coarseReference.total[index],
     );
     if (traceRequested) {
       // Optional trace tails are outside the gesture and are never presentation proof.
@@ -1182,8 +1181,7 @@ async function negativeControl(fixture, fault) {
       fault !== "delay-render" ||
       (result.time.passed &&
         result.time.maximumStepMs <= 50 &&
-        (result.time.discardMs.feedback ?? 0) > 0 &&
-        result.time.timedDoseMs === 0);
+        result.time.issues.length === 0);
     const code =
       fault === "delay-render"
         ? "SUBMISSION_LOWER_BOUND_EXCEEDS_LIMIT"
@@ -1416,28 +1414,29 @@ async function scalingJourney() {
         requestedHoldMs: 1000,
       };
       result.referenceExpected = manifest.expected;
-      const factor = edit.time.acceptedDoseFt / manifest.region.brush.amount;
+      const reference = reconstructReferenceC1Stroke(
+        edit.time.inputManifest,
+        manifest.expected.points,
+      );
+      const ridgeReference = reconstructReferenceC1Stroke(
+        edit.time.inputManifest,
+        manifest.expected.ridgePoints,
+      );
+      const pixelReference = reconstructReferenceC1Stroke(
+        edit.time.inputManifest,
+        [manifest.region.ridgePixelProbe],
+      );
       const expected = {
         ...manifest.expected,
-        afterCoarseDab: atStationaryDose(
-          manifest.expected.before,
-          manifest.expected.afterCoarseDab,
-          factor,
+        afterCoarseDab: manifest.expected.before.map(
+          (value, index) => value + reference.total[index],
         ),
-        ridgeAfterCoarseDab: atStationaryDose(
-          manifest.expected.ridgeBefore,
-          manifest.expected.ridgeAfterCoarseDab,
-          factor,
+        ridgeAfterCoarseDab: manifest.expected.ridgeBefore.map(
+          (value, index) => value + ridgeReference.total[index],
         ),
         ridgePixelAfterCoarseDab:
-          manifest.expected.ridgePixelBefore +
-          (manifest.expected.ridgePixelAfterCoarseDab -
-            manifest.expected.ridgePixelBefore) *
-            factor,
-        ridgePixelWithoutFineAfterCoarseDab:
-          -100 +
-          (manifest.expected.ridgePixelWithoutFineAfterCoarseDab + 100) *
-            factor,
+          manifest.expected.ridgePixelBefore + pixelReference.total[0],
+        ridgePixelWithoutFineAfterCoarseDab: -100 + pixelReference.total[0],
       };
       result.expected = expected;
       const afterImage = await capture(session, "coarse-after", [

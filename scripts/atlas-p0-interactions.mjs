@@ -1,3 +1,4 @@
+import { reconstructReferenceC1Stroke } from "./atlas-p0-brush-reference.mjs";
 import { captureCanvas } from "./atlas-p0-desktop.mjs";
 import {
   extractEditSamples,
@@ -89,6 +90,8 @@ export async function exact(page, timeout = 20_000) {
       if (error) throw new Error(error);
       return (
         !o.state.loading &&
+        !o.document.active &&
+        !o.document.finishing &&
         o.renderer.submittedRevision === o.document.revision &&
         o.renderer.submittedViewGeneration === o.renderer.viewGeneration
       );
@@ -431,6 +434,16 @@ export async function brushDoseBehavior(
     const deltas = after.samples.map(
       (height, i) => height - edit.before.samples[i],
     );
+    const expected = reconstructReferenceC1Stroke(
+      edit.time.inputManifest,
+      points,
+    );
+    const referencePassed = deltas.every(
+      (delta, index) =>
+        Number.isFinite(delta) &&
+        delta >= 0.9 * expected.uncappedTotal[index] - 1e-7 &&
+        delta <= expected.total[index] + 1e-7,
+    );
     const pixelsChanged = changedImage.pixels.every(
       (pixel, i) =>
         pixel &&
@@ -449,6 +462,8 @@ export async function brushDoseBehavior(
       after: after.samples,
       undone: undone.samples,
       deltas,
+      expected,
+      referencePassed,
       time: edit.time,
       inputIds: edit.inputIds,
       samples: edit.samples,
@@ -458,6 +473,7 @@ export async function brushDoseBehavior(
       passed:
         !edit.timedOut &&
         edit.time.passed &&
+        referencePassed &&
         deltas.every((delta) => Number.isFinite(delta) && delta > 0) &&
         edit.before.samples.every((height, i) =>
           near(height, undone.samples[i], 1e-7),
@@ -469,7 +485,8 @@ export async function brushDoseBehavior(
   const point = [[-800, -600]];
   const short = await run("held-dose-500", point, 500);
   const long = await run("held-dose-1000", point, 1000);
-  const doseRatio = long.time.acceptedDoseFt / short.time.acceptedDoseFt;
+  const doseRatio =
+    long.expected.uncappedTotal[0] / short.expected.uncappedTotal[0];
   const effectRatio = long.deltas[0] / short.deltas[0];
   const held = {
     passed:
@@ -478,19 +495,14 @@ export async function brushDoseBehavior(
       short.time.stationary &&
       long.time.stationary &&
       doseRatio > 1 &&
-      effectRatio > 1 &&
-      near(
-        short.deltas[0] / short.time.acceptedDoseFt,
-        long.deltas[0] / long.time.acceptedDoseFt,
-        1e-7,
-      ),
+      effectRatio > 1,
     requestedDurationRatio: 2,
     doseRatio,
     effectRatio,
     short,
     long,
     interpretation:
-      "Longer responsive holding deepens terrain. Dose includes one declared nominal press; skipped feedback/capped time is not recovered.",
+      "Longer responsive holding deepens terrain. C1 prepays time against its swept minimum; normal input retains at least 90% of the independent uncapped reference.",
   };
   const path =
     diameter === 512
@@ -508,12 +520,12 @@ export async function brushDoseBehavior(
     passed:
       fast.passed &&
       slow.passed &&
-      slow.time.acceptedDoseFt > fast.time.acceptedDoseFt &&
+      total(slow.expected.uncappedTotal) > total(fast.expected.uncappedTotal) &&
       total(slow.deltas) > total(fast.deltas),
     fast,
     slow,
     interpretation:
-      "The same path takes twice the nominal time; compare actual accepted dose and terrain effect, never a fabricated event-rate invariant.",
+      "The same path takes twice the nominal time; compare its independent causal C1 reference and materialized terrain effect.",
   };
   return { held, movement };
 }
@@ -595,7 +607,7 @@ async function sustainedLargeStroke(session) {
     ? content.after.events
         .filter(
           (event) =>
-            event.kind === "brush-discard" &&
+            event.kind === "brush-accepted" &&
             event.gestureId === content.time.gestureId,
         )
         .reduce(
@@ -605,7 +617,10 @@ async function sustainedLargeStroke(session) {
               0,
               Math.min(event.toAt, stall.toAt) -
                 Math.max(event.fromAt, stall.fromAt),
-            ),
+            ) *
+              (event.rawElapsedMs > 0
+                ? 1 - event.offeredElapsedMs / event.rawElapsedMs
+                : 0),
           0,
         )
     : 0;

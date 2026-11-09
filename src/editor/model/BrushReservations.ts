@@ -42,6 +42,7 @@ export type BrushReservationResult =
     };
 
 interface TileIndex {
+  key: string;
   slot: number;
   tileX: number;
   tileY: number;
@@ -54,6 +55,14 @@ interface ReservedEffect {
   cells: Uint32Array;
   amounts: Float64Array;
   count: number;
+  cursor: number;
+}
+
+export interface BrushMaterialization {
+  fromCell: number;
+  toCell: number;
+  totalCells: number;
+  complete: boolean;
 }
 
 interface FrozenEffect {
@@ -86,8 +95,8 @@ function sameContext(
 }
 
 /**
- * R1's pure, exact per-coefficient reservation proof. This is not connected to
- * the controller or a GPU. The caller must independently prove source/D11
+ * Exact per-coefficient reservation ledger. The document owns its continuation;
+ * the caller must independently prove source/D11
  * readiness and the complete visible influence before acknowledging a receipt.
  *
  * reserve -> materialize -> freeze -> acknowledge. Accepted but unapplied work
@@ -108,6 +117,7 @@ export class BrushReservations {
   private readonly applied: Float64Array;
   private readonly reserved: Float64Array;
   private readonly tiles = new Map<string, TileIndex>();
+  private readonly bySlot: TileIndex[] = [];
   private readonly pending = new Map<number, ReservedEffect>();
   private readonly frozen = new Map<number, FrozenEffect>();
   private context: BrushReservationContext;
@@ -117,6 +127,7 @@ export class BrushReservations {
   private nextReceipt = 1;
   private acknowledgedReceipt = 0;
   private peakBytes = 0;
+  private maximumOutstanding = 0;
 
   constructor(options: {
     rate: number;
@@ -172,6 +183,7 @@ export class BrushReservations {
       peakBufferBytes: this.peakBytes,
       maskBytes: 0,
       accepting: this.accepting,
+      maximumOutstanding: this.maximumOutstanding,
     };
   }
 
@@ -198,6 +210,7 @@ export class BrushReservations {
     const newCells = new Map<number, number>();
     const seen = new Set<number>();
     let count = 0;
+    const spacing = heightSpacing(this.level);
     for (const effect of effects) {
       if (
         !Number.isInteger(effect.index) ||
@@ -207,27 +220,28 @@ export class BrushReservations {
         (effect.delta !== 0 && Math.sign(effect.delta) !== this.direction)
       )
         throw new RangeError("Ungültiger oder gegenläufiger Pinselbeitrag.");
-      const parsed = parseHeightTileKey(effect.key);
-      if (parsed.level !== this.level)
-        throw new RangeError("Eine Geste besitzt genau eine Autorenstufe.");
-      const spacing = heightSpacing(this.level);
-      if (
-        Math.abs((parsed.tileX * 64 + (effect.index % 64)) * spacing) >
-          WORLD_LIMIT ||
-        Math.abs(
-          (parsed.tileY * 64 + Math.floor(effect.index / 64)) * spacing,
-        ) > WORLD_LIMIT
-      )
-        throw new RangeError("Pinselstützstelle außerhalb der Welt.");
-      if (effect.delta === 0) continue;
       const existing = this.tiles.get(effect.key);
       let tile = existing ?? newTiles.get(effect.key);
       if (!tile) {
-        if (this.tiles.size + newTiles.size === this.maxTiles)
+        const parsed = parseHeightTileKey(effect.key);
+        if (parsed.level !== this.level)
+          throw new RangeError("Eine Geste besitzt genau eine Autorenstufe.");
+        if (
+          effect.delta !== 0 &&
+          this.tiles.size + newTiles.size === this.maxTiles
+        )
           return { accepted: false, reason: "tiles" };
         tile = { ...parsed, slot: this.tiles.size + newTiles.size };
-        newTiles.set(effect.key, tile);
+        if (effect.delta !== 0) newTiles.set(effect.key, tile);
       }
+      if (
+        Math.abs((tile.tileX * 64 + (effect.index % 64)) * spacing) >
+          WORLD_LIMIT ||
+        Math.abs((tile.tileY * 64 + Math.floor(effect.index / 64)) * spacing) >
+          WORLD_LIMIT
+      )
+        throw new RangeError("Pinselstützstelle außerhalb der Welt.");
+      if (effect.delta === 0) continue;
       const address = tile.slot * HEIGHT_TILE_CELLS + effect.index;
       if (seen.has(address))
         throw new RangeError("Pinselbeiträge je Stützstelle zuerst summieren.");
@@ -242,7 +256,9 @@ export class BrushReservations {
       const amount = Math.abs(effect.delta);
       if (this.applied[cell] + this.reserved[cell] + amount > this.limit)
         return { accepted: false, reason: "effect" };
-      cells[count] = cell;
+      // Encode the canonical tile/control address in the existing ticket
+      // buffer. It needs no second dense address buffer or retained effects list.
+      cells[count] = address;
       amounts[count++] = amount;
     }
     const nextBytes =
@@ -251,20 +267,32 @@ export class BrushReservations {
       return { accepted: false, reason: "buffers" };
 
     // All failures above precede logical mutation and tile-buffer allocation.
-    for (const [key, tile] of newTiles)
-      this.tiles.set(key, {
+    for (const [key, tile] of newTiles) {
+      const indexed: TileIndex = {
         ...tile,
+        key,
         cells: new Int32Array(HEIGHT_TILE_CELLS),
-      });
-    const bySlot = [...this.tiles.values()];
+      };
+      this.tiles.set(key, indexed);
+      this.bySlot.push(indexed);
+    }
     for (const [address, cell] of newCells)
-      bySlot[Math.floor(address / HEIGHT_TILE_CELLS)].cells[
+      this.bySlot[Math.floor(address / HEIGHT_TILE_CELLS)].cells[
         address % HEIGHT_TILE_CELLS
       ] = cell + 1;
     this.cellCount += newCells.size;
-    for (let i = 0; i < count; i++) this.reserved[cells[i]] += amounts[i];
+    for (let i = 0; i < count; i++) {
+      const address = cells[i];
+      const tile = this.bySlot[Math.floor(address / HEIGHT_TILE_CELLS)];
+      const cell = tile.cells[address % HEIGHT_TILE_CELLS] - 1;
+      this.reserved[cell] += amounts[i];
+      this.maximumOutstanding = Math.max(
+        this.maximumOutstanding,
+        this.applied[cell] + this.reserved[cell],
+      );
+    }
     const token = Object.freeze({ id: this.nextReservation++ });
-    this.pending.set(token.id, { token, cells, amounts, count });
+    this.pending.set(token.id, { token, cells, amounts, count, cursor: 0 });
     this.peakBytes = Math.max(this.peakBytes, nextBytes);
     return { accepted: true, reservation: token };
   }
@@ -273,13 +301,38 @@ export class BrushReservations {
   materialize(token: BrushReservation): boolean {
     const entry = this.pending.get(token.id);
     if (!entry || entry.token !== token) return false;
-    for (let i = 0; i < entry.count; i++) {
-      const cell = entry.cells[i];
+    return this.materializeSlice(token, entry.count - entry.cursor) !== null;
+  }
+
+  /** Visit and transfer exactly one bounded prefix of the reserved vector. */
+  materializeSlice(
+    token: BrushReservation,
+    maxCells: number,
+    apply?: (effect: BrushControlEffect) => void,
+  ): BrushMaterialization | null {
+    if (!Number.isSafeInteger(maxCells) || maxCells < 0)
+      throw new RangeError("Ungültiges Materialisierungsbudget.");
+    const entry = this.pending.get(token.id);
+    if (!entry || entry.token !== token) return null;
+    const fromCell = entry.cursor;
+    const toCell = Math.min(entry.count, fromCell + maxCells);
+    for (let i = fromCell; i < toCell; i++) {
+      const address = entry.cells[i];
+      const tile = this.bySlot[Math.floor(address / HEIGHT_TILE_CELLS)];
+      const index = address % HEIGHT_TILE_CELLS;
+      const cell = tile.cells[index] - 1;
+      apply?.({
+        key: tile.key,
+        index,
+        delta: this.direction * entry.amounts[i],
+      });
       this.reserved[cell] = Math.max(0, this.reserved[cell] - entry.amounts[i]);
       this.applied[cell] += entry.amounts[i];
     }
-    this.pending.delete(token.id);
-    return true;
+    entry.cursor = toCell;
+    const complete = toCell === entry.count;
+    if (complete) this.pending.delete(token.id);
+    return { fromCell, toCell, totalCells: entry.count, complete };
   }
 
   /** Freeze applied effect only. A pending reservation is never drawn by this receipt. */
@@ -301,6 +354,7 @@ export class BrushReservations {
     const frozen = this.frozen.get(receipt.id);
     if (
       !frozen ||
+      frozen.receipt !== receipt ||
       receipt.id <= this.acknowledgedReceipt ||
       !sameContext(receipt, this.context) ||
       !sameContext(receipt, frozen.receipt)

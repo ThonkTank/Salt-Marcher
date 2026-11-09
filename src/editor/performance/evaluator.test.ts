@@ -27,7 +27,10 @@ import {
   P0_REQUIREMENTS,
 } from "../../../scripts/atlas-p0-evaluate.mjs";
 import { analyzeTrace, parseTrace } from "../../../scripts/atlas-p0-trace.mjs";
-import { observeStroke } from "../../../scripts/atlas-p0-interactions.mjs";
+import {
+  exact,
+  observeStroke,
+} from "../../../scripts/atlas-p0-interactions.mjs";
 import { startReadyStrokeMonitor } from "../../../scripts/atlas-p0-collection.mjs";
 import {
   referenceC0Stroke,
@@ -1273,408 +1276,575 @@ describe("explicit processed no-op evidence", () => {
   });
 });
 
-describe("bounded accepted brush time", () => {
-  function events(): Record<string, unknown>[] {
-    const base = { sessionId: "session-a", gestureId: 1, viewGeneration: 1 };
-    const dose = {
-      ...base,
-      from: [0, 0],
-      to: [0, 0],
-      rateFtPerSecond: 100,
-      changed: true,
-      bounds: [-1, -1, 1, 1],
+describe("C1 admitted work, bounded materialization and frozen receipts", () => {
+  // Invalid shapes are intentional: these fixtures exercise the runtime schema.
+  type Event = Record<string, any>;
+  const base = { sessionId: "session-a", gestureId: 1, viewGeneration: 1 };
+  const work = (pendingCells: number, pendingPoints: number) => ({
+    pendingCells,
+    pendingPoints,
+    pendingAdmissions: pendingCells ? 2 : 0,
+    cells: 6,
+    tiles: 1,
+    bufferBytes: 1600,
+    effectLimit: 5,
+    maxOutstandingEffect: 4,
+  });
+  const admission = (
+    id: number,
+    fromAt: number,
+    toAt: number,
+    cause: string,
+    from: number[],
+    to: number[],
+    inputIds: number[],
+    at: number,
+  ): Event => ({
+    ...base,
+    kind: "brush-accepted",
+    admissionId: id,
+    from,
+    to,
+    path: cause === "press" ? [] : [to],
+    segments:
+      toAt === fromAt
+        ? []
+        : [{ from, to, elapsedMs: Math.min(50, toAt - fromAt) }],
+    samples:
+      cause === "press" ? [] : [{ point: to, at: toAt, input: inputIds[0] }],
+    observedAt: toAt,
+    fromAt,
+    toAt,
+    rawElapsedMs: toAt - fromAt,
+    offeredElapsedMs: Math.min(50, toAt - fromAt),
+    cause,
+    end: cause === "terminal",
+    pointCount: 1,
+    pendingPoints: 2,
+    inputIds,
+    rateFtPerSecond: 100,
+    radius: 20,
+    level: 0,
+    reserved: true,
+    reservedCells: 2,
+    acceptedTimeEffect: 1,
+    discardedTimeEffect: 0,
+    work: work(3, 2),
+    at,
+  });
+  const chunk = (
+    id: number,
+    at: number,
+    applications: Event[],
+    admissionIds: number[],
+    completedAdmissionIds: number[],
+    inputIds: number[],
+    sealed = false,
+  ): Event => ({
+    ...base,
+    kind: "brush-interval",
+    dosing: "c1",
+    cause: "materialize",
+    intervalId: id,
+    applications,
+    admissionIds,
+    completedAdmissionIds,
+    inputIds,
+    sealed,
+    at,
+    projectedAt: at,
+    changed: true,
+    revision: id,
+    bounds: [-20, -20, 60, 20],
+  });
+  const part = (admissionId: number, fromCell: number, toCell: number) => ({
+    admissionId,
+    fromCell,
+    toCell,
+    totalCells: 2,
+  });
+  function events(): Event[] {
+    const renderReceipt = {
+      id: 4,
+      sessionId: "session-a",
+      viewGeneration: 1,
+      preparationId: 2,
+      revision: 1,
+      bounds: [[-20, -20, 20, 20]],
     };
     return [
-      { kind: "input", id: 1, inputKind: "edit", createdAt: 0, at: 1 },
+      {
+        kind: "input",
+        id: 1,
+        inputKind: "edit",
+        eventType: "pointerdown",
+        createdAt: 0,
+        at: 1,
+      },
       {
         ...base,
         kind: "brush-start",
         input: 1,
-        startAt: 1,
+        dosing: "c1",
+        startAt: 0,
         inputAt: 0,
         point: [0, 0],
         rateFtPerSecond: 100,
+        radius: 20,
+        level: 0,
         at: 1,
       },
-      {
-        ...dose,
-        kind: "brush-interval",
-        intervalId: 1,
-        revision: 1,
-        cause: "press",
-        nominalDose: true,
-        fromAt: 2,
-        toAt: 2,
-        ...geometry(1000 / 60),
-        rawElapsedMs: 0,
-        inputIds: [1],
-        at: 2.1,
-        projectedAt: 2.1,
-      },
+      admission(1, 0, 0, "press", [0, 0], [0, 0], [1], 2),
+      chunk(1, 3, [part(1, 0, 1)], [1], [], []),
       {
         ...base,
-        kind: "brush-discard",
-        fromAt: 1,
-        toAt: 10,
-        reason: "feedback",
-        at: 10,
+        kind: "brush-frozen",
+        receiptId: 1,
+        renderReceipt: structuredClone(renderReceipt),
+        at: 3.1,
       },
-      { ...base, kind: "submit", frame: 1, revision: 1, at: 10.1 },
+      { ...base, kind: "submit", frame: 1, revision: 1, at: 4 },
       {
         ...base,
         kind: "brush-submit",
         intervalId: 1,
-        revision: 1,
         frame: 1,
-        at: 10.2,
+        revision: 1,
+        at: 4.1,
       },
       {
-        ...dose,
-        kind: "brush-interval",
-        intervalId: 2,
-        revision: 2,
-        cause: "hold",
-        nominalDose: false,
-        fromAt: 10,
-        toAt: 30,
-        ...geometry(20),
-        rawElapsedMs: 20,
-        inputIds: [],
-        at: 30.1,
-        projectedAt: 30.1,
+        ...base,
+        kind: "gpu-completed",
+        frame: 1,
+        revision: 1,
+        renderReceipt: structuredClone(renderReceipt),
+        at: 5,
       },
-      { ...base, kind: "submit", frame: 2, revision: 2, at: 40.1 },
+      {
+        ...base,
+        kind: "brush-feedback",
+        receiptId: 1,
+        renderReceipt: structuredClone(renderReceipt),
+        accepted: true,
+        work: work(1, 1),
+        at: 6,
+      },
+      {
+        kind: "input",
+        id: 2,
+        inputKind: "edit",
+        eventType: "pointermove",
+        createdAt: 20,
+        at: 20,
+      },
+      admission(2, 0, 20, "move", [0, 0], [20, 0], [2], 21),
+      chunk(2, 22, [part(1, 1, 2), part(2, 0, 1)], [1, 2], [1], [1]),
+      {
+        kind: "input",
+        id: 3,
+        inputKind: "pointerup",
+        eventType: "pointerup",
+        createdAt: 70,
+        at: 70,
+      },
+      admission(3, 20, 70, "terminal", [20, 0], [40, 0], [3], 70.5),
+      {
+        ...base,
+        kind: "brush-end",
+        input: 3,
+        inputAt: 70,
+        clock: 70,
+        endAt: 71,
+        reason: "pointerup",
+        at: 71,
+      },
+      chunk(3, 75, [part(2, 1, 2), part(3, 0, 2)], [2, 3], [2, 3], [2], true),
+      {
+        ...base,
+        kind: "brush-complete",
+        input: 3,
+        revision: 3,
+        sequence: 1,
+        pendingCells: 0,
+        pendingPoints: 0,
+        pendingAdmissions: 0,
+        at: 76,
+      },
+      {
+        ...base,
+        kind: "commit",
+        input: 3,
+        revision: 3,
+        sequence: 1,
+        bounds: [[-20, -20, 60, 20]],
+        at: 77,
+      },
+      { ...base, kind: "submit", frame: 2, revision: 3, at: 80 },
       {
         ...base,
         kind: "brush-submit",
         intervalId: 2,
         revision: 2,
         frame: 2,
-        at: 40.2,
-      },
-      { kind: "input", id: 2, inputKind: "pointerup", createdAt: 49, at: 50 },
-      {
-        ...base,
-        kind: "brush-discard",
-        fromAt: 30,
-        toAt: 50,
-        reason: "pointerup",
-        at: 50.1,
+        at: 80.1,
       },
       {
         ...base,
-        kind: "brush-end",
-        input: 2,
-        endAt: 50,
-        inputAt: 49,
-        reason: "pointerup",
-        at: 50.2,
+        kind: "brush-submit",
+        intervalId: 3,
+        revision: 3,
+        frame: 2,
+        at: 80.1,
+      },
+      {
+        ...base,
+        kind: "edit-submit",
+        input: 3,
+        sequence: 1,
+        revision: 3,
+        frame: 2,
+        at: 80.1,
       },
     ];
   }
-  it("separates nominal press from accepted hold, rejected time and native input queue delay", () => {
-    const result = evaluateBrushTime(events(), [1, 2], "session-a");
-    expect(result.passed).toBe(true);
-    expect(result.acceptedMs).toBeCloseTo(1000 / 60 + 20);
-    expect(result.timedDoseMs).toBe(20);
-    expect(result.pressDoseMs).toBeCloseTo(1000 / 60);
-    expect(result.discardMs).toEqual({ feedback: 9, pointerup: 20 });
-    expect(result.maximumStepMs).toBe(20);
-    expect(result.stationary).toBe(true);
-  });
-  it("recognizes a closed moving path even when its first and last positions agree", () => {
+  const select = (journal: Event[], kind: string, id?: number): Event =>
+    journal.find(
+      (event) =>
+        event.kind === kind &&
+        (id === undefined || (event.admissionId ?? event.intervalId) === id),
+    )!;
+  it("allows several pending reservations, partial application and terminal materialization after seal", () => {
     const journal = events();
-    Object.assign(journal[6], {
-      cause: "move",
+    const result = evaluateBrushTime(journal, [1, 2, 3], "session-a");
+    expect(result.issues).toEqual([]);
+    expect(result).toMatchObject({
+      passed: true,
+      acceptedMs: 70,
+      maximumStepMs: 50,
+      completedAt: 76,
+      changedSteps: 3,
+      submittedSteps: 3,
+      stationary: false,
+      acceptedDoseFt: null,
+    });
+    expect(evaluateBrushPublicationOrder(journal).passed).toBe(true);
+    expect(
+      extractEditSamples(journal, [1, 2, 3], "session-a").map(
+        (entry: { submissionAt: number | null }) => entry.submissionAt,
+      ),
+    ).toEqual([80, 80, 80]);
+  });
+  it("retains the entire stalled coalesced polyline while capping only its causal time", () => {
+    const journal = events();
+    for (const event of journal)
+      if (event.at >= 21) {
+        event.at += 480;
+        if (event.projectedAt !== undefined) event.projectedAt += 480;
+        if (event.createdAt !== undefined) event.createdAt += 480;
+      }
+    const move = select(journal, "brush-accepted", 2);
+    Object.assign(move, {
+      toAt: 500,
+      rawElapsedMs: 500,
+      offeredElapsedMs: 50,
+      observedAt: 500,
+      pointCount: 2,
+      path: [
+        [10, 10],
+        [20, 0],
+      ],
+      samples: [
+        { point: [10, 10], at: 20, input: 2 },
+        { point: [20, 0], at: 500, input: 4 },
+      ],
+      inputIds: [2, 4],
       segments: [
-        { from: [0, 0], to: [10, 10], elapsedMs: 10 },
-        { from: [10, 10], to: [0, 0], elapsedMs: 10 },
+        { from: [0, 0], to: [10, 10], elapsedMs: 25 },
+        { from: [10, 10], to: [20, 0], elapsedMs: 25 },
       ],
     });
-    const result = evaluateBrushTime(journal, [1, 2], "session-a");
-    expect(result.passed).toBe(true);
-    expect(result.stationary).toBe(false);
-    expect(result.timedDoseMs).toBe(20);
+    journal.splice(journal.indexOf(move), 0, {
+      kind: "input",
+      id: 4,
+      inputKind: "edit",
+      eventType: "pointermove",
+      createdAt: 500,
+      at: 500,
+    });
+    journal.find((event) => event.kind === "input" && event.id === 3)!.id = 5;
+    Object.assign(select(journal, "brush-accepted", 3), {
+      fromAt: 500,
+      toAt: 550,
+      observedAt: 550,
+      inputIds: [5],
+      samples: [{ point: [40, 0], at: 550, input: 5 }],
+    });
+    Object.assign(select(journal, "brush-end"), {
+      input: 5,
+      inputAt: 550,
+      clock: 550,
+      endAt: 551,
+    });
+    for (const event of journal)
+      if (["brush-complete", "commit", "edit-submit"].includes(event.kind))
+        event.input = 5;
+    select(journal, "brush-interval", 3).inputIds = [2, 4];
+    const result = evaluateBrushTime(journal, [1, 2, 4, 5], "session-a");
+    expect(result.issues).toEqual([]);
+    expect(result.discardMs.cap).toBe(450);
+    expect(result.inputManifest!.windows[0].points).toHaveLength(2);
+  });
+  it("uses the actual release timestamp when the Up handler runs late", () => {
+    const journal = events();
+    journal.find(
+      (event) => event.kind === "input" && event.id === 3,
+    )!.createdAt = 20;
+    Object.assign(select(journal, "brush-accepted", 3), {
+      fromAt: 20,
+      toAt: 20,
+      rawElapsedMs: 0,
+      offeredElapsedMs: 0,
+      segments: [],
+      samples: [{ point: [40, 0], at: 20, input: 3 }],
+      observedAt: 70,
+    });
+    Object.assign(select(journal, "brush-end"), { inputAt: 20, clock: 20 });
+    const result = evaluateBrushTime(journal, [1, 2, 3], "session-a");
+    expect(result.issues).toEqual([]);
+    expect(result.acceptedMs).toBe(20);
+    expect(result.inputQueueMs.up).toBe(51);
+  });
+  it.each([
+    "unknown-range",
+    "duplicate-range",
+    "missing-range",
+    "missing-completion",
+    "pending-completion",
+    "late-materialization",
+    "late-admission",
+    "capacity",
+    "effect",
+    "missing-effect",
+    "missing-cells",
+    "parameters",
+    "time-gap",
+    "time-overlap",
+    "time-cap",
+    "terminal-time",
+    "missing-terminal",
+    "path",
+    "input-time",
+  ])("fails closed on %s in the shared raw replay", (fault) => {
+    const journal = events(),
+      move = select(journal, "brush-accepted", 2),
+      terminal = select(journal, "brush-accepted", 3),
+      final = select(journal, "brush-interval", 3);
+    if (fault === "unknown-range") final.applications[0].admissionId = 99;
+    if (fault === "duplicate-range") final.applications[0].fromCell = 0;
+    if (fault === "missing-range")
+      journal.splice(journal.indexOf(select(journal, "brush-interval", 1)), 1);
+    if (fault === "missing-completion")
+      journal.splice(journal.indexOf(select(journal, "brush-complete")), 1);
+    if (fault === "pending-completion")
+      select(journal, "brush-complete").pendingCells = 1;
+    if (fault === "late-materialization")
+      journal.push({
+        ...structuredClone(final),
+        intervalId: 4,
+        at: 90,
+        projectedAt: 90,
+      });
+    if (fault === "late-admission")
+      journal.push({ ...structuredClone(move), admissionId: 99, at: 90 });
+    if (fault === "capacity") move.work.pendingPoints = 129;
+    if (fault === "effect") move.work.maxOutstandingEffect = 5.1;
+    if (fault === "missing-effect") delete move.work.maxOutstandingEffect;
+    if (fault === "missing-cells") delete move.work.cells;
+    if (fault === "parameters") move.radius = 21;
+    if (fault === "time-gap")
+      Object.assign(move, {
+        fromAt: 1,
+        rawElapsedMs: 19,
+        offeredElapsedMs: 19,
+        segments: [{ from: [0, 0], to: [20, 0], elapsedMs: 19 }],
+      });
+    if (fault === "time-overlap")
+      Object.assign(terminal, { fromAt: 19, rawElapsedMs: 51 });
+    if (fault === "time-cap") terminal.offeredElapsedMs = 51;
+    if (fault === "terminal-time") terminal.toAt = 71;
+    if (fault === "missing-terminal")
+      journal.splice(journal.indexOf(terminal), 1);
+    if (fault === "path") move.path = [[9, 9]];
+    if (fault === "input-time") move.samples[0].at = 19;
+    expect(evaluateBrushTime(journal, [1, 2, 3], "session-a").passed).toBe(
+      false,
+    );
+    const replay = evaluateObservation({
+      events: journal,
+      sessionId: "session-a",
+      droppedEvents: 0,
+    });
+    expect(replay.status).toBe("FAIL");
+    expect(replay.brushWork.passed).toBe(false);
   });
   it.each([
     "missing",
-    "duration",
-    "disconnected",
-    "nonfinite",
-    "negative",
-    "endpoint",
-  ])(
-    "rejects %s path geometry in both time and real-frame evidence",
-    (fault) => {
-      const journal = events();
-      const segments = [
-        { from: [0, 0], to: [10, 10], elapsedMs: 10 },
-        { from: [10, 10], to: [0, 0], elapsedMs: 10 },
-      ];
-      journal[6].segments = segments;
-      if (fault === "missing") delete journal[6].segments;
-      if (fault === "duration") segments[1].elapsedMs = 11;
-      if (fault === "disconnected") segments[1].from = [11, 10];
-      if (fault === "nonfinite") segments[0].to[0] = NaN;
-      if (fault === "negative") segments[0].elapsedMs = -10;
-      if (fault === "endpoint") segments[1].to = [1, 0];
-      const result = evaluateBrushTime(journal, [1, 2], "session-a");
-      expect(result.passed).toBe(false);
-      expect(result.stationary).toBe(false);
-      expect(result.issues).toContainEqual({
-        code: "INVALID_OR_EXCESSIVE_BRUSH_DOSE",
-        intervalId: 2,
-      });
-      expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual({
-        code: "BRUSH_STEP_SUBMISSION_MISSING",
-        intervalId: 2,
-      });
-    },
-  );
-  it("accounts for explicit overflow time and inputs without accepting invented discard reasons", () => {
-    const journal = events();
-    journal[3].reason = "overflow";
-    journal.splice(
-      3,
-      0,
-      {
-        kind: "input",
-        id: 3,
-        inputKind: "edit",
-        eventType: "pointermove",
-        createdAt: 4,
-        at: 4.1,
-      },
-      {
-        kind: "input",
-        id: 4,
-        inputKind: "edit",
-        eventType: "pointermove",
-        createdAt: 5,
-        at: 5.1,
-      },
-      {
-        kind: "noop",
-        input: 3,
-        sessionId: "session-a",
-        accepted: false,
-        reason: "overflow",
-        at: 10,
-      },
-      {
-        kind: "noop",
-        input: 4,
-        sessionId: "session-a",
-        accepted: false,
-        reason: "overflow",
-        at: 10,
-      },
+    "wrong-revision",
+    "wrong-view",
+    "partial-bounds",
+    "duplicate",
+    "missing-request",
+  ])("refuses an unproven full frozen receipt: %s", (fault) => {
+    const journal = events(),
+      gpu = select(journal, "gpu-completed"),
+      feedback = select(journal, "brush-feedback");
+    if (fault === "missing") gpu.renderReceipt = null;
+    if (fault === "wrong-revision") gpu.renderReceipt.revision = 2;
+    if (fault === "wrong-view") gpu.renderReceipt.viewGeneration = 2;
+    if (fault === "partial-bounds")
+      gpu.renderReceipt.bounds = [[-20, -20, 0, 20]];
+    if (fault === "duplicate") journal.push({ ...feedback, at: 90 });
+    if (fault === "missing-request")
+      journal.splice(journal.indexOf(select(journal, "brush-frozen")), 1);
+    expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual(
+      expect.objectContaining({ code: "UNPROVEN_BRUSH_EFFECT_RECEIPT" }),
     );
-    const time = evaluateBrushTime(journal, [1, 3, 4, 2], "session-a");
-    expect(time.passed).toBe(true);
-    expect(time.discardMs).toEqual({ overflow: 9, pointerup: 20 });
-    expect(time.timedDoseMs).toBe(20);
-    const noops = extractEditSamples(journal, [3, 4], "session-a");
-    const measured = evaluateSubmissionDiagnostics(noops);
-    expect(measured).toMatchObject({
-      status: "PROXY_ONLY",
-      d10DiscardedInputs: 2,
-      notAccepted: 2,
-    });
-    expect(measured.inputToResponseMs.count).toBe(0);
     expect(
-      noops.every(
-        (sample: { submissionAt: number | null; modelAt: number | null }) =>
-          sample.submissionAt === null && sample.modelAt === null,
-      ),
-    ).toBe(true);
-    expect(
-      evaluateSubmissionDiagnostics([{ ...noops[0], eventType: "pointerdown" }])
-        .status,
-    ).toBe("FAIL");
-
-    journal.find((event) => event.kind === "brush-discard")!.reason =
-      "invented";
-    journal.find((event) => event.kind === "noop")!.reason = "invented";
-    expect(
-      evaluateBrushTime(journal, [1, 3, 4, 2], "session-a").issues,
-    ).toContainEqual({ code: "INVALID_BRUSH_DISCARD" });
-    expect(
-      evaluateSubmissionDiagnostics(
-        extractEditSamples(journal, [3, 4], "session-a"),
-      ).issues,
-    ).toContainEqual(
-      expect.objectContaining({ code: "INPUT_NOT_ACCEPTED", inputId: 3 }),
-    );
-  });
-  it("rejects a dose created in the release handler before brush-end", () => {
-    const journal = events();
-    const [release] = journal.splice(9, 1);
-    release.createdAt = 29;
-    release.at = 30;
-    journal.at(-1)!.inputAt = 29;
-    journal.splice(6, 0, release);
-    const result = evaluateBrushTime(journal, [1, 2], "session-a");
-    expect(result.issues).toEqual([
-      { code: "BRUSH_DOSE_AFTER_RELEASE", intervalId: 2 },
-    ]);
-    expect(result.passed).toBe(false);
-  });
-  it("accepts a pre-release dose whose real frame is submitted after release", () => {
-    const journal = events();
-    const [frame, receipt] = journal.splice(7, 2);
-    frame.at = 60.1;
-    receipt.at = 60.2;
-    journal.push(frame, receipt);
-    const result = evaluateBrushTime(journal, [1, 2], "session-a");
-    expect(result.passed).toBe(true);
-    expect(result.submittedSteps).toBe(2);
-  });
-  it.each([false, true])(
-    "checks that a capped stall remainder does not replay an old path (moving=%s)",
-    (moving) => {
-      const journal = events();
-      Object.assign(journal[6], {
-        fromAt: 210,
-        toAt: 260,
-        ...geometry(50, [0, 0], moving ? [10, 0] : [0, 0]),
-        rawElapsedMs: 250,
-        to: moving ? [10, 0] : [0, 0],
-        cause: moving ? "move" : "hold",
-        at: 260.1,
-        projectedAt: 260.1,
-      });
-      journal[7].at = 270.1;
-      journal[8].at = 270.2;
-      Object.assign(journal[9], { createdAt: 279, at: 280 });
-      Object.assign(journal[10], { fromAt: 260, toAt: 280, at: 280.1 });
-      Object.assign(journal[11], {
-        endAt: 280,
-        inputAt: 279,
-        at: 280.2,
-      });
-      journal.splice(6, 0, {
-        kind: "brush-discard",
+      evaluateObservation({
+        events: journal,
         sessionId: "session-a",
-        gestureId: 1,
-        fromAt: 10,
-        toAt: 210,
-        reason: "cap",
-        at: 260,
-      });
-      const result = evaluateBrushTime(journal, [1, 2], "session-a");
-      expect(result.passed).toBe(!moving);
-      expect(result.issues).toEqual(
-        moving ? [{ code: "BRUSH_CAPPED_PATH_REPLAY", intervalId: 2 }] : [],
-      );
-    },
-  );
-  it.each(["gap", "overlap", "cap", "future-press"])(
-    "rejects invalid %s accounting without inventing dose",
-    (fault) => {
-      const journal = events();
-      if (fault === "gap") journal[10].fromAt = 40;
-      if (fault === "overlap") journal[10].fromAt = 20;
-      if (fault === "cap") journal[6].acceptedElapsedMs = 51;
-      if (fault === "future-press") journal[2].toAt = 2 + 1000 / 60;
-      const expected =
-        fault === "gap"
-          ? "UNEXPLAINED_BRUSH_TIME"
-          : fault === "overlap"
-            ? "OVERLAPPING_BRUSH_TIME"
-            : "INVALID_OR_EXCESSIVE_BRUSH_DOSE";
-      expect(
-        evaluateBrushTime(journal, [1, 2], "session-a").issues,
-      ).toContainEqual(expect.objectContaining({ code: expected }));
-    },
-  );
-  it("rejects another gesture's dose before the first gesture's real publication", () => {
+        droppedEvents: 0,
+      }).brushWork.passed,
+    ).toBe(false);
+  });
+  it("does not promote an unknown draw to a materialization receipt", () => {
     const journal = events();
-    journal.splice(3, 0, {
-      ...journal[2],
-      intervalId: 3,
-      gestureId: 99,
-      revision: 2,
-      at: 4,
-    });
+    select(journal, "brush-submit", 3).frame = 999;
     expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual(
       expect.objectContaining({
-        code: "MULTIPLE_UNPUBLISHED_BRUSH_STEPS",
+        code: "BRUSH_STEP_SUBMISSION_MISSING",
         intervalId: 3,
-        previousIntervalId: 1,
-      }),
-    );
-  });
-  it("retires only a truly changed offscreen view, including resize without camera input", () => {
-    const journal = events().filter(
-      (event) => !(event.kind === "brush-submit" && event.intervalId === 1),
-    );
-    journal.splice(
-      3,
-      0,
-      {
-        kind: "view-change",
-        sessionId: "session-a",
-        viewGeneration: 2,
-        bounds: [10, 10, 20, 20],
-        at: 7.9,
-      },
-      {
-        kind: "brush-feedback-obsolete",
-        sessionId: "session-a",
-        gestureId: 1,
-        intervalId: 1,
-        revision: 1,
-        reason: "outside-view",
-        bounds: [-1, -1, 1, 1],
-        viewBounds: [10, 10, 20, 20],
-        viewGeneration: 2,
-        at: 8,
-      },
-    );
-    const result = evaluateBrushPublicationOrder(journal);
-    expect(result.passed).toBe(true);
-    expect(result.steps[0]).toMatchObject({ submittedAt: null, retiredAt: 8 });
-    journal[3].viewGeneration = 3;
-    expect(evaluateBrushPublicationOrder(journal).passed).toBe(false);
-    journal[3].viewGeneration = 2;
-    journal[3].bounds = journal[4].viewBounds = [-0.5, -0.5, 0.5, 0.5];
-    expect(evaluateBrushPublicationOrder(journal).passed).toBe(false);
-  });
-  it("does not turn a receipt without its actual frame into a published brush step", () => {
-    const journal = events();
-    journal[5].frame = 999;
-    expect(evaluateBrushPublicationOrder(journal).issues).toContainEqual(
-      expect.objectContaining({
-        code: "BRUSH_STEP_SUBMISSION_MISSING",
-        intervalId: 1,
       }),
     );
     expect(evaluateBrushTime([], [], "session-a").passed).toBe(false);
   });
-  it("reports consciously skipped inputs distinctly from unknown or unchanged model work", () => {
-    const samples = extractEditSamples(
-      [
-        { kind: "input", id: 1, inputKind: "edit", createdAt: 1, at: 2 },
-        { kind: "noop", input: 1, accepted: false, reason: "feedback", at: 3 },
-      ],
-      [1],
-      "session-a",
+  function prepaid(): Event[] {
+    const journal = events(),
+      move = select(journal, "brush-accepted", 2);
+    Object.assign(
+      journal.find((event) => event.kind === "input" && event.id === 2)!,
+      { createdAt: 10, at: 10 },
     );
-    expect(samples[0]).toMatchObject({
-      accepted: false,
-      noopReason: "feedback",
+    Object.assign(move, {
+      to: [0, 0],
+      path: [[0, 0]],
+      toAt: 10,
+      observedAt: 10,
+      at: 11,
+      rawElapsedMs: 10,
+      offeredElapsedMs: 10,
+      reserved: false,
+      reservedCells: 0,
+      samples: [{ point: [0, 0], at: 10, input: 2 }],
+      segments: [{ from: [0, 0], to: [0, 0], elapsedMs: 10 }],
+    });
+    journal.splice(journal.indexOf(move) + 1, 0, {
+      ...base,
+      kind: "noop",
+      input: 2,
+      accepted: true,
+      reason: "prepaid",
+      at: 11.1,
+    });
+    Object.assign(select(journal, "brush-accepted", 3), {
+      from: [0, 0],
+      fromAt: 10,
+      rawElapsedMs: 60,
+      segments: [{ from: [0, 0], to: [40, 0], elapsedMs: 50 }],
+    });
+    Object.assign(select(journal, "brush-interval", 2), {
+      applications: [part(1, 1, 2)],
+      admissionIds: [1],
+    });
+    Object.assign(select(journal, "brush-interval", 3), {
+      applications: [part(3, 0, 2)],
+      admissionIds: [3],
+      completedAdmissionIds: [3],
+      inputIds: [],
+    });
+    return journal;
+  }
+  it("proves prepaid no-change without inventing a model mutation, draw or presentation", () => {
+    const journal = prepaid();
+    expect(evaluateBrushTime(journal, [1, 2, 3], "session-a").issues).toEqual(
+      [],
+    );
+    const input = extractEditSamples(journal, [2], "session-a")[0];
+    expect(input).toMatchObject({
+      noopEvidence: "c1-prepaid-v1",
       modelChanged: false,
       modelAt: null,
-      submissionAt: null,
+      frameId: null,
+      presentation: null,
     });
-    expect(evaluateSubmissionDiagnostics(samples).issues).toContainEqual({
-      code: "INPUT_NOT_ACCEPTED",
-      inputId: 1,
-      accepted: false,
-      reason: "feedback",
-      modelChanged: false,
-    });
+    expect(evaluateSubmissionDiagnostics([input]).issues).toEqual([]);
+  });
+  it.each(["missing-admission", "reserved", "missing-proof", "wrong-gesture"])(
+    "rejects invented prepaid no-change: %s",
+    (fault) => {
+      const journal = prepaid(),
+        move = select(journal, "brush-accepted", 2);
+      if (fault === "missing-admission")
+        journal.splice(journal.indexOf(move), 1);
+      if (fault === "reserved")
+        Object.assign(move, { reserved: true, reservedCells: 1 });
+      if (fault === "missing-proof") delete move.work.maxOutstandingEffect;
+      if (fault === "wrong-gesture") select(journal, "noop").gestureId = 99;
+      const input = extractEditSamples(journal, [2], "session-a")[0];
+      expect(input.noopEvidence).toBeNull();
+      expect(evaluateSubmissionDiagnostics([input]).issues).toContainEqual(
+        expect.objectContaining({ code: "EXPECTED_EDIT_NO_CHANGE" }),
+      );
+    },
+  );
+  it("does not count prepaid inputs toward native changed-edit minimums", () => {
+    const input = extractEditSamples(prepaid(), [2], "session-a")[0];
+    const report: any = knownGood();
+    report.runs[0].scenarios[0].samples = Array.from({ length: 100 }, () => ({
+      ...input,
+    }));
+    expect(evaluateAcceptance(report, oneCase).failures).toContainEqual(
+      expect.objectContaining({ code: "INSUFFICIENT_SAMPLES", actual: 0 }),
+    );
+  });
+  it("waits for accepted finishing work even if the current source revision has already drawn", async () => {
+    const observation = {
+      state: { loading: false, error: null },
+      document: { active: true, finishing: true, revision: 4 },
+      renderer: {
+        submittedRevision: 4,
+        submittedViewGeneration: 2,
+        viewGeneration: 2,
+      },
+    };
+    vi.stubGlobal("window", { atlasObserve: () => observation });
+    vi.stubGlobal("document", { querySelector: () => null });
+    let predicate: (() => boolean) | undefined;
+    const page = {
+      waitForFunction: async (fn: () => boolean) => {
+        predicate = fn;
+      },
+    };
+    try {
+      await exact(page);
+      expect(predicate!()).toBe(false);
+      observation.document.active = false;
+      expect(predicate!()).toBe(false);
+      observation.document.finishing = false;
+      expect(predicate!()).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 
@@ -1774,60 +1944,169 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     }));
   }
   function journal(delayed = false) {
-    const events = stroke(delayed).flatMap((sample) => [
-      {
+    const events: Record<string, any>[] = [];
+    const base = { sessionId: "session-a", gestureId: 1, viewGeneration: 1 };
+    for (const [index, sample] of stroke(delayed).entries()) {
+      const first = index === 0,
+        up = sample.inputKind === "pointerup",
+        from = [Math.max(0, index - 1) * 50, 0],
+        to = [index * 50, 0];
+      events.push({
         kind: "input",
         id: sample.inputId,
         inputKind: sample.inputKind,
+        eventType: first ? "pointerdown" : up ? "pointerup" : "pointermove",
         createdAt: sample.createdAt,
         at: sample.handlerAt,
-      },
-      {
-        kind: sample.inputKind === "pointerup" ? "commit" : "brush-interval",
-        ...geometry(2),
-        input: sample.inputId,
+      });
+      if (first)
+        events.push({
+          ...base,
+          kind: "brush-start",
+          input: sample.inputId,
+          dosing: "c1",
+          startAt: 0,
+          inputAt: 0,
+          point: [0, 0],
+          rateFtPerSecond: 100,
+          radius: 20,
+          level: 0,
+          at: sample.handlerAt,
+        });
+      events.push({
+        ...base,
+        kind: "brush-accepted",
+        admissionId: sample.inputId,
+        from,
+        to,
+        path: first ? [] : [to],
+        samples: first
+          ? []
+          : [{ point: to, at: sample.createdAt, input: sample.inputId }],
+        observedAt: sample.createdAt,
+        segments: first ? [] : [{ from, to, elapsedMs: 24 }],
+        fromAt: Math.max(0, sample.createdAt - 24),
+        toAt: sample.createdAt,
+        rawElapsedMs: first ? 0 : 24,
+        offeredElapsedMs: first ? 0 : 24,
+        cause: first ? "press" : up ? "terminal" : "move",
+        end: up,
         inputIds: [sample.inputId],
+        rateFtPerSecond: 100,
+        radius: 20,
+        level: 0,
+        pointCount: 1,
+        pendingPoints: 1,
+        reserved: true,
+        reservedCells: 1,
+        acceptedTimeEffect: 1,
+        discardedTimeEffect: 0,
+        work: {
+          pendingCells: 1,
+          pendingPoints: 1,
+          pendingAdmissions: 1,
+          cells: index + 1,
+          tiles: 1,
+          bufferBytes: 1600,
+          effectLimit: 5,
+          maxOutstandingEffect: 4,
+        },
+        at: sample.modelAt - 0.5,
+      });
+      if (up)
+        events.push({
+          ...base,
+          kind: "brush-end",
+          input: sample.inputId,
+          inputAt: sample.createdAt,
+          clock: sample.createdAt,
+          endAt: sample.modelAt - 0.4,
+          reason: "pointerup",
+          at: sample.modelAt - 0.4,
+        });
+      events.push({
+        ...base,
+        kind: "brush-interval",
+        dosing: "c1",
+        cause: "materialize",
         intervalId: sample.inputId,
-        gestureId: 1,
+        applications: [
+          {
+            admissionId: sample.inputId,
+            fromCell: 0,
+            toCell: 1,
+            totalCells: 1,
+          },
+        ],
+        admissionIds: [sample.inputId],
+        completedAdmissionIds: [sample.inputId],
+        inputIds: up ? [] : [sample.inputId],
+        sealed: up,
         changed: true,
-        sessionId: sample.sessionId,
-        projectedAt: sample.modelAt,
-        bounds:
-          sample.inputKind === "pointerup" ? [[0, 0, 1, 1]] : [0, 0, 1, 1],
-        sequence: sample.inputId,
+        bounds: [0, -20, 220, 20],
         revision: sample.revision,
-        at: sample.modelAt,
-      },
-      {
-        kind: sample.inputKind === "pointerup" ? "edit-submit" : "brush-submit",
-        input: sample.inputId,
-        sequence: sample.inputId,
-        intervalId: sample.inputId,
-        gestureId: 1,
-        viewGeneration: 1,
-        sessionId: sample.sessionId,
-        revision: sample.revision,
-        frame: sample.frameId,
-        at: sample.submissionAt,
-      },
-      {
-        kind: "submit",
-        viewGeneration: 1,
-        sessionId: sample.sessionId,
-        frame: sample.frameId,
-        revision: sample.revision,
-        exactRevision: sample.revision,
-        at: sample.submissionAt,
-      },
-    ]);
-    // A partially uploaded frame is real, but cannot acknowledge an exact edit.
+        at: up ? sample.modelAt - 0.3 : sample.modelAt,
+        projectedAt: up ? sample.modelAt - 0.3 : sample.modelAt,
+      });
+      if (up)
+        events.push(
+          {
+            ...base,
+            kind: "brush-complete",
+            input: sample.inputId,
+            revision: sample.revision,
+            sequence: sample.inputId,
+            pendingCells: 0,
+            pendingPoints: 0,
+            pendingAdmissions: 0,
+            at: sample.modelAt - 0.2,
+          },
+          {
+            ...base,
+            kind: "commit",
+            input: sample.inputId,
+            revision: sample.revision,
+            sequence: sample.inputId,
+            bounds: [[0, -20, 220, 20]],
+            at: sample.modelAt,
+          },
+          {
+            ...base,
+            kind: "edit-submit",
+            input: sample.inputId,
+            revision: sample.revision,
+            sequence: sample.inputId,
+            frame: sample.frameId,
+            at: sample.submissionAt,
+          },
+        );
+      events.push(
+        {
+          ...base,
+          kind: "brush-submit",
+          intervalId: sample.inputId,
+          revision: sample.revision,
+          frame: sample.frameId,
+          at: sample.submissionAt,
+        },
+        {
+          ...base,
+          kind: "submit",
+          frame: sample.frameId,
+          revision: sample.revision,
+          exactRevision: sample.revision,
+          at: sample.submissionAt,
+        },
+      );
+    }
     events.push({
       kind: "submit",
       sessionId: "session-a",
       frame: 900,
       exactRevision: -1,
       at: 40,
-    } as (typeof events)[number]);
+    });
+    events.sort((a, b) => a.at - b.at);
     return { events, sessionId: "session-a", droppedEvents: 0 };
   }
   function scenario(delayed = false) {
@@ -1871,7 +2150,7 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
   }
   function probeReport(collected = scenario()) {
     return {
-      schemaVersion: 5,
+      schemaVersion: 6,
       purpose: "probe",
       selection: "collection",
       mode: "lab",
@@ -1927,6 +2206,8 @@ describe("saved moving-stroke evidence and explicit probe scope", () => {
     const exactResult = evaluateObservation(regionExact);
     assert(exactResult.live, "The replayed edit must expose live evidence");
     expect(exactResult.live[0].passed).toBe(true);
+    expect(exactResult.brushWork.passed).toBe(true);
+    expect(exactResult.status).toBe("INCOMPLETE");
     const partial = journal();
     partial.events.find(
       (event) => event.kind === "submit" && event.frame === 3,
@@ -2424,7 +2705,7 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
     };
   }
 
-  it("retains every cold input and fails stalled feedback without calling D10 discards lost edits", () => {
+  it("retains every cold input and fails dropped movement during stalled feedback", () => {
     const result = evaluateScenario(coldStroke(true));
     expect(result.status).toBe("FAIL");
     expect(result.sampleCount).toBe(6);
@@ -2444,7 +2725,7 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
     );
     expect(
       result.failures.some((issue) => issue.code === "INPUT_NOT_ACCEPTED"),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("uses the same live/content criteria after cold or warm readiness", () => {
@@ -2467,7 +2748,7 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
     );
   });
 
-  it("permits proven movement coalescing without accepting a lost press or inventing a submit", () => {
+  it("rejects a dropped coalesced point without inventing a submit", () => {
     const scenario = coldStroke(false);
     Object.assign(scenario.samples[2], {
       modelAt: null,
@@ -2480,7 +2761,7 @@ describe("D11/M10 uses a real local gate and the ordinary edit contract", () => 
       gestureId: scenario.samples[0].inputId,
       frameId: null,
     });
-    expect(evaluateScenario(scenario).status).toBe("PROXY_ONLY");
+    expect(evaluateScenario(scenario).status).toBe("FAIL");
     expect(
       evaluateSubmissionDiagnostics(scenario.samples).inputToResponseMs.count,
     ).toBe(5);

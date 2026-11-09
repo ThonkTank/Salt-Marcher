@@ -1114,78 +1114,84 @@ Höhenabfragen, Undo und gespeicherte Daten behalten ihre `Float64`-Werte.
 
 **Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
 gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
-bestätigt leer sein; der sichtbare Wirkbereich muss zum aktuellen Ausschnitt
-passen und von der GPU fertig gezeichnet sein. Das bloße Einreichen eines Frames
-genügt für die nächste Dosis nicht; die Prüfung blockiert den Eingabethread nicht.
-Auch nach einer Änderung der Pinselstufe muss die passende lokale
-Darstellungsvorbereitung abgeschlossen sein. Währenddessen gilt dieselbe
-sichtbare Warteanzeige und Regel zum erneuten Drücken.
-Diese Rückmeldung ist kein Nachweis der ersten physischen Bildschirmpräsentation.
-Bei Bewegung gehört das angenommene
-Segment dazu. Eine reguläre numerische Übersicht auf dem gewählten Maßstab und
-ein gezeichneter leerer Ozean sind gültige Grundlagen. Ein alter Ersatzframe,
-eine Ladefläche oder bloß vorhandene Daten genügen nicht.
+bestätigt leer sein; der sichtbare Wirkbereich muss zur aktuellen Ansicht und
+Werkzeugvorbereitung passen und von der GPU fertig gezeichnet sein. Ein Submit
+allein ist keine solche Bestätigung. Diese Rückmeldung belegt noch nicht die
+erste physische Bildschirmpräsentation.
 
-Die Pinselfläche muss das Fenster mit positiver Fläche schneiden. Ein über den
-Fensterrand ragender Pinsel benötigt nur für den sichtbaren Teil ein Bild; die
-Daten für den vollständigen Eingriff bleiben erforderlich. Fehlende entfernte
-Bildschirmteile sperren einen bereits bereiten lokalen Ort nicht. Noch
-ungezeichnete Flächen sind schraffiert. Über einem nicht bereiten Ort sind Pinsel
-und Status als wartend erkennbar; bei Fehlern wird ein erneuter Ladeversuch
-angeboten. Navigation bleibt bedienbar. Lokale Daten werden auch beim Bewegen
-des Zeigers oder Ändern der Pinselgröße ohne aktive Geste angefordert.
+Eine reguläre numerische Übersicht auf dem gewählten Maßstab und ein gezeichneter
+leerer Ozean sind gültige Grundlagen. Ein alter Ersatzframe, eine Ladefläche oder
+bloß vorhandene Daten genügen nicht. Die Pinselfläche muss das Fenster mit
+positiver Fläche schneiden. Ein über den Fensterrand ragender Pinsel benötigt
+nur für den sichtbaren Teil ein Bild; die Daten für den vollständigen Eingriff
+bleiben erforderlich. Fehlende entfernte Bildteile sperren einen bereiten
+lokalen Ort nicht. Noch ungezeichnete Flächen sind schraffiert. Pinsel und Status
+zeigen fehlende Bereitschaft; Fehler bieten einen erneuten Ladeversuch an.
+Navigation bleibt bedienbar. Der lokale Quellenbedarf folgt auch dem Zeiger und
+Änderungen der Pinselgröße ohne aktive Geste.
 
 Ein Druck vor Freigabe wird abgewiesen. Er erzeugt keine Modelländerung, keinen
 Undo-Schritt und keine vorgemerkte Wirkung. Auch wenn die Taste bis nach dem
-Laden gehalten wird, beginnt kein Strich automatisch. Zum Bearbeiten muss der
-Nutzer loslassen und erneut drücken; bei weiter gehaltener Taste erklärt ein
-Hinweis diesen Zustand. Wartezeit und währenddessen zurückgelegte Wege werden
-nicht nachgeholt.
+Laden gehalten wird, beginnt kein Strich automatisch. Der Nutzer muss loslassen
+und erneut drücken; bei gehaltener Taste erklärt ein Hinweis diesen Zustand.
+Wartezeit und Wege vor der Freigabe werden nicht nachgeholt.
 
-Ein Strich hält seine Autorenstufe und Pinselparameter bis zum Abschluss fest.
-**Gedrücktes Halten bearbeitet die Stelle fortlaufend weiter. Langsame Züge
-wirken stärker als schnelle, weil der Pinsel länger auf den betroffenen Stellen
-verweilt.** Die Stärke ist eine Zielrate pro Sekunde. Ein kleiner begrenzter
-Anfangsimpuls wird bei einem zulässigen Druck sofort angenommen und erhält auch
-sehr kurze Klicks. Weitere Schritte folgen dem tatsächlichen
-Darstellungsfortschritt und enthalten jeweils höchstens 50 ms Dosis. Höchstens
-ein Schritt darf noch auf seine Darstellung warten. Bei langsamer Verarbeitung
-wirkt der Pinsel entsprechend schwächer; verworfene Wartezeit wird nicht später
-als großer Auftrag nachgeholt. Eine Bewegung auf freigegebenem Gelände wird
-bereits beim Eintreffen angenommen, sofern keine eigene Dosis aussteht; ein
-unmittelbares Loslassen verwirft diese angenommene Wirkung nicht. Bewegung und
-Halten rechnen verstrichene Zeit gemeinsam genau einmal an. Normales
-Zusammenfassen mehrerer Mausereignisse vor der nächsten Zeichenchance erhält
-ihren zeitgestempelten Verlauf. Richtungswechsel werden nicht durch eine Gerade
-zwischen Anfang und Ende ersetzt; die Restzeit nach dem letzten Bewegungspunkt
-wirkt an dessen Ort. Das gemeinsame Zeitkonto wird dabei einmal verbucht.
-Der wartende Verlauf ist auf 128 Punkte begrenzt. Ein Überlauf verwirft den
-überlasteten Verlauf ausdrücklich, statt eine Abkürzung zu malen. Eine erfolglose
-Zeichenrunde verwirft ebenfalls ihre Wartezeit und den nicht angewandten Weg.
-Der reine Fachkern integriert die ausdrücklich
-angenommene Zeit und den Weg. Jeder angenommene Abschnitt wirkt live. Eine noch
-ausstehende Darstellung der eigenen Dosis pausiert nur weitere Wirkung; der
-gehaltene Strich kann nach dieser Rückmeldung am aktuellen Ort weitergehen.
-Verlässt er dagegen seine sichtbar bereite Grundlage oder fehlen neu benötigte
-Quellen, endet er vor dem unzulässigen Abschnitt. Die bereits angenommenen
-Änderungen bleiben ein gemeinsamer Undo-Schritt; zum Weiterarbeiten ist ein neuer
-Druck nötig. Pointerup fasst ebenfalls den angenommenen Strich zu einem
-Undo-Schritt zusammen. Ist dessen vollständiger Endzustand bereits gezeichnet,
-verlangt der Abschluss keinen zusätzlichen identischen Terrainframe. Eine noch
-ausstehende Darstellung bleibt ausstehend. Escape,
-Fokusverlust, Pointercancel und ein ausdrücklicher Ansichtwechsel beenden die
-laufende Einwirkung und erhalten bereits angenommene Änderungen. Fehlende lokale
-Daten bleiben als Wartezustand sichtbar und werden nicht als leeres Gelände behandelt.
-Nach Loslassen oder Abbruch wird keine weitere Dosis angenommen. Bereits
-angenommene Änderungen dürfen noch sichtbar werden; ein wartender Restweg oder
-angesammelte Haltezeit darf keine neue Bearbeitung auslösen.
-Auch schnelle aufeinanderfolgende Klicks stapeln keine unsichtbaren Schritte.
-Ein ausdrücklicher Wechsel zu einem anderen Kartenausschnitt beendet das Warten
-auf vollständig verlassene Bereiche; ihre angenommenen Änderungen bleiben
-erhalten und erscheinen bei Rückkehr.
-Grenzen für Arbeit und Speicher werden vor der jeweiligen Änderung geprüft;
-eine Ablehnung späterer Abschnitte erhält den vorher angenommenen Teil als
-rückgängig machbare Aktion.
+Ein Strich hält Autorenstufe und Pinselparameter bis zum Abschluss fest.
+**Gedrücktes Halten vertieft die Stelle. Langsame Züge wirken stärker als
+schnelle, weil mehr Zeit auf die betroffenen Stellen entfällt.** C1 verwendet
+je Stützstelle den größeren Wert aus einer einmaligen räumlichen Mindestwirkung
+und kumulierter angenommener Zeitwirkung: `V = max(F, T)`. Die räumliche
+Mindestwirkung folgt dem größten quartischen Kernelwert auf der vollständigen
+angenommenen Polylinie, multipliziert mit 1/60 Sekunde der fixierten Rate.
+Der Anfangsklick gehört zu diesem einmaligen Anteil. Er wird auf die Zeitwirkung
+angerechnet; wiederholte Nullzeitbesuche stapeln keine neuen Mindestimpulse.
+Dies ist die in R1 ausgewählte Semantik.
+
+Bewegungs- und Haltezeit werden auf derselben kausalen Uhr einmal verbucht.
+Gleiche Zeitstempel erhalten ihre Ecken; ihre neue Zeit verteilt sich nach
+Weglänge. Verspätete Ereignisse erhalten ihre noch nicht aufgenommene Geometrie,
+erzeugen aber keine bereits verbuchte Zeit erneut. Pro Annahmefenster werden
+höchstens 50 ms Zeit proportional auf seine Teilstrecken verteilt. Überzählige
+Zeit verfällt und erzeugt später keinen Nachholauftrag. Die Rate bleibt fest.
+
+Vor jeder Annahme werden Quellen, sichtbare Grundlage, Arbeit und Speicher
+geprüft und die vollständige Wirkung reserviert. Je Stützstelle dürfen angewandte
+und reservierte, noch nicht passend bestätigte Beiträge gemeinsam höchstens
+50 ms der fixierten Rate ausmachen. Ein ausgeschöpfter Ort verwirft keinen
+anderen zulässigen Ort, auch nicht in derselben Autorenkachel. Vollständige,
+passende Renderbestätigungen geben nur ihre tatsächlich dargestellte Wirkung
+frei. Teilbilder und alte Belege zählen nicht.
+
+Eigene spätere Änderungen entwerten die beim Beginn nachgewiesene Grundlage
+nicht. Neu berührte Orte müssen jedoch ebenfalls sichtbar bereit sein. Fehlen
+Quellen oder sichtbare Grundlage, endet die Eingabe vor dem unzulässigen
+Abschnitt; der bereits angenommene Teil bleibt erhalten und ein neuer Druck
+ist erforderlich. Quellen- und Bildprüfungen erhalten die Ecken des Wegs.
+Es gibt kein globales Warten auf eine einzelne eigene Dosis.
+
+Zusammengefasste Mausereignisse werden in ihrer gelieferten Reihenfolge
+aufgenommen; ihr zusammenfassendes Ereignis wird nicht doppelt gezählt.
+Die gemeinsame noch nicht abgearbeitete Eingabe ist auf 128 Punkte begrenzt.
+Nichtterminale Eingabe lässt einen Platz für Up frei. Ein tatsächlicher
+Kapazitätsüberlauf wird vor Annahme verständlich abgewiesen und beendet die
+weitere Eingabe. Er kürzt keine zuvor angenommene Arbeit und malt keine
+Abkürzung durch eine Kurve. Eine langsame Zeichenrunde verwirft keinen schon
+angenommenen Weg.
+
+**Loslassen beendet die Eingabe, der Aktionsabschluss folgt nach der letzten
+angenommenen Arbeit.** Up reserviert seinen tatsächlichen Endpunkt samt noch
+zulässiger Zeit vor Rückkehr des Handlers, auch ohne vorangegangenes Move.
+Danach wird keine zusätzliche Zeit oder Geometrie angenommen. Die begrenzte
+Fortsetzung kann weitere Frames benötigen; der Status zeigt den Abschluss an.
+Die gesamte Geste erzeugt genau einen Undo-Schritt. Nach dem tatsächlichen
+Aktionsabschluss erfolgt keine weitere Autorenmutation für diese Geste.
+
+Escape, Fokusverlust, Pointercancel und ausdrücklicher Ansichtwechsel beenden
+die Eingabe und erhalten die bereits angenommene Arbeit einschließlich ihrer
+Fortsetzung. Ein vollständig aktueller Endstand benötigt keinen künstlichen
+identischen Terrainframe. Ausstehende Darstellung bleibt ausstehend.
+Schnelle Klickfolgen dürfen weder eine noch abschließende Aktion überholen noch
+auf ungesehenem eigenem Gelände unsichtbare Schritte stapeln.
 
 Während einer gehaltenen Bewegung folgt das tatsächliche Gelände dem Pinsel
 kontinuierlich. Wenige frühe Zwischenbilder und ein korrektes Endbild genügen
@@ -1215,10 +1221,14 @@ Das Lesen benötigter Ausschnitte kann während des asynchronen Speicherns
 weiterlaufen. Schreibaufträge und Projektwechsel bleiben geordnet; die Datei
 enthält weiterhin genau den reservierten Stand.
 
-Neu, Öffnen und Schließen beenden zunächst den laufenden Höhenstrich und warten
-auf ausstehende Schreibaufträge. Bei ungespeicherten Änderungen stehen
+Undo/Redo, Speichern, Recovery, Neu, Öffnen und Schließen verwenden dieselbe
+Aktionsbarriere. Sie versiegeln zunächst die Eingabe und warten auf sämtliche
+angenommene Restarbeit, bevor History, Writer oder Dateisnapshot ihren Stand
+auswählen. Neu, Öffnen und Schließen warten außerdem auf ausstehende Schreibaufträge. Bei ungespeicherten Änderungen stehen
 **Speichern, Verwerfen und Abbrechen** zur Wahl. Abbrechen erhält den vollständigen
-abgeschlossenen Strich samt History und lässt das Dokument geöffnet. Ein Fehler
+abgeschlossenen Strich samt History und lässt das Dokument geöffnet. Ein
+fehlgeschlagenes Öffnen erhält ihn ebenfalls. Erfolgreicher Dokumentwechsel
+und Disposal invalidieren alte Fortsetzungen und verspätete Antworten. Ein Fehler
 beim Speichern oder eine fehlende Bestätigung des Editors schließt das Fenster nicht.
 
 Nach einem Schreibfehler bleiben die angenommenen Änderungen im Editor und der

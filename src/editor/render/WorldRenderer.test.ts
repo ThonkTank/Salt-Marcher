@@ -149,6 +149,9 @@ vi.mock("./HeightField", () => ({
         }
       return changed;
     }
+    readSource(key: string) {
+      return this.sources.get(key);
+    }
     applySourcePatches(patches: readonly HeightPatch[]) {
       return this.updateSources(
         patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
@@ -1003,6 +1006,232 @@ it("keeps the same certified source area during a small camera move", async () =
   expect(world.inspectRegion(world.bounds()).status).toBe("current");
 });
 
+it("R2 renderer completes the entire frozen group while retaining newer changes", async () => {
+  const { world, field, document, observation, change, frame } =
+    await readyRenderer({ width: 256, height: 128, x: 512, y: 256 });
+  const first = change([240, 240]);
+  const second = change([720, 240]);
+  const frozenSources = [...field.sources.values()].map((tile) => ({
+    ...tile,
+    values: tile.values.slice(),
+  }));
+  const receipt = world.freezeRender([first.bounds, second.bounds])!;
+  expect(receipt).not.toBeNull();
+  expect(receipt.revision).toBe(document.revision);
+  for (const tile of world["tiles"].values())
+    vi.spyOn(tile.field, "compositionWork", "get").mockReturnValue(
+      editorBudgets.compositionWorkPerFrame,
+    );
+  const partial = world.renderFrame(performance.now())!;
+  expect(partial.exactRevision).toBe(-1);
+  const newer = change([740, 240]);
+  expect(document.revision).toBeGreaterThan(receipt.revision);
+  expect([...field.sources.values()]).toEqual(frozenSources);
+  expect(world.state().queuedSourceTiles).toBeGreaterThan(0);
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("pending");
+  expect(observation.read().at(-1)).toMatchObject({
+    kind: "gpu-completed",
+    renderReceipt: null,
+  });
+  for (
+    let step = 0;
+    step < 20 && world.inspectRenderReceipt(receipt) === "pending";
+    step++
+  )
+    frame();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+  expect(world.inspectRenderReceipt({ ...receipt })).toBe("invalid");
+  expect(world.inspectRegion(newer.bounds).status).toBe("stale");
+  expect(world.state().queuedSourceTiles).toBe(0);
+  expect(observation.read().at(-1)).toMatchObject({
+    kind: "gpu-completed",
+    revision: receipt.revision,
+    renderReceipt: receipt,
+  });
+  for (const tile of field.sources.values())
+    expect(tile.values).toEqual(
+      document
+        .snapshot(heightTileSupport(tile))
+        .tiles.find((item) => item.key === tile.key)!.values,
+    );
+  for (let step = 0; step < 20 && world.state().queuedTiles; step++) frame();
+  expect(world.inspectRegion(newer.bounds).status).toBe("current");
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+});
+
+it("R2 renderer rejects an imported foundation while completing its older immutable group", async () => {
+  const { world, document, field, change } = await readyRenderer();
+  const area: Bounds = [180, 180, 240, 240];
+  const foundation = world.captureFoundation();
+  const update = change([200, 200]);
+  expect(world.inspectFoundation(area, foundation).status).toBe("current");
+  const receipt = world.freezeRender(update.bounds)!;
+  world.renderFrame(performance.now());
+  const source = update.patches.find((patch) => patch.after)!.after!;
+  const imported = { ...source, values: source.values.slice() };
+  imported.values[40 * 64 + 40] += 5;
+  world.updatePresentation([imported], [], []);
+  expect(document.revision).toBe(receipt.revision);
+  expect(field.sources.get(source.key)!.values).toEqual(source.values);
+  expect(world.inspectFoundation(area, foundation).status).toBe("missing");
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+  expect(field.sources.get(source.key)!.values).toEqual(imported.values);
+  expect(world.inspectRegion(area).status).toBe("stale");
+  world.renderFrame(performance.now());
+  world.pollCompletion();
+  expect(world.inspectRegion(area).status).toBe("current");
+  expect(world.inspectFoundation(area, foundation).status).toBe("missing");
+});
+
+it("R2 renderer captures partial current foundations without mutating them during inspection", async () => {
+  const { world, change, frame } = await readyRenderer();
+  const left: Bounds = [180, 180, 230, 230];
+  const right: Bounds = [320, 320, 360, 360];
+  change([200, 200]);
+  expect(world.inspectRegion(left).status).toBe("stale");
+  expect(world.inspectRegion(right).status).toBe("current");
+  const foundation = world.captureFoundation();
+  expect(world.inspectFoundation(left, foundation).status).toBe("missing");
+  expect(world.inspectFoundation(right, foundation).status).toBe("current");
+  frame();
+  const state = world.state();
+  for (let i = 0; i < 4; i++)
+    expect(world.inspectFoundation(left, foundation).status).toBe("current");
+  expect(world.state()).toEqual(state);
+  change([200, 200]);
+  expect(world.inspectFoundation(left, foundation).status).toBe("missing");
+  frame();
+  expect(world.acceptFoundation(left, foundation)).toBe(true);
+  change([200, 200]);
+  expect(world.inspectFoundation(left, foundation).status).toBe("current");
+  expect(world.acceptFoundation(left, { ...foundation })).toBe(false);
+});
+
+it("R2 renderer freezes separate influences without requiring a cold gap", async () => {
+  const { world, change, frame } = await readyRenderer({
+    width: 384,
+    height: 384,
+  });
+  const first = change([-200, -200]);
+  const second = change([700, 700]);
+  const ready = world.isPresentationReady.bind(world);
+  vi.spyOn(world, "isPresentationReady").mockImplementation((bounds, power) =>
+    intersectsBounds(bounds, [0, 0, 512, 512]) ? false : ready(bounds, power),
+  );
+  expect(world.freezeRender(world.bounds())).toBeNull();
+  const receipt = world.freezeRender([first.bounds, second.bounds])!;
+  expect(receipt).not.toBeNull();
+  expect(receipt.bounds).toEqual([first.bounds, second.bounds]);
+  for (
+    let step = 0;
+    step < 20 && world.inspectRenderReceipt(receipt) === "pending";
+    step++
+  )
+    frame();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+  expect(world.inspectRegion(first.bounds).status).toBe("current");
+  expect(world.inspectRegion(second.bounds).status).toBe("current");
+});
+
+it("R2 renderer invalidates receipts across preparation, view, session and context changes", async () => {
+  const { world, canvas, change, frame, observation } = await readyRenderer();
+  const foundation = world.captureFoundation();
+  const update = change([200, 200]);
+  const first = world.freezeRender(update.bounds)!;
+  frame();
+  expect(world.inspectRenderReceipt(first)).toBe("complete");
+  world.setToolLevel(1);
+  expect(world.inspectRenderReceipt(first)).toBe("invalid");
+  expect(world.inspectFoundation(update.bounds, foundation).status).toBe(
+    "missing",
+  );
+  frame();
+  const reused = world.freezeRender(update.bounds)!;
+  expect(world.inspectRenderReceipt(reused)).toBe("complete");
+  expect(observation.read().at(-1)).toMatchObject({
+    kind: "render-current",
+    renderReceipt: reused,
+    frame: world.state().lastCompletedFrame,
+  });
+  world.moveCamera({ ...world.camera, x: world.camera.x + 1 });
+  expect(world.inspectRenderReceipt(reused)).toBe("invalid");
+  world.refresh();
+  frame();
+  const moved = world.freezeRender(update.bounds)!;
+  canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+  expect(world.inspectRenderReceipt(moved)).toBe("invalid");
+  canvas.dispatchEvent(new Event("webglcontextrestored"));
+  frame();
+  const restored = world.freezeRender(update.bounds)!;
+  expect(world.inspectRenderReceipt(restored)).toBe("complete");
+  world.reset(new EditorDocument("another-render-session", { empty: true }));
+  expect(world.inspectRenderReceipt(restored)).toBe("invalid");
+});
+
+it("R2 renderer preserves frozen fine overviews and coalesces every later delta", async () => {
+  const { world, field, document, change, frame } = await readyRenderer({
+    scale: 0.01,
+  });
+  const first = change([200, 200]);
+  const receipt = world.freezeRender(first.bounds)!;
+  world.renderFrame(performance.now());
+  const frozenOverviews = [...field.overviews.values()].map((tile) => ({
+    ...tile,
+    values: tile.values.slice(),
+  }));
+  const second = change([210, 210]);
+  const third = change([220, 220]);
+  expect([...field.overviews.values()]).toEqual(frozenOverviews);
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+  const latest = world.freezeRender([
+    first.bounds,
+    second.bounds,
+    third.bounds,
+  ])!;
+  expect(latest.revision).toBe(document.revision);
+  for (
+    let step = 0;
+    step < 20 && world.inspectRenderReceipt(latest) === "pending";
+    step++
+  )
+    frame();
+  expect(world.inspectRenderReceipt(latest)).toBe("complete");
+  for (const overview of field.overviews.values()) {
+    const bounds = heightOverviewBounds(overview);
+    const sample = prepareHeightSampler(document.snapshot(bounds).tiles);
+    const step = 2 ** overview.power;
+    for (let y = 0; y < 128; y++)
+      for (let x = 0; x < 128; x++)
+        expect(overview.values[y * 128 + x]).toBeCloseTo(
+          (sample(bounds[0] + (x + 0.5) * step, bounds[1] + (y + 0.5) * step) +
+            100) /
+            HEIGHT_SUM_SCALE,
+          12,
+        );
+  }
+});
+
+it("R2 renderer keeps the before proof of a queued deletion after author eviction", async () => {
+  const { world, field, change } = await readyRenderer({ scale: 0.01 });
+  const update = change([200, 200]);
+  const source = update.patches.find((patch) => patch.after)!.after!;
+  world.forgetSources([source.key]);
+  expect(field.sources.has(source.key)).toBe(false);
+  const receipt = world.freezeRender(update.bounds)!;
+  const apply = vi.spyOn(world["field"], "applySourcePatches");
+  world.renderFrame(performance.now());
+  world.updateSourcePatches([{ key: source.key, before: source, after: null }]);
+  expect(apply).not.toHaveBeenCalled();
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+  expect(apply).toHaveBeenCalledWith([
+    { key: source.key, before: source, after: null },
+  ]);
+});
+
 it("keeps visible progress and the frame loop after a slow or failed brush decision", async () => {
   const { drainView, controller, frame, pointer, advance } =
     await readyController();
@@ -1102,13 +1331,17 @@ async function readyController(
     diagnostics: options.diagnostics ?? true,
     onFileAction: vi.fn(() => () => {}),
     status: async () => info,
-    readPresentation: vi.fn(async (request: ReadPresentationRequest) => ({
-      ...request,
-      sequence: info.sequence,
-      tiles: [],
-      overviews: [],
-      overviewKeys: heightOverviewKeys(request.bounds, request.power),
-    })),
+    readPresentation: vi.fn(
+      async (
+        request: ReadPresentationRequest,
+      ): Promise<Awaited<ReturnType<AtlasDesktop["readPresentation"]>>> => ({
+        ...request,
+        sequence: info.sequence,
+        tiles: [],
+        overviews: [],
+        overviewKeys: heightOverviewKeys(request.bounds, request.power),
+      }),
+    ),
     readRegion: vi.fn(
       async (request: ReadRegionRequest): Promise<RegionRead> => ({
         ...request,
@@ -1148,6 +1381,7 @@ async function readyController(
       await Promise.resolve();
       frame();
       if (
+        !controller.state.finishing &&
         !controller.state.loading &&
         controller.world.inspectRegion(controller.world.bounds()).status ===
           "current"
@@ -1155,6 +1389,20 @@ async function readyController(
         return;
     }
     throw new Error("Actual numeric terrain view did not finish");
+  };
+  const drainAction = async () => {
+    for (let step = 0; step < 200; step++) {
+      frame(0);
+      for (let turn = 0; turn < 8; turn++) await Promise.resolve();
+      const observed = controller.observe();
+      if (!observed.document!.active && !observed.state.finishing) {
+        expect(observed.document!.brushWork?.pendingPoints ?? 0).toBe(0);
+        expect(observed.document!.brushWork?.pendingCells ?? 0).toBe(0);
+        expect(observed.document!.brushWork?.pendingAdmissions ?? 0).toBe(0);
+        return;
+      }
+    }
+    throw new Error("Accepted author work did not finish");
   };
   const pointer = (
     type: string,
@@ -1198,13 +1446,16 @@ async function readyController(
     frame,
     pointer,
     drainView,
+    drainAction,
+    canvas,
     advance,
     resize,
   };
 }
 
 it("rejects Down during tool preparation, never autostarts a held press, and keeps observation read-only", async () => {
-  const { controller, pointer, frame, drainView } = await readyController();
+  const { controller, pointer, frame, drainView, drainAction } =
+    await readyController();
   const prepare = vi.spyOn(controller.world, "setToolLevel");
   const gl = controller.world.renderer.gl;
   const wait = vi
@@ -1233,13 +1484,17 @@ it("rejects Down during tool preparation, never autostarts a held press, and kee
   expect(controller.observe().document!.revision).toBe(0);
   pointer("pointerup", 24, 20);
   pointer("pointerdown", 24, 20);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().document!.revision).toBe(0);
+  expect(controller.observe().document!.brushWork!.pendingPoints).toBe(1);
   pointer("pointerup", 24, 20);
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(1);
   controller.destroy();
 });
 
-it("keeps the active stroke level prepared when settings change and prepares the new tool only after release", async () => {
-  const { controller, pointer, frame, drainView } = await readyController();
+it("keeps the stroke level through finishing and prepares changed settings after completion", async () => {
+  const { controller, pointer, frame, drainView, drainAction } =
+    await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 20, 20);
@@ -1247,458 +1502,394 @@ it("keeps the active stroke level prepared when settings change and prepares the
   controller.setBrush(512, 400);
   expect(prepare).toHaveBeenLastCalledWith(0);
   expect(controller.observe().readiness.brush.level).toBe(0);
-  frame();
+  frame(0);
   pointer("pointerup", 20, 20);
-  expect(prepare).toHaveBeenLastCalledWith(controller.currentBrush().level);
-  expect(controller.observe().readiness.ready).toBe(false);
+  expect(controller.state.finishing).toBe(true);
+  expect(prepare).toHaveBeenLastCalledWith(0);
+  await drainAction();
   await drainView();
+  expect(prepare).toHaveBeenLastCalledWith(controller.currentBrush().level);
   expect(controller.observe().readiness.ready).toBe(true);
   controller.destroy();
 });
 
 it.each([16, 512])(
-  "keeps a %ipx short click and prevents invisible impulses from stacking across gestures",
+  "reserves a %ipx short click and rejects another gesture until its action and terrain complete",
   async (diameter) => {
-    const { drainView, controller, bridge, frame, pointer } =
-      await readyController(0, {
-        width: 1180,
-        height: 894,
-      });
+    const { controller, bridge, pointer, frame, drainView, drainAction } =
+      await readyController(0, { width: 1180, height: 894 });
     controller.setBrush(diameter, 400);
     await drainView();
     pointer("pointerdown", 20, 20);
-    expect(controller.observe().document!.revision).toBe(1);
+    expect(controller.observe().document!.revision).toBe(0);
+    expect(controller.observe().document!.brushWork!.pendingPoints).toBe(1);
     pointer("pointerup", 20, 20);
+    expect(controller.state.finishing).toBe(true);
     pointer("pointerdown", 20, 20);
     pointer("pointerup", 20, 20);
-    expect(controller.observe().document!.revision).toBe(1);
-    await Promise.resolve();
+    expect(bridge.commit).not.toHaveBeenCalled();
+    await drainAction();
+    const complete = controller.observe();
+    expect(complete.document!.historyActions).toBe(1);
     expect(bridge.commit).toHaveBeenCalledOnce();
-    const intervals = controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval");
-    expect(intervals).toHaveLength(1);
-    expect(intervals[0]).toMatchObject({
-      cause: "press",
-      nominalDose: true,
-      acceptedElapsedMs: 1000 / 60,
+    const accepted = complete.events.filter(
+      (event) => event.kind === "brush-accepted",
+    );
+    expect(accepted.map((event) => event.cause)).toEqual(["press", "terminal"]);
+    expect(accepted[0]).toMatchObject({
+      pointCount: 1,
       rawElapsedMs: 0,
+      offeredElapsedMs: 0,
     });
-    expect(intervals[0].fromAt).toBe(intervals[0].toAt);
-    frame();
-    frame();
-    for (let step = 0; step < 3; step++) frame(50);
-    expect(controller.observe().document!.revision).toBe(1);
     expect(
-      controller.observation
-        .read()
-        .filter((event) => event.kind === "brush-submit"),
+      complete.events.filter((event) => event.kind === "brush-start"),
     ).toHaveLength(1);
+    await drainView();
+    frame(1000);
+    expect(controller.observe().document!.revision).toBe(
+      complete.document!.revision,
+    );
+    expect(controller.observe().document!.historyActions).toBe(1);
     expect(
       controller.observation
         .read()
-        .filter((event) => event.kind === "edit-submit")
-        .map((event) => event.input),
-    ).toEqual([2]);
-    expect(
-      controller.observation
-        .read()
-        .filter((event) => event.kind === "noop")
-        .map((event) => event.input),
-    ).toEqual([3, 4]);
+        .filter((event) => event.kind === "edit-submit"),
+    ).toHaveLength(1);
     controller.destroy();
   },
 );
 
 it.each(["drop-render", "delay-render", "pointerup-render"] as const)(
-  "keeps one accepted large dose through %s and never paints a waiting path after release",
+  "retains accepted path and terminal endpoint through %s without new time after Up",
   async (fault) => {
-    const { drainView, controller, frame, pointer, advance } =
-      await readyController(0, {
-        width: 1180,
-        height: 894,
-      });
+    const {
+      controller,
+      bridge,
+      frame,
+      pointer,
+      advance,
+      drainView,
+      drainAction,
+    } = await readyController(0, { width: 1180, height: 894 });
     controller.setBrush(512, 400);
     await drainView();
     controller.world.fault = fault;
     pointer("pointerdown", 190, 372);
-    frame(24);
+    frame(0);
     advance(24);
     pointer("pointermove", 330, 372);
-    frame(24);
+    frame(0);
     advance(24);
     pointer("pointermove", 610, 372);
-    frame(24);
-    expect(controller.observe().document!.revision).toBe(1);
-    expect(
-      controller.observation
-        .read()
-        .filter((event) => event.kind === "brush-submit"),
-    ).toHaveLength(0);
-    pointer("pointerup", 610, 372);
-    const values = controller.observe([
+    pointer("pointerup", 650, 372);
+    expect(controller.state.finishing).toBe(true);
+    await drainAction();
+    const complete = controller.observe([
       [-1600, -300],
-      [80, -300],
-    ]).samples;
+      [-640, -300],
+      [240, -300],
+    ]);
+    expect(complete.samples.every((value) => value! > -100)).toBe(true);
+    expect(complete.document!.historyActions).toBe(1);
+    expect(bridge.commit).toHaveBeenCalledOnce();
+    const admissions = complete.events.filter(
+      (event) => event.kind === "brush-accepted",
+    );
+    expect(admissions.map((event) => event.cause)).toEqual([
+      "press",
+      "move",
+      "move",
+      "terminal",
+    ]);
+    expect(admissions.at(-1)!.to).toEqual([240, -300]);
     controller.world.fault = "none";
+    await drainView();
     frame(1000);
-    expect(controller.observe().document!.revision).toBe(1);
+    const after = controller.observe([
+      [-1600, -300],
+      [-640, -300],
+      [240, -300],
+    ]);
+    expect(after.samples).toEqual(complete.samples);
+    expect(after.document!.revision).toBe(complete.document!.revision);
     expect(
-      controller.observe([
-        [-1600, -300],
-        [80, -300],
-      ]).samples,
-    ).toEqual(values);
-    expect(
-      controller.observation
-        .read()
-        .filter((event) => event.kind === "brush-interval"),
-    ).toHaveLength(1);
-    expect(
-      controller.observation
-        .read()
-        .filter((event) => event.kind === "brush-submit"),
-    ).toHaveLength(1);
-    expect(controller.observe().readiness.ready).toBe(false);
-    frame(0);
-    expect(controller.observe().readiness.ready).toBe(true);
+      after.events.filter((event) => event.kind === "brush-accepted"),
+    ).toHaveLength(admissions.length);
     controller.destroy();
   },
 );
 
-it("retains an accepted press and its dose fact when presentation projection fails", async () => {
-  const { controller, bridge, frame, pointer, drainView } =
+it("retains accepted author work and its dose fact when presentation projection fails", async () => {
+  const { controller, bridge, frame, pointer, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
   const original = controller.observe([[-48, -48]]).samples[0]!;
-  const previousFrame = controller.world.state().lastSubmittedFrame;
-  const projection = vi
-    .spyOn(controller.world, "updateSourcePatches")
-    .mockImplementationOnce(() => {
+  bridge.readPresentation.mockImplementation(async (request) => ({
+    ...request,
+    sequence: bridge.commit.mock.calls.at(-1)?.[0].sequence ?? 0,
+    tiles:
+      bridge.commit.mock.calls
+        .at(-1)?.[0]
+        .patches.flatMap((patch) => (patch.after ? [patch.after] : [])) ?? [],
+    overviews: [],
+    overviewKeys: heightOverviewKeys(request.bounds, request.power),
+  }));
+  vi.spyOn(controller.world, "updateSourcePatches").mockImplementationOnce(
+    () => {
       throw new Error("Darstellungsbudget überschritten");
-    });
-
+    },
+  );
   pointer("pointerdown", 20, 20);
-  const accepted = controller.observe([[-48, -48]]);
+  expect(controller.state.error).toBeNull();
+  frame(0);
   expect(controller.state.error).toBe("Darstellungsbudget überschritten");
-  expect(accepted.gesture).toBeNull();
-  expect(accepted.document).toMatchObject({
-    revision: 1,
-    sequence: 1,
-    historyActions: 1,
-  });
-  expect(accepted.samples[0]).toBeGreaterThan(original);
-  expect(controller.state.canUndo).toBe(true);
-  expect(controller.state.needsPress).toBe(true);
+  expect(controller.state.finishing).toBe(true);
+  expect(controller.observe([[-48, -48]]).samples[0]).toBeGreaterThan(original);
   const intervals = controller.observation
     .read()
     .filter((event) => event.kind === "brush-interval");
   expect(intervals).toHaveLength(1);
   expect(intervals[0]).toMatchObject({
-    cause: "press",
+    cause: "materialize",
+    dosing: "c1",
     changed: true,
-    revision: 1,
-    acceptedElapsedMs: 1000 / 60,
     projectedAt: null,
   });
-
-  // Redrawing the old terrain must not certify this failed projection.
-  frame();
-  expect(controller.world.state().lastSubmittedFrame).toBeGreaterThan(
-    previousFrame,
-  );
   pointer("pointerup", 20, 20);
+  await drainAction();
   await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   expect(bridge.commit).toHaveBeenCalledOnce();
-  const committed = bridge.commit.mock.calls[0][0];
-  expect(committed.sequence).toBe(1);
-  expect(committed.patches.length).toBeGreaterThan(0);
-  expect(
-    prepareHeightSampler(
-      committed.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
-    )(-48, -48),
-  ).toBeCloseTo(accepted.samples[0]!, 10);
-
+  const stored = prepareHeightSampler(
+    bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
+      patch.after ? [patch.after] : [],
+    ),
+  );
+  expect(stored(-48, -48)).toBeCloseTo(
+    controller.observe([[-48, -48]]).samples[0]!,
+    10,
+  );
   controller.undo();
   await drainView();
-  for (let step = 0; step < 20 && controller.state.writing; step++)
-    await Promise.resolve();
-  expect(controller.state.writing).toBe(false);
-  expect(projection).toHaveBeenCalledTimes(2);
   expect(controller.observe([[-48, -48]]).samples[0]).toBe(original);
   expect(controller.state.canRedo).toBe(true);
-  expect(bridge.commit).toHaveBeenCalledTimes(2);
-  expect(bridge.commit.mock.calls[1][0].sequence).toBe(2);
   expect(
     controller.observation
       .read()
       .filter((event) => event.kind === "brush-submit"),
   ).toHaveLength(0);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval"),
-  ).toHaveLength(1);
   controller.destroy();
 });
 
-it("ends without evaluating an unaccepted queued path", async () => {
-  const { controller, frame, pointer } = await readyController();
+it("rejects an invalid path before acceptance and finishes its already reserved press", async () => {
+  const { controller, frame, pointer, drainAction } = await readyController();
   pointer("pointerdown", 20, 20);
   pointer("pointermove", 30_000_000, 20);
   pointer("pointerup", 30_000_000, 20);
-  expect(controller.observe().gesture).toBeNull();
-  expect(controller.observe().document!.revision).toBe(1);
-  frame(1000);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.state.finishing).toBe(true);
   expect(
     controller.observation
       .read()
-      .filter((event) => event.kind === "brush-interval"),
+      .filter((event) => event.kind === "brush-accepted"),
   ).toHaveLength(1);
+  await drainAction();
+  const complete = controller.observe([[-48, -48]]);
+  expect(complete.gesture).toBeNull();
+  expect(complete.document!.historyActions).toBe(1);
+  frame(1000);
+  expect(controller.observe([[-48, -48]]).samples).toEqual(complete.samples);
   controller.destroy();
 });
 
-it("deepens while held only after each actual current frame, without synthetic pointer inputs or repeated UI state", async () => {
-  const { controller, frame, pointer, drainView } = await readyController();
+it("deepens while held using local C1 allowance without synthetic pointer inputs", async () => {
+  const { controller, frame, pointer, drainView, drainAction } =
+    await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 20, 20);
+  frame(0);
   const pressHeight = controller.observe([[-48, -48]]).samples[0]!;
-  controller.onChange = vi.fn();
-  for (let step = 0; step < 8; step++) {
-    frame(16);
-  }
-  expect(controller.onChange).not.toHaveBeenCalled();
+  for (let step = 0; step < 8; step++) frame(16);
   expect(controller.observe([[-48, -48]]).samples[0]).toBeGreaterThan(
     pressHeight,
   );
   const events = controller.observation.read();
-  const intervals = events.filter((event) => event.kind === "brush-interval");
-  expect(intervals.length).toBeGreaterThan(2);
-  expect(
-    intervals
-      .slice(1)
-      .every(
-        (event) =>
-          event.cause === "hold" &&
-          Number(event.acceptedElapsedMs) > 0 &&
-          Number(event.acceptedElapsedMs) <= 50 &&
-          (event.inputIds as number[]).length === 0,
-      ),
-  ).toBe(true);
-  expect(
-    intervals
-      .slice(1)
-      .reduce((total, event) => total + Number(event.acceptedElapsedMs), 0),
-  ).toBe(128);
-  expect(controller.observe().renderer.submittedRevision).toBe(
-    controller.observe().document!.revision,
+  const held = events.filter(
+    (event) => event.kind === "brush-accepted" && event.cause === "hold",
   );
+  expect(
+    held.reduce((sum, event) => sum + Number(event.offeredElapsedMs), 0),
+  ).toBe(128);
+  expect(
+    held.every(
+      (event) =>
+        (event.inputIds as number[]).length === 0 &&
+        Number(event.offeredElapsedMs) <= 50,
+    ),
+  ).toBe(true);
   expect(
     events.filter(
       (event) => event.kind === "input" && event.inputKind === "edit",
     ),
   ).toHaveLength(1);
-  for (let index = 1; index < intervals.length; index++) {
-    const previous = events.findIndex(
-      (event) =>
-        event.kind === "brush-submit" &&
-        event.intervalId === intervals[index - 1].intervalId,
-    );
-    expect(previous).toBeGreaterThan(-1);
-    expect(previous).toBeLessThan(events.indexOf(intervals[index]));
-  }
   pointer("pointerup", 20, 20);
-  const revision = controller.observe().document!.revision;
+  await drainAction();
+  const complete = controller.observe([[-48, -48]]);
   await drainView();
-  expect(controller.observe().document!.revision).toBe(revision);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval"),
-  ).toHaveLength(intervals.length);
+  frame(1000);
+  expect(controller.observe([[-48, -48]]).samples).toEqual(complete.samples);
+  expect(controller.observe().document!.revision).toBe(
+    complete.document!.revision,
+  );
   controller.undo();
   await drainView();
   expect(controller.observe([[-48, -48]]).samples[0]).toBeCloseTo(-100, 10);
   controller.destroy();
 });
 
-it("caps a stalled frame once and discards late movement without restoring an older anchor", async () => {
-  const { drainView, controller, frame, pointer, advance } =
+it("caps stalled time while preserving its complete spatial path and rejects a causally older sample", async () => {
+  const { controller, frame, pointer, advance, drainView, drainAction } =
+    await readyController(0, { width: 256, height: 128 });
+  controller.setBrush(16, 400);
+  await drainView();
+  pointer("pointerdown", 48, 64);
+  const oldAt = performance.now();
+  frame(0);
+  advance(1000);
+  pointer("pointermove", 208, 64);
+  const admission = controller.observation
+    .read()
+    .filter((event) => event.kind === "brush-accepted")
+    .at(-1)!;
+  expect(admission).toMatchObject({
+    cause: "move",
+    from: [-320, 0],
+    to: [320, 0],
+    rawElapsedMs: 1000,
+    offeredElapsedMs: 50,
+  });
+  pointer("pointermove", 10, 64, oldAt);
+  expect(controller.state.error).toContain("geordnet");
+  pointer("pointerup", 208, 64);
+  await drainAction();
+  const complete = controller.observe([
+    [-320, 0],
+    [0, 0],
+    [320, 0],
+  ]);
+  expect(complete.samples.every((value) => value! > -100)).toBe(true);
+  expect(complete.document!.historyActions).toBe(1);
+  frame(1000);
+  expect(
+    controller.observe([
+      [-320, 0],
+      [0, 0],
+      [320, 0],
+    ]).samples,
+  ).toEqual(complete.samples);
+  controller.destroy();
+});
+
+it("accepts many finite moves while a frozen draw waits and materializes all reserved work", async () => {
+  const { controller, frame, pointer, drainView, drainAction } =
+    await readyController();
+  controller.setBrush(16, 400);
+  await drainView();
+  controller.world.fault = "drop-render";
+  pointer("pointerdown", 20, 20);
+  frame(0);
+  for (let x = 21; x <= 40; x++) pointer("pointermove", x, 20);
+  expect(
+    controller.observation
+      .read()
+      .filter(
+        (event) => event.kind === "brush-accepted" && event.cause === "move",
+      ),
+  ).toHaveLength(20);
+  expect(
+    controller.observe().document!.brushWork!.pendingPoints,
+  ).toBeGreaterThan(0);
+  pointer("pointerup", 44, 20);
+  await drainAction();
+  const complete = controller.observe([
+    [-48, -48],
+    [0, -48],
+    [48, -48],
+  ]);
+  expect(complete.samples.every((value) => value! > -100)).toBe(true);
+  expect(complete.document!.historyActions).toBe(1);
+  controller.world.fault = "none";
+  await drainView();
+  expect(controller.observe().renderer.submittedRevision).toBe(
+    complete.document!.revision,
+  );
+  controller.destroy();
+});
+
+it("invalidates a frozen receipt on navigation while finishing accepted old-view work", async () => {
+  const { controller, frame, pointer, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 20, 20);
-  const oldAt = Number(
-    controller.observation.read().find((event) => event.kind === "brush-start")!
-      .inputAt,
-  );
   frame(0);
-  frame(1000);
-  let intervals = controller.observation
+  const frozen = controller.observation
     .read()
-    .filter((event) => event.kind === "brush-interval");
-  expect(intervals).toHaveLength(2);
-  expect(intervals[1]).toMatchObject({
-    acceptedElapsedMs: 50,
-    rawElapsedMs: 1000,
-  });
-  expect(Number(intervals[1].toAt) - Number(intervals[1].fromAt)).toBe(50);
-  expect(
-    controller.observation
-      .read()
-      .some(
-        (event) =>
-          event.kind === "brush-discard" &&
-          event.reason === "cap" &&
-          Number(event.toAt) - Number(event.fromAt) === 950,
-      ),
-  ).toBe(true);
-  // A fresh position is tracked during feedback wait; an older event cannot undo it.
-  controller.world.fault = "drop-render";
-  advance(16);
-  pointer("pointermove", 44, 20);
-  const accepted = controller.observe().document!.revision;
-  pointer("pointermove", 52, 20);
-  frame();
-  pointer("pointermove", 10, 20, oldAt);
-  frame();
-  expect(controller.observe().document!.revision).toBe(accepted);
-  controller.world.fault = "none";
-  frame();
-  expect(controller.observe().document!.revision).toBe(accepted);
-  frame();
-  intervals = controller.observation
-    .read()
-    .filter((event) => event.kind === "brush-interval");
-  expect(intervals.at(-1)).toMatchObject({
-    from: [80, -48],
-    to: [80, -48],
-    acceptedElapsedMs: 32,
-  });
-  // A late event cannot move the anchor or suppress current held-time work.
-  pointer("pointermove", 10, 20, oldAt);
-  frame();
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval"),
-  ).toHaveLength(intervals.length + 1);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval")
-      .at(-1),
-  ).toMatchObject({ from: [80, -48], to: [80, -48], acceptedElapsedMs: 16 });
-  expect(
-    controller.observation
-      .read()
-      .some(
-        (event) =>
-          event.kind === "noop" &&
-          event.reason === "stale" &&
-          event.accepted === false,
-      ),
-  ).toBe(true);
-  advance(16);
-  pointer("pointermove", 56, 20);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval")
-      .at(-1),
-  ).toMatchObject({ from: [80, -48], to: [96, -48], acceptedElapsedMs: 16 });
-  pointer("pointerup");
-  controller.destroy();
-});
-
-it("accepts at most one bounded dose from many queued moves", async () => {
-  const { drainView, controller, frame, pointer } = await readyController();
-  controller.setBrush(16, 400);
-  await drainView();
-  controller.world.fault = "drop-render";
-  pointer("pointerdown", 20, 20);
-  frame();
-  for (let x = 21; x <= 40; x++) pointer("pointermove", x, 20);
-  controller.world.fault = "none";
-  frame(500);
-  expect(controller.observe().document!.revision).toBe(1);
-  frame(16);
-  const intervals = controller.observation
-    .read()
-    .filter((event) => event.kind === "brush-interval");
-  expect(intervals).toHaveLength(2);
-  expect(intervals[1]).toMatchObject({
-    from: [32, -48],
-    to: [32, -48],
-    acceptedElapsedMs: 50,
-  });
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "noop" && event.reason === "stale"),
-  ).toHaveLength(19);
-  pointer("pointerup");
-  controller.destroy();
-});
-
-it("ends obsolete feedback only after navigating completely away, then waits for the new displayed basis", async () => {
-  const { controller, frame, pointer, drainView } = await readyController();
-  controller.setBrush(16, 400);
-  await drainView();
-  pointer("pointerdown", 20, 20);
+    .find((event) => event.kind === "brush-frozen")!;
+  expect(frozen).toBeDefined();
+  const gl = controller.world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
   pointer("pointerup", 20, 20);
-  controller.goTo(new Event("navigate"), 4, 0, 0.25);
-  pointer("pointerdown", 20, 20);
-  pointer("pointerup", 20, 20);
-  expect(controller.observe().document!.revision).toBe(1);
-  expect(
-    controller.observation
-      .read()
-      .some((event) => event.kind === "brush-feedback-obsolete"),
-  ).toBe(false);
   controller.goTo(new Event("navigate"), 10_000, 0, 0.25);
+  expect(
+    controller.world.inspectRenderReceipt(
+      frozen.renderReceipt as import("./WorldRenderer").FrozenRenderReceipt,
+    ),
+  ).toBe("invalid");
   pointer("pointerdown", 20, 20);
-  expect(controller.observe().document!.revision).toBe(1);
-  const obsolete = controller.observation
-    .read()
-    .filter((event) => event.kind === "brush-feedback-obsolete");
-  expect(obsolete).toHaveLength(1);
-  expect(obsolete[0]).toMatchObject({
-    intervalId: 1,
-    gestureId: 1,
-    reason: "outside-view",
-  });
   pointer("pointerup", 20, 20);
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(1);
+  expect(
+    controller.observation
+      .read()
+      .some(
+        (event) =>
+          event.kind === "brush-feedback" &&
+          event.accepted &&
+          event.renderReceipt === frozen.renderReceipt,
+      ),
+  ).toBe(false);
   await drainView();
   pointer("pointerdown", 20, 20);
-  expect(controller.observe().document!.revision).toBe(2);
   pointer("pointerup", 20, 20);
-  frame();
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(2);
   controller.destroy();
 });
 
-it("releases offscreen feedback on resize without accepting the not-yet-drawn view", async () => {
-  const { controller, pointer, resize, drainView } = await readyController();
+it("finishes accepted work across resize and requires the new view before another press", async () => {
+  const { controller, pointer, resize, drainView, drainAction } =
+    await readyController();
   controller.setBrush(8, 400);
   await drainView();
   pointer("pointerdown", 2, 32);
   pointer("pointerup", 2, 32);
   resize(8);
   pointer("pointerdown", 4, 32);
-  expect(controller.observe().document!.revision).toBe(1);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-feedback-obsolete"),
-  ).toHaveLength(1);
   pointer("pointerup", 4, 32);
+  expect(controller.observe().document!.revision).toBe(0);
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(1);
   await drainView();
   pointer("pointerdown", 4, 32);
-  expect(controller.observe().document!.revision).toBe(2);
   pointer("pointerup", 4, 32);
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(2);
   controller.destroy();
 });
 
@@ -1797,20 +1988,21 @@ it("never resumes a held early press; release and a new press are required after
   expect(
     controller.observation
       .read()
-      .filter((event) => event.kind === "brush-interval"),
+      .filter((event) => event.kind === "brush-accepted"),
   ).toHaveLength(1);
   expect(
     controller.observation
       .read()
-      .find((event) => event.kind === "brush-interval"),
+      .find((event) => event.kind === "brush-accepted"),
   ).toMatchObject({
     cause: "press",
-    acceptedElapsedMs: 1000 / 60,
+    offeredElapsedMs: 0,
     rawElapsedMs: 0,
   });
   pointer("pointerup");
   frame(200);
-  expect(controller.observe().document!.revision).toBe(1);
+  await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   controller.destroy();
 });
 
@@ -1840,8 +2032,9 @@ it("uses the displayed-terrain gate in normal startup without diagnostic callbac
   pointer("pointerup", 24, 20);
   pointer("pointerdown", 24, 20);
   pointer("pointerup", 24, 20);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.state.finishing).toBe(true);
   await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   expect(bridge.commit).toHaveBeenCalledOnce();
   expect(controller.state.canUndo).toBe(true);
   expect(controller.observation.read()).toEqual([]);
@@ -1852,11 +2045,16 @@ it("uses the displayed-terrain gate in normal startup without diagnostic callbac
 });
 
 it("keeps input decisions, terrain and history identical with diagnostics enabled or disabled", async () => {
-  const apply = vi.spyOn(EditorDocument.prototype, "applySegments");
   const replay = async (diagnostics: boolean) => {
-    apply.mockClear();
-    const { controller, bridge, pointer, frame, drainView, advance } =
-      await readyController(0, { diagnostics, ready: false });
+    const {
+      controller,
+      bridge,
+      pointer,
+      frame,
+      drainView,
+      drainAction,
+      advance,
+    } = await readyController(0, { diagnostics, ready: false });
     controller.setBrush(16, 400);
     const states: unknown[] = [];
     const capture = () => {
@@ -1872,8 +2070,6 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
         needsPress: controller.state.needsPress,
       });
     };
-
-    // A cold press remains blocked after loading while its physical button is held.
     pointer("pointerdown", 20, 20);
     pointer("pointermove", 24, 20);
     await drainView();
@@ -1882,27 +2078,20 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
     expect(controller.observe().document!.revision).toBe(0);
     expect(controller.state.needsPress).toBe(true);
     pointer("pointerup", 24, 20);
-
     controller.world.fault = "drop-render";
     pointer("pointerdown", 24, 20);
     pointer("pointermove", 32, 20);
+    capture();
     frame(24);
     capture();
-    expect(controller.observe().document!.revision).toBe(1);
-    controller.world.fault = "none";
-    frame(16);
-    capture();
-    expect(controller.observe().document!.revision).toBe(1);
     advance(16);
     pointer("pointermove", 36, 20);
-    capture();
-    expect(controller.observe().document!.revision).toBe(2);
-
-    // The accepted dose survives Up, so a second unseen press cannot stack it.
-    pointer("pointerup", 32, 20);
+    pointer("pointerup", 40, 20);
     pointer("pointerdown", 32, 20);
     pointer("pointerup", 32, 20);
-    expect(controller.observe().document!.revision).toBe(2);
+    await drainAction();
+    expect(controller.observe().document!.historyActions).toBe(1);
+    controller.world.fault = "none";
     await drainView();
     capture();
     controller.undo();
@@ -1914,13 +2103,10 @@ it("keeps input decisions, terrain and history identical with diagnostics enable
       await Promise.resolve();
     expect(controller.state.writing).toBe(false);
     capture();
-
     const result = {
       states,
-      segments: structuredClone(apply.mock.calls),
       commits: structuredClone(bridge.commit.mock.calls),
     };
-    expect(result.segments).toHaveLength(2);
     expect(result.commits).toHaveLength(3);
     expect(controller.observation.eventCount > 0).toBe(diagnostics);
     controller.destroy();
@@ -1951,7 +2137,8 @@ it("prepares an off-center finer tool on hover and size change without a gesture
   expect(controller.state.canUndo).toBe(false);
   pointer("pointerdown", 450, 32);
   pointer("pointerup", 450, 32);
-  expect(controller.observe().document!.revision).toBe(1);
+  await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   controller.destroy();
 });
 
@@ -1985,32 +2172,34 @@ it("marks navigation ready only after the actual matching local submit", async (
   expect(events.indexOf(submit)).toBeLessThan(events.indexOf(ready));
   pointer("pointerdown");
   pointer("pointerup");
-  expect(controller.observe().document!.revision).toBe(1);
+  await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   controller.destroy();
 });
 
 it("ends a stroke before an unseen gap even when its two endpoints are visible", async () => {
-  const { controller, bridge, frame, pointer, drainView } =
+  const { controller, bridge, frame, pointer, drainView, drainAction } =
     await readyController(0, { width: 512 });
   controller.setBrush(16, 400);
   await drainView();
-  const inspect = controller.world.inspectRegion.bind(controller.world);
+  pointer("pointerdown", 64, 32);
+  frame(0);
+  const accepted = controller.observe().document!.revision;
+  const inspect = controller.world.inspectFoundation.bind(controller.world);
   const gap = vi
-    .spyOn(controller.world, "inspectRegion")
-    .mockImplementation((bounds) => {
-      const region = inspect(bounds);
+    .spyOn(controller.world, "inspectFoundation")
+    .mockImplementation((bounds, proof) => {
+      const region = inspect(bounds, proof);
       return bounds[0] < 0 && bounds[2] > 0
         ? { ...region, status: "missing" }
         : region;
     });
-  pointer("pointerdown", 64, 32);
-  const accepted = controller.observe().document!.revision;
   pointer("pointermove", 448, 32);
-  frame();
+  expect(controller.state.finishing).toBe(true);
+  await drainAction();
   expect(controller.observe().gesture).toBeNull();
   expect(controller.observe().document!.revision).toBe(accepted);
   expect(controller.state.needsPress).toBe(true);
-  for (let step = 0; step < 4; step++) await Promise.resolve();
   expect(bridge.commit).toHaveBeenCalledOnce();
   gap.mockRestore();
   await drainView();
@@ -2030,23 +2219,24 @@ it("ends a stroke before an unseen gap even when its two endpoints are visible",
 });
 
 it("permits a partial edge footprint but ends before a captured pointer paints wholly outside the viewport", async () => {
-  const { controller, bridge, pointer, frame, drainView } =
+  const { controller, bridge, pointer, frame, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 1, 32);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().document!.brushWork!.pendingPoints).toBe(1);
   pointer("pointermove", 1000, 32);
-  frame();
+  await drainAction();
   expect(controller.observe().gesture).toBeNull();
-  expect(controller.observe().document!.revision).toBe(1);
+  const complete = controller.observe().document!.revision;
+  expect(complete).toBeGreaterThan(0);
   expect(controller.observe().readiness.reason).toBe("outside");
   expect(controller.state.loading).toBe(false);
   pointer("pointermove", 32, 32);
   await drainView();
   frame(500);
   expect(controller.state.needsPress).toBe(true);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().document!.revision).toBe(complete);
   expect(bridge.commit).toHaveBeenCalledOnce();
   pointer("pointerup");
   controller.undo();
@@ -2095,7 +2285,8 @@ it("retains the current full tool halo when size and hover change during a prese
   expect(controller.state.error).toBeNull();
   pointer("pointerdown", 511, 128);
   pointer("pointerup", 511, 128);
-  expect(controller.observe().document!.revision).toBe(1);
+  await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   controller.destroy();
 });
 
@@ -2308,7 +2499,7 @@ it("edits a submitted warm local area while the outer presentation read is still
   expect(controller.state.loading).toBe(false);
   pointer("pointerdown");
   pointer("pointerup");
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.state.finishing).toBe(true);
   for (let step = 0; step < 6; step++) {
     frame();
     await Promise.resolve();
@@ -2345,33 +2536,44 @@ it("shows an initial read failure and recovers through the ordinary retry withou
   expect(controller.observe().document!.revision).toBe(0);
   pointer("pointerdown");
   pointer("pointerup");
-  expect(controller.observe().document!.revision).toBe(1);
+  await drainView();
+  expect(controller.observe().document!.historyActions).toBe(1);
   controller.destroy();
 });
 
-it("ends a held stroke on resize instead of painting at a world point different from its cursor", async () => {
-  const { controller, pointer, resize, frame, drainView } =
+it("seals a held stroke on resize and finishes at its accepted world point", async () => {
+  const { controller, pointer, resize, frame, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 32, 32);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().document!.revision).toBe(0);
   resize(128);
+  expect(controller.state.finishing).toBe(true);
+  await drainAction();
   expect(controller.observe().gesture).toBeNull();
+  expect(
+    controller.observe([
+      [0, 0],
+      [-128, 0],
+    ]).samples[0],
+  ).toBeGreaterThan(-100);
+  expect(
+    controller.observe([
+      [0, 0],
+      [-128, 0],
+    ]).samples[1],
+  ).toBe(-100);
   await drainView();
   frame(500);
-  expect(controller.observe().document!.revision).toBe(1);
+  expect(controller.observe().document!.historyActions).toBe(1);
   expect(controller.state.needsPress).toBe(true);
   pointer("pointerup", 32, 32);
   pointer("pointerdown", 32, 32);
   pointer("pointerup", 32, 32);
-  expect(controller.observe().document!.revision).toBe(2);
-  expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-interval")
-      .at(-1),
-  ).toMatchObject({ from: [-128, 0], to: [-128, 0] });
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(2);
+  expect(controller.observe([[-128, 0]]).samples[0]).toBeGreaterThan(-100);
   controller.destroy();
 });
 
@@ -2418,92 +2620,123 @@ it("projects fine source changes into a certified empty overview exactly once, i
 });
 
 // Controller regressions use the real author model and presentation readiness.
-// Only the existing GL boundary is mocked; a revision alone is not a draw receipt.
+// Only the existing GL boundary is mocked; reservation and completion are distinct.
 it.each([16, 512])(
-  "accepts a ready final %ipx movement before pointerup between frames",
+  "reserves the final %ipx Up point before RAF and finishes it once with one Undo",
   async (diameter) => {
-    const { drainView, controller, bridge, pointer, frame, advance } =
-      await readyController(0, { width: 1180, height: 894 });
+    const {
+      controller,
+      bridge,
+      pointer,
+      frame,
+      advance,
+      drainView,
+      drainAction,
+    } = await readyController(0, { width: 1180, height: 894 });
     controller.setBrush(diameter, 4000);
     await drainView();
-    const endX = diameter === 512 ? 610 : 230;
+    const endX = diameter === 512 ? 690 : 290;
     const endpoint: [number, number] = [(endX - 590) / 0.25, -300];
-    const original = controller.observe([endpoint]).samples[0]!;
     pointer("pointerdown", 190, 372);
-    frame(0);
-    expect(controller.observe().readiness).toMatchObject({
-      ready: false,
-      reason: "feedback",
-    });
-
     advance(24);
-    pointer("pointermove", endX, 372);
-    const accepted = controller.observe([endpoint]);
-    expect(accepted.samples[0]).toBeGreaterThan(original);
+    pointer("pointermove", endX - 40, 372);
     pointer("pointerup", endX, 372);
-    expect(controller.observe([endpoint]).samples).toEqual(accepted.samples);
-    frame(16);
-    frame(200);
-    const completed = controller.observe([endpoint]);
-    expect(completed.samples).toEqual(accepted.samples);
-    expect(completed.document!.revision).toBe(accepted.document!.revision);
-    expect(completed.renderer.submittedRevision).toBe(
-      completed.document!.revision,
-    );
-    expect(completed.document!.historyActions).toBe(1);
-    await Promise.resolve();
+    const sealed = controller.observe([endpoint]);
+    expect(sealed.document!.revision).toBe(0);
+    expect(sealed.state.finishing).toBe(true);
+    expect(sealed.document!.brushWork!.pendingPoints).toBe(3);
+    expect(
+      sealed.events.filter((event) => event.kind === "brush-accepted").at(-1),
+    ).toMatchObject({
+      cause: "terminal",
+      to: endpoint,
+      end: true,
+      pointCount: 1,
+    });
+    expect(bridge.commit).not.toHaveBeenCalled();
+    await drainAction();
+    const complete = controller.observe([endpoint]);
+    expect(complete.samples[0]).toBeGreaterThan(-100);
+    expect(complete.document!.historyActions).toBe(1);
     expect(bridge.commit).toHaveBeenCalledOnce();
     const stored = prepareHeightSampler(
       bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
         patch.after ? [patch.after] : [],
       ),
     );
-    expect(stored(...endpoint)).toBeCloseTo(accepted.samples[0]!, 10);
+    expect(stored(...endpoint)).toBeCloseTo(complete.samples[0]!, 10);
+    await drainView();
+    frame(1000);
+    expect(controller.observe([endpoint]).samples).toEqual(complete.samples);
+    expect(controller.observe().document!.revision).toBe(
+      complete.document!.revision,
+    );
+    controller.undo();
+    await drainView();
+    expect(controller.observe([endpoint]).samples[0]).toBe(-100);
+    expect(controller.observe().document!.historyActions).toBe(1);
+    expect(controller.state.canUndo).toBe(false);
+    expect(controller.state.canRedo).toBe(true);
     controller.destroy();
   },
 );
 
-it("shows a newly accepted held dose in the same frame while preserving one pending dose", async () => {
-  const { drainView, controller, pointer, frame } = await readyController();
+it("keeps a frozen GPU stand while newer accepted work advances and releases only its own receipt", async () => {
+  const { controller, pointer, frame, advance, drainView, drainAction } =
+    await readyController();
   controller.setBrush(16, 400);
   await drainView();
-  const point: [number, number] = [-48, -48];
   pointer("pointerdown", 20, 20);
   frame(0);
-  const press = controller.observe([point]);
-
-  frame(16);
-  const held = controller.observe([point]);
-  expect(held.samples[0]).toBeGreaterThan(press.samples[0]!);
-  expect(held.renderer.submittedRevision).toBe(held.document!.revision);
-  expect(held.readiness).toMatchObject({ ready: false, reason: "feedback" });
-
-  controller.world.fault = "drop-render";
-  frame(16);
-  const waiting = controller.observe([point]);
-  expect(waiting.samples[0]).toBeGreaterThan(held.samples[0]!);
-  for (let index = 0; index < 5; index++) {
-    pointer("pointermove", 20 + index, 20);
-    frame(16);
-  }
-  expect(controller.observe([point]).samples).toEqual(waiting.samples);
-  expect(controller.observe().document!.revision).toBe(
-    waiting.document!.revision,
-  );
-  pointer("pointerup", 24, 20);
-  controller.world.fault = "none";
-  frame(200);
-  expect(controller.observe([point]).samples).toEqual(waiting.samples);
-  expect(controller.observe().renderer.submittedRevision).toBe(
-    waiting.document!.revision,
-  );
+  const gl = controller.world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  const frozen = controller.observation
+    .read()
+    .find((event) => event.kind === "brush-frozen")!;
+  const revision = controller.observe().document!.revision;
+  const frameId = controller.observe().renderer.lastSubmittedFrame;
+  advance(16);
+  pointer("pointermove", 48, 20);
+  frame(0);
+  advance(16);
+  pointer("pointermove", 56, 20);
+  frame(0);
+  expect(controller.observe().document!.revision).toBeGreaterThan(revision);
+  expect(controller.observe().renderer.lastSubmittedFrame).toBe(frameId);
+  expect(controller.observe().renderer.queuedSourceTiles).toBeGreaterThan(0);
+  expect(controller.observe().readiness.ready).toBe(true);
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  pointer("pointerup", 56, 20);
+  const feedback = controller.observation
+    .read()
+    .filter((event) => event.kind === "brush-feedback" && event.accepted);
+  expect(feedback).toHaveLength(1);
+  expect(feedback[0]).toMatchObject({
+    revision,
+    renderReceipt: frozen.renderReceipt,
+  });
+  await drainAction();
+  await drainView();
+  expect(
+    controller
+      .observe([
+        [0, -48],
+        [96, -48],
+      ])
+      .samples.every((value) => value! > -100),
+  ).toBe(true);
+  expect(
+    wait.mock.calls.every(([, flags, timeout]) => flags === 0 && timeout === 0),
+  ).toBe(true);
   controller.destroy();
 });
 
 it.each(["pointerup", "pointercancel", "blur"])(
-  "adds no dose on %s or later frames after a ready accepted move",
+  "seals accepted work at %s and creates no new contribution during finishing",
   async (end) => {
-    const { drainView, controller, pointer, frame, advance } =
+    const { controller, pointer, frame, advance, drainView, drainAction } =
       await readyController();
     controller.setBrush(16, 400);
     await drainView();
@@ -2511,23 +2744,35 @@ it.each(["pointerup", "pointercancel", "blur"])(
     frame(0);
     advance(16);
     pointer("pointermove", 40, 20);
-    const beforeEnd = controller.observe([
-      [-48, -48],
-      [32, -48],
-    ]);
     advance(200);
     if (end === "blur") window.dispatchEvent(new Event("blur"));
     else pointer(end, 40, 20);
-    frame(1000);
-    frame(1000);
-    const afterEnd = controller.observe([
+    const admissions = controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-accepted");
+    expect(
+      admissions.filter((event) => event.cause === "terminal"),
+    ).toHaveLength(end === "pointerup" ? 1 : 0);
+    expect(controller.state.finishing).toBe(true);
+    await drainAction();
+    const complete = controller.observe([
       [-48, -48],
       [32, -48],
     ]);
-    expect(afterEnd.gesture).toBeNull();
-    expect(afterEnd.samples).toEqual(beforeEnd.samples);
-    expect(afterEnd.document!.revision).toBe(beforeEnd.document!.revision);
-    expect(afterEnd.document!.historyActions).toBe(1);
+    expect(complete.samples.every((value) => value! > -100)).toBe(true);
+    expect(complete.document!.historyActions).toBe(1);
+    frame(1000);
+    frame(1000);
+    const after = controller.observe([
+      [-48, -48],
+      [32, -48],
+    ]);
+    expect(after.gesture).toBeNull();
+    expect(after.samples).toEqual(complete.samples);
+    expect(after.document!.revision).toBe(complete.document!.revision);
+    expect(
+      after.events.filter((event) => event.kind === "brush-accepted"),
+    ).toHaveLength(admissions.length);
     controller.destroy();
   },
 );
@@ -2538,8 +2783,15 @@ async function timedControllerStroke(
   durationMs = 1000,
   corner = false,
 ) {
-  const { drainView, controller, bridge, pointer, frame, advance } =
-    await readyController(0, { width: 256, height: 128 });
+  const {
+    drainView,
+    drainAction,
+    controller,
+    bridge,
+    pointer,
+    frame,
+    advance,
+  } = await readyController(0, { width: 256, height: 128 });
   controller.setBrush(64, 400);
   await drainView();
   pointer("pointerdown", 64, 64);
@@ -2559,7 +2811,8 @@ async function timedControllerStroke(
   // dose rate from the separately tested Move→Up boundary between frames.
   frame(1000 / 60);
   pointer("pointerup", 192, 64);
-  frame(0);
+  await drainAction();
+  await drainView();
   const observed = controller.observe([
     [-128, 0],
     [0, corner ? -128 : 0],
@@ -2568,7 +2821,7 @@ async function timedControllerStroke(
   expect(observed.renderer.submittedRevision).toBe(observed.document!.revision);
   expect(controller.state.error).toBeNull();
   const intervals = observed.events.filter(
-    (event) => event.kind === "brush-interval" && event.cause !== "press",
+    (event) => event.kind === "brush-accepted" && event.cause !== "press",
   );
   await Promise.resolve();
   expect(bridge.commit).toHaveBeenCalledOnce();
@@ -2583,7 +2836,7 @@ async function timedControllerStroke(
     mass,
     heights: observed.samples.map((height) => height! + 100),
     acceptedMs: intervals.reduce(
-      (sum, event) => sum + Number(event.acceptedElapsedMs),
+      (sum, event) => sum + Number(event.offeredElapsedMs),
       0,
     ),
   };
@@ -2626,48 +2879,69 @@ it("keeps a timed corner comparable across 30, 60 and 120Hz pointer delivery", a
   }
 });
 
-it("drops the old path and excess time after a stalled ready move", async () => {
-  const { drainView, controller, pointer, frame, advance } =
-    await readyController(0, {
-      width: 256,
-      height: 128,
-    });
+it("preserves the whole stalled path while capping only its offered time", async () => {
+  const { controller, pointer, frame, advance, drainView, drainAction } =
+    await readyController(0, { width: 256, height: 128 });
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 48, 64);
   frame(0);
   advance(250);
   pointer("pointermove", 208, 64);
-  frame(0);
-  const observed = controller.observe([
+  pointer("pointerup", 208, 64);
+  await drainAction();
+  const complete = controller.observe([
     [0, 0],
     [320, 0],
   ]);
-  expect(observed.samples[0]).toBe(-100);
-  expect(observed.samples[1]).toBeGreaterThan(-100);
-  const last = observed.events
-    .filter((event) => event.kind === "brush-interval")
-    .at(-1)!;
-  expect(last).toMatchObject({
-    from: [320, 0],
+  expect(complete.samples.every((height) => height! > -100)).toBe(true);
+  const move = complete.events.find(
+    (event) => event.kind === "brush-accepted" && event.cause === "move",
+  )!;
+  expect(move).toMatchObject({
+    from: [-320, 0],
     to: [320, 0],
-    acceptedElapsedMs: 50,
+    offeredElapsedMs: 50,
     rawElapsedMs: 250,
   });
-  const discarded = observed.events
-    .filter((event) => event.kind === "brush-discard")
-    .reduce((sum, event) => sum + Number(event.toAt) - Number(event.fromAt), 0);
-  expect(discarded).toBe(200);
-  pointer("pointerup", 208, 64);
   frame(1000);
   expect(
     controller.observe([
       [0, 0],
       [320, 0],
     ]).samples,
-  ).toEqual(observed.samples);
+  ).toEqual(complete.samples);
   controller.destroy();
 });
+
+/** Direct C1 author reference for the same finite polyline, independent of DOM delivery. */
+function prepaidReference(
+  brush: import("../model").HeightBrush,
+  points: [number, number][],
+  time: import("../model").HeightSegment[],
+) {
+  const reference = new EditorDocument("controller-c1-reference", {
+    empty: true,
+  });
+  reference.beginPrepaidGesture(brush, {
+    sessionId: reference.sessionId,
+    gestureId: 1,
+    viewId: 1,
+    preparationId: 1,
+  });
+  reference.admitBrushBatch({
+    admissionId: 1,
+    path: { from: points[0], points, end: true },
+    time,
+    pointCount: points.length,
+  });
+  reference.sealBrushGesture();
+  for (let count = 0; count < 200 && reference.active; count++)
+    reference.advanceBrushGesture();
+  expect(reference.active).toBe(false);
+  expect(reference.metrics.historyActions).toBe(1);
+  return reference;
+}
 
 it.each([
   [16, false],
@@ -2680,8 +2954,15 @@ it.each([
     const width = diameter === 16 ? 256 : 1200;
     const height = diameter === 16 ? 256 : 1000;
     const offset = diameter === 16 ? 64 : 200;
-    const { controller, bridge, pointer, advance, frame, drainView } =
-      await readyController(0, { width, height });
+    const {
+      controller,
+      bridge,
+      pointer,
+      advance,
+      frame,
+      drainView,
+      drainAction,
+    } = await readyController(0, { width, height });
     controller.setBrush(diameter, 400);
     pointer("pointermove", width / 2 - offset, height / 2);
     await drainView();
@@ -2689,13 +2970,15 @@ it.each([
     const corner: [number, number] = [0, -offset * 4];
     const to: [number, number] = [offset * 4, 0];
     const probes: [number, number][] = [corner, [0, 0], from, to];
-    const reference = new EditorDocument("corner-reference", { empty: true });
-    reference.beginGesture(controller.currentBrush());
-    reference.applySegment(from, from, 1000 / 60);
-    reference.applySegment(from, corner, 8);
-    reference.applySegment(corner, to, 8);
-    reference.applySegment(to, to, 16);
-    reference.finishGesture();
+    const reference = prepaidReference(
+      controller.currentBrush(),
+      [from, corner, to],
+      [
+        { from, to: corner, elapsedMs: 8 },
+        { from: corner, to, elapsedMs: 8 },
+        { from: to, to, elapsedMs: 16 },
+      ],
+    );
 
     expect(controller.observe().readiness.ready).toBe(true);
     pointer("pointerdown", width / 2 - offset, height / 2);
@@ -2720,8 +3003,8 @@ it.each([
     frame(0);
     frame(16);
     pointer("pointerup", width / 2 + offset, height / 2);
-    frame(0);
-    await Promise.resolve();
+    await drainAction();
+    await drainView();
 
     expect(controller.state.error).toBeNull();
     expect(controller.world.fault).toBe("none");
@@ -2752,7 +3035,11 @@ it.each([
       observed.sessionId,
     );
     expect(time.passed).toBe(true);
-    expect(time.timedDoseMs).toBe(32);
+    expect(
+      observed.events
+        .filter((event) => event.kind === "brush-accepted")
+        .reduce((sum, event) => sum + Number(event.offeredElapsedMs), 0),
+    ).toBe(32);
     expect(
       observed.events.filter(
         (event) => event.kind === "noop" && event.reason === "coalesced",
@@ -2762,54 +3049,100 @@ it.each([
   },
 );
 
-it("discards an overloaded point buffer explicitly and resumes only new time", async () => {
-  const { drainView, controller, pointer, advance, frame } =
+it("rejects an oversized input window before acceptance and finishes every earlier reservation", async () => {
+  const { controller, pointer, frame, advance, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 20, 20);
-  for (let index = 0; index <= MAX_BRUSH_POINTS; index++) {
-    advance(0.1);
-    pointer("pointermove", 20 + (index % 2), 20);
-  }
-  expect(controller.observe().document!.revision).toBe(1);
-  frame(3.1);
-  frame(16);
-  pointer("pointerup", 20, 20);
   frame(0);
-  const observed = controller.observe();
+  advance(16);
+  pointer("pointermove", 40, 20);
+  const accepted = controller.observation
+    .read()
+    .filter((event) => event.kind === "brush-accepted").length;
+  advance(16);
+  pointer(
+    "pointermove",
+    56,
+    20,
+    performance.now(),
+    Array.from({ length: MAX_BRUSH_POINTS }, (_, index) => ({
+      x: 40 + index / 8,
+      y: 20,
+      at: performance.now(),
+    })),
+  );
+  expect(controller.state.error).toContain("offene Pinselpunkte");
+  expect(controller.state.finishing).toBe(true);
   expect(
-    observed.events.filter(
-      (event) => event.kind === "noop" && event.reason === "overflow",
-    ),
-  ).toHaveLength(MAX_BRUSH_POINTS + 1);
-  const time = evaluateBrushTime(
-    observed.events,
-    observed.events
-      .filter((event) => event.kind === "input")
-      .map((event) => event.id),
-    observed.sessionId,
-  );
-  expect(time.passed).toBe(true);
-  expect((time.discardMs as Record<string, number>).overflow).toBeCloseTo(
-    12.9,
-    7,
-  );
-  expect(time.timedDoseMs).toBeCloseTo(19.1, 7);
-  const dose = observed.events
-    .filter((event) => event.kind === "brush-interval")
-    .at(-1)!;
-  expect(dose.segments).toEqual([
-    { from: [-48, -48], to: [-48, -48], elapsedMs: time.timedDoseMs },
+    controller.observation
+      .read()
+      .filter((event) => event.kind === "brush-accepted"),
+  ).toHaveLength(accepted);
+  await drainAction();
+  expect(controller.observe([[32, -48]]).samples[0]).toBeGreaterThan(-100);
+  expect(controller.observe().document!.historyActions).toBe(1);
+  expect(controller.state.needsPress).toBe(true);
+  pointer("pointermove", 52, 20);
+  frame(500);
+  expect(controller.observe().document!.historyActions).toBe(1);
+  pointer("pointerup", 52, 20);
+  await drainView();
+  pointer("pointerdown", 52, 20);
+  pointer("pointerup", 52, 20);
+  await drainAction();
+  expect(controller.observe().document!.historyActions).toBe(2);
+  controller.destroy();
+});
+
+it("reserves the terminal slot after 127 coalesced pending points", async () => {
+  const { controller, pointer, frame, advance, drainView, drainAction } =
+    await readyController(0, { width: 512, height: 128 });
+  controller.setBrush(16, 400);
+  await drainView();
+  pointer("pointerdown", 64, 64);
+  frame(0);
+  advance(50);
+  const at = performance.now();
+  const points = Array.from({ length: 127 }, (_, i) => ({
+    x: 64 + (256 * (i + 1)) / 127,
+    y: 64 + (i % 2 ? 1 : -1),
+    at: at - 50 + (50 * (i + 1)) / 127,
+  }));
+  pointer("pointermove", 320, 64, at, points);
+  expect(controller.observe().document!.brushWork!.pendingPoints).toBe(127);
+  pointer("pointerup", 336, 64, at);
+  expect(controller.observe().document!.brushWork!.pendingPoints).toBe(128);
+  expect(controller.state.error).toBeNull();
+  await drainAction();
+  const complete = controller.observe([
+    [-768, 0],
+    [-256, 0],
+    [320, 0],
   ]);
+  expect(complete.samples.every((value) => value! > -100)).toBe(true);
+  expect(complete.document!.historyActions).toBe(1);
+  expect(
+    complete.events
+      .filter((event) => event.kind === "brush-accepted")
+      .map((event) => event.pointCount),
+  ).toEqual([1, 127, 1]);
   controller.destroy();
 });
 
 it.each(["sources", "outside", "partial"] as const)(
   "validates every coalesced corner before accepting its path (%s)",
   async (kind) => {
-    const { drainView, controller, pointer, advance, frame, bridge } =
-      await readyController(0, { width: 256, height: 256 });
+    const {
+      drainView,
+      drainAction,
+      controller,
+      pointer,
+      advance,
+      frame,
+      bridge,
+    } = await readyController(0, { width: 256, height: 256 });
     controller.setBrush(16, 400);
     await drainView();
     pointer("pointerdown", 64, 128);
@@ -2831,29 +3164,46 @@ it.each(["sources", "outside", "partial"] as const)(
       { x: 192, y: 128, at: performance.now() },
     ]);
     expect(controller.state.error).toBeNull();
-    expect(controller.observe().document!.revision).toBe(
-      kind === "partial" ? 2 : 1,
-    );
-    expect(controller.state.needsPress).toBe(kind !== "partial");
+    expect(controller.observe().document!.revision).toBe(1);
+    expect(controller.state.finishing).toBe(kind !== "partial");
+    const moves = controller.observation
+      .read()
+      .filter(
+        (event) => event.kind === "brush-accepted" && event.cause === "move",
+      );
+    expect(moves).toHaveLength(kind === "partial" ? 1 : 0);
     pointer("pointerup", 192, 128);
-    frame(0);
-    await Promise.resolve();
+    await drainAction();
     expect(bridge.commit).toHaveBeenCalledOnce();
     controller.destroy();
   },
 );
 
-it("confirms release against already submitted terrain without waiting for another frame", async () => {
-  const { drainView, controller, pointer, frame, advance, bridge } =
-    await readyController();
+it("reuses already submitted terrain once the sealed action actually completes", async () => {
+  const {
+    controller,
+    pointer,
+    frame,
+    advance,
+    bridge,
+    drainView,
+    drainAction,
+  } = await readyController();
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 20, 20);
   frame(0);
-  const before = controller.observation.read();
-  const submit = before.filter((event) => event.kind === "submit").at(-1)!;
+  const submit = controller.observation
+    .read()
+    .filter((event) => event.kind === "submit")
+    .at(-1)!;
   advance(4);
   pointer("pointerup", 20, 20);
+  expect(
+    controller.observation.read().some((event) => event.kind === "commit"),
+  ).toBe(false);
+  expect(controller.state.finishing).toBe(true);
+  await drainAction();
   const events = controller.observation.read();
   const commit = events.find((event) => event.kind === "commit")!;
   expect(events.filter((event) => event.kind === "edit-submit")).toMatchObject([
@@ -2864,40 +3214,36 @@ it("confirms release against already submitted terrain without waiting for anoth
       completedAt: commit.at,
     },
   ]);
-  expect(events.filter((event) => event.kind === "submit")).toHaveLength(
-    before.filter((event) => event.kind === "submit").length,
-  );
   expect(
     events.filter((event) => event.kind === "brush-interval"),
   ).toHaveLength(1);
   expect(controller.observe().document!.historyActions).toBe(1);
-  await Promise.resolve();
   expect(bridge.commit).toHaveBeenCalledOnce();
   controller.destroy();
 });
 
-it("keeps release unconfirmed until its outstanding dose actually draws", async () => {
-  const { drainView, controller, pointer, frame, advance } =
+it("keeps release unconfirmed until its accepted author work actually draws", async () => {
+  const { controller, pointer, frame, advance, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
+  controller.world.fault = "drop-render";
   pointer("pointerdown", 20, 20);
   advance(4);
   pointer("pointerup", 20, 20);
+  await drainAction();
   expect(
     controller.observation
       .read()
       .filter((event) => event.kind === "edit-submit"),
   ).toHaveLength(0);
+  expect(controller.observe().document!.historyActions).toBe(1);
+  controller.world.fault = "none";
   frame(16);
   const events = controller.observation.read();
   const submit = events.filter((event) => event.kind === "submit").at(-1)!;
   expect(events.filter((event) => event.kind === "edit-submit")).toMatchObject([
-    {
-      frame: submit.frame,
-      submittedAt: submit.at,
-      completedAt: submit.at,
-    },
+    { frame: submit.frame, submittedAt: submit.at, completedAt: submit.at },
   ]);
   expect(
     events.filter((event) => event.kind === "brush-interval"),
@@ -2905,12 +3251,16 @@ it("keeps release unconfirmed until its outstanding dose actually draws", async 
   controller.destroy();
 });
 
-it("preserves a normal queued corner when the GPU completes between input events", async () => {
-  const { drainView, controller, bridge, pointer, frame, advance } =
-    await readyController(0, {
-      width: 256,
-      height: 256,
-    });
+it("preserves an accepted corner when the GPU completes between input events", async () => {
+  const {
+    controller,
+    bridge,
+    pointer,
+    frame,
+    advance,
+    drainView,
+    drainAction,
+  } = await readyController(0, { width: 256, height: 256 });
   controller.setBrush(16, 400);
   await drainView();
   pointer("pointerdown", 64, 128);
@@ -2926,18 +3276,22 @@ it("preserves a normal queued corner when the GPU completes between input events
   wait.mockReturnValue(gl.ALREADY_SIGNALED);
   advance(8);
   pointer("pointermove", 192, 128);
-  expect(controller.observe().document!.revision).toBe(2);
+  expect(controller.observe().document!.brushWork!.pendingPoints).toBe(2);
   pointer("pointerup", 192, 128);
-  await Promise.resolve();
+  await drainAction();
   expect(bridge.commit).toHaveBeenCalledOnce();
-  const reference = new EditorDocument("input-fence-reference", {
-    empty: true,
-  });
-  reference.beginGesture(controller.currentBrush());
-  reference.applySegment([-256, 0], [-256, 0], 1000 / 60);
-  reference.applySegment([-256, 0], [0, -256], 8);
-  reference.applySegment([0, -256], [256, 0], 8);
-  reference.finishGesture();
+  const reference = prepaidReference(
+    controller.currentBrush(),
+    [
+      [-256, 0],
+      [0, -256],
+      [256, 0],
+    ],
+    [
+      { from: [-256, 0], to: [0, -256], elapsedMs: 8 },
+      { from: [0, -256], to: [256, 0], elapsedMs: 8 },
+    ],
+  );
   const actual = prepareHeightSampler(
     bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
       patch.after ? [patch.after] : [],
@@ -2954,18 +3308,13 @@ it("preserves a normal queued corner when the GPU completes between input events
       10,
     );
   expect(
-    controller.observation
-      .read()
-      .filter((event) => event.kind === "brush-discard"),
-  ).toHaveLength(0);
-  expect(
     wait.mock.calls.every(([, flags, timeout]) => flags === 0 && timeout === 0),
   ).toBe(true);
   controller.destroy();
 });
 
-it("never queues a second dose during GPU timeout and discards failed-frame travel without catch-up", async () => {
-  const { drainView, controller, pointer, frame, advance } =
+it("bounds unseen held effect locally during GPU timeout without dropping a newly entered path", async () => {
+  const { controller, pointer, frame, advance, drainView, drainAction } =
     await readyController();
   controller.setBrush(16, 400);
   await drainView();
@@ -2976,38 +3325,35 @@ it("never queues a second dose during GPU timeout and discards failed-frame trav
     .spyOn(gl, "clientWaitSync")
     .mockReturnValue(gl.TIMEOUT_EXPIRED);
   const submitted = controller.observe().renderer.lastSubmittedFrame;
-  advance(16);
-  pointer("pointermove", 52, 20);
-  frame(0);
-  frame(200);
-  expect(controller.observe().document!.revision).toBe(1);
-  expect(controller.observe().renderer.lastSubmittedFrame).toBe(submitted);
-  expect(controller.observe().renderer.gpuPending).toBe(true);
-  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  for (let i = 0; i < 8; i++) {
+    frame(50);
+    const work = controller.observe().document!.brushWork!;
+    expect(work.maxOutstandingEffect).toBeLessThanOrEqual(
+      work.effectLimit + 1e-9,
+    );
+  }
+  const held = controller.observe([[-48, -48]]).samples;
+  frame(1000);
+  expect(controller.observe([[-48, -48]]).samples).toEqual(held);
   advance(16);
   pointer("pointermove", 56, 20);
-  const accepted = controller.observe([
-    [0, -48],
-    [88, -48],
-  ]);
-  expect(accepted.document!.revision).toBe(2);
-  expect(accepted.samples[0]).toBe(-100);
-  expect(accepted.samples[1]).toBeGreaterThan(-100);
-  expect(
-    accepted.events.filter((event) => event.kind === "brush-interval").at(-1),
-  ).toMatchObject({
-    from: [80, -48],
-    to: [96, -48],
-    acceptedElapsedMs: 16,
-  });
   pointer("pointerup", 56, 20);
-  frame(1000);
+  await drainAction();
+  const complete = controller.observe([
+    [0, -48],
+    [96, -48],
+  ]);
+  expect(complete.samples.every((value) => value! > -100)).toBe(true);
+  expect(complete.renderer.lastSubmittedFrame).toBe(submitted);
+  expect(complete.document!.historyActions).toBe(1);
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  await drainView();
   expect(
     controller.observe([
       [0, -48],
-      [88, -48],
+      [96, -48],
     ]).samples,
-  ).toEqual(accepted.samples);
+  ).toEqual(complete.samples);
   expect(
     wait.mock.calls.every(([, flags, timeout]) => flags === 0 && timeout === 0),
   ).toBe(true);
@@ -3015,34 +3361,188 @@ it("never queues a second dose during GPU timeout and discards failed-frame trav
 });
 
 it.each(["pointerdown", "pointermove", "pointerup"])(
-  "reports a failed fence during %s without accepting that input or losing its prior dose",
+  "reports a failed fence during %s without accepting another path or losing prior work",
   async (type) => {
-    const { drainView, controller, bridge, pointer, frame } =
+    const { controller, bridge, pointer, frame, drainView, drainAction } =
       await readyController();
     controller.setBrush(16, 400);
     await drainView();
     pointer("pointerdown", 20, 20);
     if (type === "pointerdown") pointer("pointerup", 20, 20);
     frame(0);
-    const inputs = controller.observation
+    const accepted = controller.observation
       .read()
-      .filter((event) => event.kind === "input").length;
+      .filter((event) => event.kind === "brush-accepted").length;
     const gl = controller.world.renderer.gl;
     vi.spyOn(gl, "clientWaitSync").mockReturnValueOnce(gl.WAIT_FAILED);
     pointer(type, 56, 56);
     expect(controller.state.error).toContain("Grafikabschluss");
-    expect(controller.observe().document!.revision).toBe(1);
     expect(controller.observe().renderer.gpuPending).toBe(false);
     expect(
-      controller.observation.read().filter((event) => event.kind === "input"),
-    ).toHaveLength(inputs);
-    frame(0);
-    frame(0);
+      controller.observation
+        .read()
+        .filter((event) => event.kind === "brush-accepted"),
+    ).toHaveLength(accepted);
     pointer("pointerup", 20, 20);
-    await Promise.resolve();
+    await drainAction();
+    await drainView();
     expect(controller.observe().document!.historyActions).toBe(1);
     expect(bridge.commit).toHaveBeenCalledOnce();
     expect(controller.observe([[-48, -48]]).samples[0]).toBeGreaterThan(-100);
     controller.destroy();
   },
 );
+
+it("seals input on context loss, finishes accepted work, and invalidates its old receipt", async () => {
+  const {
+    controller,
+    canvas,
+    pointer,
+    frame,
+    advance,
+    drainView,
+    drainAction,
+  } = await readyController();
+  controller.setBrush(16, 400);
+  await drainView();
+  pointer("pointerdown", 20, 20);
+  frame(0);
+  const frozen = controller.observation
+    .read()
+    .find((event) => event.kind === "brush-frozen")!;
+  advance(16);
+  pointer("pointermove", 48, 20);
+  canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+  expect(
+    controller.world.inspectRenderReceipt(
+      frozen.renderReceipt as import("./WorldRenderer").FrozenRenderReceipt,
+    ),
+  ).toBe("invalid");
+  frame(0);
+  await drainAction();
+  const complete = controller.observe([
+    [-48, -48],
+    [64, -48],
+  ]);
+  expect(complete.samples.every((value) => value! > -100)).toBe(true);
+  expect(complete.document!.historyActions).toBe(1);
+  expect(complete.gesture).toBeNull();
+  canvas.dispatchEvent(new Event("webglcontextrestored"));
+  pointer("pointerup", 48, 20);
+  await drainView();
+  frame(1000);
+  expect(
+    controller.observe([
+      [-48, -48],
+      [64, -48],
+    ]).samples,
+  ).toEqual(complete.samples);
+  expect(controller.observe().document!.revision).toBe(
+    complete.document!.revision,
+  );
+  controller.destroy();
+});
+
+it.each(["destroy", "replacement"] as const)(
+  "invalidates unfinished old-session work and rejects a waiting Save after %s",
+  async (ending) => {
+    const { controller, bridge, pointer, frame } = await readyController();
+    pointer("pointerdown", 20, 20);
+    pointer("pointermove", 40, 20);
+    const oldDocument = controller["doc"];
+    const save = controller.save();
+    const rejected = expect(save).rejects.toThrow("beendet");
+    expect(controller.state.finishing).toBe(true);
+    if (ending === "destroy") controller.destroy();
+    else
+      controller["setProject"]({
+        ...(await bridge.status()),
+        sessionId: "replacement",
+      });
+    await rejected;
+    expect(oldDocument.disposed).toBe(true);
+    const revision = oldDocument.revision;
+    oldDocument.advanceBrushGesture();
+    frame(1000);
+    expect(oldDocument.revision).toBe(revision);
+    expect(oldDocument.active).toBe(false);
+    expect(bridge.saveProject).not.toHaveBeenCalled();
+    expect(bridge.commit).not.toHaveBeenCalled();
+    if (ending === "replacement") controller.destroy();
+  },
+);
+
+it("waits for accepted terminal work before Undo and restores the entire action", async () => {
+  const { controller, bridge, pointer, advance, drainView, drainAction } =
+    await readyController();
+  pointer("pointerdown", 12, 20);
+  advance(16);
+  pointer("pointermove", 32, 20);
+  pointer("pointerup", 52, 20);
+  controller.undo();
+  expect(controller.observe().document!.sequence).toBe(0);
+  await drainAction();
+  await drainView();
+  expect(
+    controller.observe([
+      [-80, -48],
+      [0, -48],
+      [80, -48],
+    ]).samples,
+  ).toEqual([-100, -100, -100]);
+  expect(controller.observe().document!.historyActions).toBe(1);
+  expect(controller.state.canUndo).toBe(false);
+  expect(controller.state.canRedo).toBe(true);
+  expect(bridge.commit).toHaveBeenCalledTimes(2);
+  expect(bridge.commit.mock.calls.map(([request]) => request.sequence)).toEqual(
+    [1, 2],
+  );
+  controller.destroy();
+});
+
+it("waits for accepted terminal work before Save and preserves its endpoint on reopen", async () => {
+  const { controller, bridge, pointer, advance, drainAction } =
+    await readyController();
+  bridge.saveProject.mockImplementation(
+    async (request: import("../bridge").SaveRequest) => ({
+      ...request,
+      savedSequence: request.sequence,
+      path: "/tmp/complete-r2.atlas",
+    }),
+  );
+  pointer("pointerdown", 12, 20);
+  advance(16);
+  pointer("pointermove", 32, 20);
+  pointer("pointerup", 52, 20);
+  const save = controller.save();
+  expect(bridge.saveProject).not.toHaveBeenCalled();
+  expect(controller.state.finishing).toBe(true);
+  await drainAction();
+  await save;
+  expect(bridge.commit).toHaveBeenCalledOnce();
+  expect(bridge.saveProject).toHaveBeenCalledWith({
+    sessionId: "shared-frame",
+    sequence: 1,
+    saveAs: false,
+  });
+  expect(controller.state.saved).toBe(true);
+  const reopened = new EditorDocument("reopened", { empty: true, sequence: 1 });
+  reopened.acceptCoverage(
+    [-512, -512, 512, 512],
+    bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
+      patch.after ? [patch.after] : [],
+    ),
+    1,
+    reopened.sessionId,
+  );
+  const points: [number, number][] = [
+    [-80, -48],
+    [0, -48],
+    [80, -48],
+  ];
+  expect(points.map((point) => reopened.sampleHeight(...point))).toEqual(
+    controller.observe(points).samples,
+  );
+  expect(reopened.sampleHeight(80, -48)).toBeGreaterThan(-100);
+  controller.destroy();
+});

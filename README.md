@@ -16,14 +16,17 @@ Electron/Pixi und bietet bislang einen begrenzten Höheneditor.
 
 Die vier Dokumente zum aktuellen Produkt werden aktualisiert, nicht als Chronik
 fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand.
-Die geplante P0-Korrektur erhält diese vier Zuständigkeiten. R1 im Neubauplan
-hat den ersten additiven Pinselkandidaten an einem begrenzten Wiederbesuchsfall
-widerlegt. Der ausgewählte Gegenkandidat verrechnet eine einmalige räumliche
-Mindestwirkung mit kumulierter Zeitwirkung und besitzt eine unabhängige
-Inhaltsreferenz samt lokalen Reservierungsprüfungen. Er ist noch nicht in den
-aktiven Editor integriert; R2/R3 folgen. Nach der Hardware-Richtungsprobe ist
-nur ein kleiner gemeinsamer Landschafts-/Hausfall zulässig; der weitere Ausbau
-bleibt an die vollständige P0- und P3-Abnahme gebunden.
+R1 im Neubauplan hat den ersten additiven Pinselkandidaten an einem begrenzten
+Wiederbesuchsfall widerlegt. R2 integriert den ausgewählten C1: einmalige
+räumliche Mindestwirkung mit Anrechnung auf kumulierte Zeitwirkung, Reservierung
+vor Annahme und begrenzte Fortsetzung bis zum vollständigen Aktionsabschluss.
+Undo und Dateiaktionen warten auf diesen gemeinsamen Abschluss. Die unabhängige
+Inhaltsreferenz und die festen Leistungsziele bleiben erhalten.
+**P0 ist weiterhin nicht freigegeben.** Die genaue R2-Abnahme und die offene
+CPU-Grenze stehen im Status. R3 begrenzt danach den normalen Renderpfad;
+R4/R5 müssen Hardware- und Präsentationsziele belegen. Erst nach positiver
+Hardware-Richtungsprobe ist der kleine gemeinsame Landschafts-/Hausfall zulässig;
+der weitere Ausbau bleibt an die vollständige P0- und P3-Abnahme gebunden.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
@@ -124,13 +127,13 @@ Kurze Probe und vollständige Sammlung verwenden dieselben Eingaben und
 Inhaltsprüfer. Die Auswahl verkleinert nicht den Abnahmeumfang. Pflichtfälle,
 Stichproben, Fehlerkontrollen und Zeitgrenzen stehen einmal im
 [Prüfvertrag](docs/implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag).
-Aktuelle Runnerberichte verwenden Schema 5. `p0:evaluate` akzeptiert nur dieses
+Aktuelle Runnerberichte verwenden Schema 6. `p0:evaluate` akzeptiert nur dieses
 Schema; historische Rohbelege bleiben unverändert und benötigen ihren zugehörigen
-Auswerterstand. Schema 5 erhält den zeitlichen Bewegungsverlauf und trennt
-Eingabe bis Zeicheneinreichung von Pointerup bis Abschluss auf bereits aktuellem
-Terrain. Schema 4 verwendete noch einen nachfolgenden Abschlussframe; Schema 3
-beschreibt den früheren Rasterpfad. Historische Messgrößen werden nicht als neue
-Abschluss-, Upload- oder Drawzeiten umgedeutet.
+Auswerterstand. Schema 6 trennt Erfassung, C1-Annahme/Reservierung,
+Materialisierung, Versiegelung, vollständigen Aktionsabschluss und Darstellung.
+Ordinalbereiche prüfen jede Reservierungsübernahme genau einmal; vollständige
+Render-Receipts belegen nur ihren eingefrorenen Einfluss. Historische Messgrößen
+werden nicht als neue Abschluss-, Upload- oder Drawzeiten umgedeutet.
 
 `--only interactions` umfasst auch einen mehrere Sekunden gezogenen
 512-Pixel-Pinsel, getrennte Live-Pixelproben, einen geknickten Strich, Halten,

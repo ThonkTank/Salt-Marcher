@@ -967,6 +967,11 @@ export class HeightField {
     for (const tile of this.tiles) tile.initSources();
   }
 
+  /** Immutable renderer source used to coalesce updates while a draw is frozen. */
+  readSource(key: string): HeightTile | undefined {
+    return this.atlas.sources.get(key);
+  }
+
   /** Imports/evictions alter the resident subset used by a fixed contribution. */
   updateSources(
     tiles: readonly HeightTile[],

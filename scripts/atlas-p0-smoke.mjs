@@ -285,7 +285,7 @@ async function rendererStall(continueHolding) {
           while (!resumed && Date.now() < deadline) {
             resumed =
               await contents.executeJavaScript(`window.atlasObserve().events.some(
-              (event) => event.kind === "brush-interval" && event.cause === "hold" && event.fromAt >= ${times.end}
+              (event) => event.kind === "brush-accepted" && event.cause === "hold" && event.fromAt >= ${times.end}
             )`);
             if (!resumed)
               await new Promise((resolve) => setTimeout(resolve, 10));
@@ -321,15 +321,21 @@ async function rendererStall(continueHolding) {
       .map((e) => e.id);
     const time = evaluateBrushTime(after.events, ids, after.sessionId);
     const acceptedDuringStall = after.events
-      .filter((e) => e.kind === "brush-interval" && e.cause !== "press")
+      .filter((e) => e.kind === "brush-accepted" && e.cause !== "press")
       .reduce(
-        (sum, e) => sum + overlap(e.fromAt, e.toAt, stall.start, stall.end),
+        (sum, e) =>
+          sum +
+          overlap(e.fromAt, e.toAt, stall.start, stall.end) *
+            (e.rawElapsedMs > 0 ? e.offeredElapsedMs / e.rawElapsedMs : 0),
         0,
       );
     const discardedDuringStall = after.events
-      .filter((e) => e.kind === "brush-discard")
+      .filter((e) => e.kind === "brush-accepted")
       .reduce(
-        (sum, e) => sum + overlap(e.fromAt, e.toAt, stall.start, stall.end),
+        (sum, e) =>
+          sum +
+          overlap(e.fromAt, e.toAt, stall.start, stall.end) *
+            (e.rawElapsedMs > 0 ? 1 - e.offeredElapsedMs / e.rawElapsedMs : 0),
         0,
       );
     recordCheck(
@@ -351,7 +357,7 @@ async function rendererStall(continueHolding) {
     );
     recordCheck(
       `${label}: no accumulated stall dose`,
-      acceptedDuringStall <= (continueHolding ? 50.01 : 0.01),
+      acceptedDuringStall <= 50.01,
       { acceptedDuringStall, discardedDuringStall },
     );
     if (continueHolding)
@@ -371,7 +377,7 @@ async function rendererStall(continueHolding) {
     await page.waitForTimeout(180);
     const settled = await stateSnapshot(page, [[0, 0]]);
     recordCheck(
-      `${label}: no late dose after release`,
+      `${label}: no late dose after completed action`,
       settled.samples[0] === after.samples[0],
     );
     await button(page, /Rückgängig/);

@@ -509,7 +509,7 @@ const samePoint = (a, b) =>
   pointValid(b) &&
   a.every((value, index) => Math.abs(value - b[index]) <= 1e-6);
 
-/** Schema 5 records the complete accepted polyline, including zero-time anchors. */
+/** A time descriptor may be used in isolation by the timing diagnosis. */
 function validBrushGeometry(interval) {
   const segments = interval?.segments;
   if (
@@ -540,8 +540,270 @@ function validBrushGeometry(interval) {
   );
 }
 
+const effectKey = (event, id = event.admissionId) =>
+  event.sessionId + "/" + event.gestureId + "/" + id;
+const gestureKey = (event) => event.sessionId + "/" + event.gestureId;
+const positiveInteger = (value) => Number.isSafeInteger(value) && value > 0;
+const nonnegativeInteger = (value) => Number.isSafeInteger(value) && value >= 0;
+const boundsValid = (bounds) =>
+  Array.isArray(bounds) &&
+  bounds.length === 4 &&
+  bounds.every(finite) &&
+  bounds[0] < bounds[2] &&
+  bounds[1] < bounds[3];
+
+/** Geometry and finite causal time are admitted before source materialization. */
+function validC1Admission(event) {
+  if (
+    !nonempty(event?.sessionId) ||
+    !positiveInteger(event?.gestureId) ||
+    !positiveInteger(event?.admissionId) ||
+    !pointValid(event?.from) ||
+    !pointValid(event?.to) ||
+    !Array.isArray(event?.path) ||
+    !event.path.every(pointValid) ||
+    !samePoint(event.path.at(-1) ?? event.from, event.to) ||
+    !Array.isArray(event?.segments) ||
+    !Array.isArray(event?.samples) ||
+    !finite(event?.observedAt) ||
+    event.observedAt > event.at ||
+    !Array.isArray(event?.inputIds) ||
+    !event.inputIds.every(positiveInteger) ||
+    new Set(event.inputIds).size !== event.inputIds.length ||
+    ![
+      event.at,
+      event.fromAt,
+      event.toAt,
+      event.rawElapsedMs,
+      event.offeredElapsedMs,
+      event.rateFtPerSecond,
+      event.radius,
+      event.acceptedTimeEffect,
+      event.discardedTimeEffect,
+    ].every(finite) ||
+    event.radius <= 0 ||
+    !nonnegativeInteger(event.level) ||
+    event.level > 21 ||
+    event.toAt < event.fromAt ||
+    event.at < event.toAt ||
+    Math.abs(event.toAt - event.fromAt - event.rawElapsedMs) > 1e-6 ||
+    Math.abs(event.offeredElapsedMs - Math.min(50, event.rawElapsedMs)) >
+      1e-6 ||
+    event.acceptedTimeEffect < 0 ||
+    event.discardedTimeEffect < 0 ||
+    !["press", "hold", "move", "terminal"].includes(event.cause) ||
+    typeof event.end !== "boolean" ||
+    event.end !== (event.cause === "terminal") ||
+    !nonnegativeInteger(event.pointCount) ||
+    event.pointCount < event.path.length ||
+    (event.end && event.pointCount === 0) ||
+    event.pointCount > (event.end ? 128 : 127) ||
+    !nonnegativeInteger(event.pendingPoints) ||
+    event.pendingPoints > 128 ||
+    typeof event.reserved !== "boolean" ||
+    !nonnegativeInteger(event.reservedCells) ||
+    event.reserved !== event.reservedCells > 0
+  )
+    return false;
+  if (
+    event.cause !== "press" &&
+    (event.samples.length !== event.path.length ||
+      event.samples.length !== event.inputIds.length ||
+      !event.samples.every(
+        (sample, index) =>
+          pointValid(sample?.point) &&
+          samePoint(sample.point, event.path[index]) &&
+          sample.input === event.inputIds[index] &&
+          finite(sample.at) &&
+          sample.at <= event.observedAt,
+      ))
+  )
+    return false;
+  let elapsed = 0;
+  const geometry = [event.from, ...event.path];
+  for (const segment of event.segments) {
+    if (
+      !pointValid(segment?.from) ||
+      !pointValid(segment?.to) ||
+      !finite(segment?.elapsedMs) ||
+      segment.elapsedMs < 0
+    )
+      return false;
+    if (
+      !geometry.some(
+        (point, index) =>
+          samePoint(segment.from, point) &&
+          (samePoint(segment.to, geometry[index + 1] ?? point) ||
+            samePoint(segment.from, segment.to)),
+      )
+    )
+      return false;
+    elapsed += segment.elapsedMs;
+  }
+  return Math.abs(elapsed - event.offeredElapsedMs) <= 1e-6;
+}
+
+function validC1Work(work, rate) {
+  return (
+    work &&
+    [work.maxOutstandingEffect, work.effectLimit].every(finite) &&
+    Math.abs(work.effectLimit - Math.abs(rate) * 0.05) <= 1e-10 &&
+    work.maxOutstandingEffect >= 0 &&
+    work.maxOutstandingEffect <= work.effectLimit + 1e-10 &&
+    nonnegativeInteger(work.pendingPoints) &&
+    work.pendingPoints <= 128 &&
+    nonnegativeInteger(work.pendingCells) &&
+    // Repeated windows can reserve the same coefficient. Ticket storage and
+    // unique author cells therefore have different finite bounds.
+    work.pendingCells <= work.pendingAdmissions * 100_000 &&
+    work.pendingCells * 12 <= work.bufferBytes &&
+    nonnegativeInteger(work.pendingAdmissions) &&
+    work.pendingAdmissions <= 128 &&
+    nonnegativeInteger(work.cells) &&
+    work.cells <= 100_000 &&
+    nonnegativeInteger(work.tiles) &&
+    work.tiles <= 512 &&
+    nonnegativeInteger(work.bufferBytes) &&
+    work.bufferBytes <= 32 * 1024 * 1024
+  );
+}
+
+/** Exact cursor ranges prove that previously reserved cells are consumed once. */
+function c1Applications(events, sessionId) {
+  const admissions = new Map(),
+    applications = new Map(),
+    sealed = new Map(),
+    completed = new Map(),
+    lastAdmission = new Map();
+  const issues = [];
+  const fail = (code, event, details = {}) =>
+    issues.push({ code, gestureId: event.gestureId, ...details });
+  for (const event of events) {
+    if (sessionId !== undefined && event.sessionId !== sessionId) continue;
+    const key = gestureKey(event);
+    if (event.kind === "brush-accepted") {
+      const id = effectKey(event),
+        valid = validC1Admission(event);
+      if (!valid)
+        fail("INVALID_C1_ADMISSION", event, { admissionId: event.admissionId });
+      if (sealed.has(key) || completed.has(key))
+        fail("BRUSH_ADMISSION_AFTER_SEAL", event, {
+          admissionId: event.admissionId,
+        });
+      if (admissions.has(id)) {
+        fail("DUPLICATE_BRUSH_ADMISSION", event, {
+          admissionId: event.admissionId,
+        });
+        continue;
+      }
+      if (event.admissionId <= (lastAdmission.get(key) ?? -1))
+        fail("UNORDERED_BRUSH_ADMISSION", event, {
+          admissionId: event.admissionId,
+        });
+      lastAdmission.set(key, event.admissionId);
+      if (
+        !validC1Work(event.work, event.rateFtPerSecond) ||
+        event.pendingPoints !== event.work?.pendingPoints
+      )
+        fail("INVALID_BRUSH_RESERVATION_PROOF", event, {
+          admissionId: event.admissionId,
+        });
+      admissions.set(id, {
+        event,
+        cursor: 0,
+        valid: valid && !sealed.has(key) && !completed.has(key),
+      });
+    } else if (event.kind === "brush-end") {
+      if (sealed.has(key)) fail("DUPLICATE_BRUSH_SEAL", event);
+      sealed.set(key, event);
+    } else if (event.kind === "brush-complete") {
+      if (completed.has(key) || !sealed.has(key))
+        fail("INVALID_BRUSH_COMPLETION", event);
+      if (
+        event.pendingCells !== 0 ||
+        event.pendingPoints !== 0 ||
+        event.pendingAdmissions !== 0
+      )
+        fail("INCOMPLETE_BRUSH_COMPLETION", event);
+      for (const entry of admissions.values())
+        if (
+          gestureKey(entry.event) === key &&
+          entry.cursor !== entry.event.reservedCells
+        )
+          fail("UNMATERIALIZED_BRUSH_RESERVATION", event, {
+            admissionId: entry.event.admissionId,
+          });
+      completed.set(key, event);
+    } else if (event.kind === "brush-interval") {
+      let valid =
+        event.dosing === "c1" &&
+        event.cause === "materialize" &&
+        Array.isArray(event.applications) &&
+        event.applications.length > 0 &&
+        Array.isArray(event.admissionIds) &&
+        Array.isArray(event.completedAdmissionIds) &&
+        Array.isArray(event.inputIds) &&
+        typeof event.changed === "boolean" &&
+        typeof event.sealed === "boolean" &&
+        event.sealed === sealed.has(key) &&
+        finite(event.at) &&
+        !completed.has(key);
+      const ids = [],
+        finished = [],
+        expectedInputs = [];
+      if (Array.isArray(event.applications))
+        for (const part of event.applications) {
+          const entry = admissions.get(effectKey(event, part?.admissionId));
+          const ok =
+            entry?.valid &&
+            entry.event.reserved &&
+            event.at >= entry.event.at &&
+            positiveInteger(part.toCell) &&
+            nonnegativeInteger(part.fromCell) &&
+            part.fromCell === entry.cursor &&
+            part.toCell > part.fromCell &&
+            part.totalCells === entry.event.reservedCells &&
+            part.toCell <= part.totalCells &&
+            !ids.includes(part.admissionId);
+          if (!ok) {
+            valid = false;
+            continue;
+          }
+          entry.cursor = part.toCell;
+          ids.push(part.admissionId);
+          if (part.toCell === part.totalCells) {
+            finished.push(part.admissionId);
+            if (entry.event.cause !== "terminal")
+              expectedInputs.push(...entry.event.inputIds);
+          }
+        }
+      const sameIds = (actual, expected) =>
+        Array.isArray(actual) &&
+        actual.length === expected.length &&
+        actual.every((id, index) => id === expected[index]);
+      valid &&=
+        sameIds(event.admissionIds, ids) &&
+        sameIds(event.completedAdmissionIds, finished) &&
+        sameIds(event.inputIds, expectedInputs);
+      if (!valid)
+        fail(
+          completed.has(key)
+            ? "BRUSH_MUTATION_AFTER_COMPLETION"
+            : "INVALID_BRUSH_MATERIALIZATION",
+          event,
+          { intervalId: event.intervalId },
+        );
+      applications.set(event, valid);
+    }
+  }
+  for (const [key, end] of sealed)
+    if (!completed.has(key)) fail("BRUSH_ACTION_INCOMPLETE", end);
+  return { admissions, applications, sealed, completed, issues };
+}
+
 /** One interpretation of input -> dose/commit -> local receipt -> real draw. */
 export function extractSubmissionEvidence(events) {
+  const admitted = c1Applications(events);
   const inputs = new Map();
   const frames = new Map();
   const changesByInput = new Map();
@@ -582,7 +844,9 @@ export function extractSubmissionEvidence(events) {
       change.kind === "brush-interval"
         ? !Number.isSafeInteger(change.intervalId) ||
           !Array.isArray(change.inputIds) ||
-          !validBrushGeometry(change) ||
+          !(change.dosing === "c1"
+            ? admitted.applications.get(change) === true
+            : validBrushGeometry(change)) ||
           !boundsValid(change.bounds)
         : !Number.isSafeInteger(change.sequence) ||
           !Array.isArray(change.bounds) ||
@@ -644,7 +908,15 @@ export function extractSubmissionEvidence(events) {
     }
     return null;
   };
-  return { inputs, frames, doses, commits, changesByInput, publication };
+  return {
+    inputs,
+    frames,
+    doses,
+    commits,
+    changesByInput,
+    publication,
+    admissions: admitted.admissions,
+  };
 }
 
 /** Missing inputs remain explicit samples; never flatMap away failed observations. */
@@ -670,6 +942,20 @@ export function extractEditSamples(
         (e.sessionId === undefined || e.sessionId === sessionId),
     );
     const published = evidence.publication(model);
+    const prepaid =
+      noop?.accepted === true &&
+      noop?.reason === "prepaid" &&
+      [...evidence.admissions.values()].some(
+        ({ event, valid }) =>
+          valid &&
+          validC1Work(event.work, event.rateFtPerSecond) &&
+          event.sessionId === sessionId &&
+          event.gestureId === noop.gestureId &&
+          event.at <= noop.at &&
+          event.reserved === false &&
+          event.reservedCells === 0 &&
+          event.inputIds.includes(inputId),
+      );
     const edit = published?.receipt;
     const submit = published?.frame;
     const gesture = events.find(
@@ -704,6 +990,7 @@ export function extractEditSamples(
       noopAt: noop?.at ?? null,
       accepted: model ? true : noop ? noop.accepted !== false : null,
       noopReason: noop?.reason ?? null,
+      noopEvidence: prepaid ? "c1-prepaid-v1" : null,
       revision: model?.revision ?? null,
       sequence: model?.sequence ?? null,
       submissionAt: submit?.at ?? null,
@@ -881,7 +1168,7 @@ export function isProcessedNoop(sample) {
   );
 }
 
-/** D10 may discard sampled movement; it never certifies an edit or a lost press. */
+/** An explicitly reported capacity overflow is separate from normal brush work. */
 function isD10Discard(sample) {
   return (
     isProcessedNoop(sample) &&
@@ -890,9 +1177,22 @@ function isD10Discard(sample) {
     sample.eventType === "pointermove" &&
     Number.isSafeInteger(sample.gestureId) &&
     sample.discardedDuringGesture === true &&
-    ["coalesced", "stale", "feedback", "overflow"].includes(sample.noopReason)
+    sample.noopReason === "overflow"
   );
 }
+
+/** Prepaid input is processed, but contributes no new source effect or frame. */
+function isC1PrepaidNoop(sample) {
+  return (
+    isProcessedNoop(sample) &&
+    sample.inputKind === "edit" &&
+    sample.accepted === true &&
+    sample.noopReason === "prepaid" &&
+    sample.noopEvidence === "c1-prepaid-v1"
+  );
+}
+const isNonchangingInput = (sample) =>
+  isD10Discard(sample) || isC1PrepaidNoop(sample);
 
 /** D11 rejection is a separate behavior case, never a successful edit sample. */
 export function evaluateBlockedInput(evidence = {}) {
@@ -985,273 +1285,272 @@ export function evaluateBlockedInput(evidence = {}) {
   return { passed: issues.length === 0, issues };
 }
 
-/** One unpublished dose per session, including across gesture boundaries. */
+/** Every materialization consumes admitted cells; only full frozen GPU receipts release effect. */
 export function evaluateBrushPublicationOrder(events, sessionId) {
+  const ledger = c1Applications(events, sessionId);
   const evidence = extractSubmissionEvidence(events);
-  const intervals = events.filter(
-    (e) =>
-      e.kind === "brush-interval" &&
-      (sessionId === undefined || e.sessionId === sessionId) &&
-      e.changed === true,
-  );
-  const issues = [],
+  const issues = [...ledger.issues],
     steps = [];
-  const previousBySession = new Map();
-  for (const interval of intervals) {
-    const previous = previousBySession.get(interval.sessionId);
+  for (const interval of events) {
+    if (
+      interval.kind !== "brush-interval" ||
+      interval.changed !== true ||
+      (sessionId !== undefined && interval.sessionId !== sessionId)
+    )
+      continue;
     const receipt = evidence.publication(interval)?.receipt;
-    const validBounds = (bounds) =>
-      Array.isArray(bounds) &&
-      bounds.length === 4 &&
-      bounds.every(finite) &&
-      bounds[0] < bounds[2] &&
-      bounds[1] < bounds[3];
-    const retired = events.find(
-      (e) =>
-        e.kind === "brush-feedback-obsolete" &&
-        e.sessionId === interval.sessionId &&
-        e.gestureId === interval.gestureId &&
-        e.intervalId === interval.intervalId &&
-        e.revision === interval.revision &&
-        e.reason === "outside-view" &&
-        Number.isSafeInteger(e.viewGeneration) &&
-        e.at >= interval.at &&
-        validBounds(e.bounds) &&
-        validBounds(e.viewBounds) &&
-        !(
-          e.bounds[0] < e.viewBounds[2] &&
-          e.bounds[2] > e.viewBounds[0] &&
-          e.bounds[1] < e.viewBounds[3] &&
-          e.bounds[3] > e.viewBounds[1]
-        ) &&
-        events.some(
-          (view, index) =>
-            index > events.indexOf(interval) &&
-            index < events.indexOf(e) &&
-            view.kind === "view-change" &&
-            view.sessionId === interval.sessionId &&
-            view.viewGeneration === e.viewGeneration &&
-            view.at <= e.at &&
-            validBounds(view.bounds) &&
-            view.bounds.every((value, i) => value === e.viewBounds[i]),
-        ),
-    );
-    const resolvedEvent = Math.min(
-      receipt ? events.indexOf(receipt) : Infinity,
-      retired ? events.indexOf(retired) : Infinity,
-    );
-    const step = {
+    if (!receipt)
+      issues.push({
+        code: "BRUSH_STEP_SUBMISSION_MISSING",
+        intervalId: interval.intervalId,
+      });
+    steps.push({
       intervalId: interval.intervalId,
       gestureId: interval.gestureId,
       sessionId: interval.sessionId,
       modelAt: interval.at,
       frameId: receipt?.frame ?? null,
       submittedAt: receipt?.at ?? null,
-      retiredAt: retired?.at ?? null,
-      retiredReason: retired?.reason ?? null,
       modelEvent: events.indexOf(interval),
       submitEvent: receipt ? events.indexOf(receipt) : null,
-      resolvedEvent: Number.isFinite(resolvedEvent) ? resolvedEvent : null,
-    };
-    if (!receipt && !retired)
+      retiredAt: null,
+      retiredReason: null,
+    });
+  }
+  const sameRender = (a, b) =>
+    a &&
+    b &&
+    ["id", "sessionId", "viewGeneration", "preparationId", "revision"].every(
+      (key) => a[key] === b[key],
+    ) &&
+    JSON.stringify(a.bounds) === JSON.stringify(b.bounds);
+  const frozen = new Map(),
+    acknowledged = new Set();
+  for (const event of events) {
+    if (sessionId !== undefined && event.sessionId !== sessionId) continue;
+    const key = effectKey(event, event.receiptId ?? event.effectReceipt?.id);
+    if (event.kind === "brush-frozen") frozen.set(key, event);
+    if (event.kind !== "brush-feedback" || event.accepted !== true) continue;
+    const request = frozen.get(key),
+      render = event.renderReceipt;
+    const completion = events.find(
+      (candidate) =>
+        ["gpu-completed", "render-current"].includes(candidate.kind) &&
+        candidate.sessionId === event.sessionId &&
+        finite(candidate.at) &&
+        candidate.at <= event.at &&
+        (candidate.kind === "render-current" || candidate.at >= request?.at) &&
+        sameRender(candidate.renderReceipt, render),
+    );
+    const frame =
+      completion &&
+      evidence.frames.get(event.sessionId + "/" + completion.frame);
+    const proven =
+      request &&
+      !acknowledged.has(key) &&
+      finite(request.at) &&
+      request.at <= event.at &&
+      positiveInteger(event.receiptId ?? event.effectReceipt?.id) &&
+      sameRender(request.renderReceipt, render) &&
+      render.sessionId === event.sessionId &&
+      Array.isArray(render.bounds) &&
+      render.bounds.length > 0 &&
+      render.bounds.every(boundsValid) &&
+      completion &&
+      frame &&
+      frame.viewGeneration === render.viewGeneration &&
+      frame.revision >= render.revision &&
+      frame.at <= completion.at;
+    if (!proven)
       issues.push({
-        code: "BRUSH_STEP_SUBMISSION_MISSING",
-        intervalId: interval.intervalId,
+        code: "UNPROVEN_BRUSH_EFFECT_RECEIPT",
+        gestureId: event.gestureId,
       });
-    if (
-      previous &&
-      (previous.resolvedEvent === null ||
-        previous.resolvedEvent >= step.modelEvent)
-    )
+    acknowledged.add(key);
+    const admission = [...ledger.admissions.values()].find(
+      (entry) => gestureKey(entry.event) === gestureKey(event),
+    );
+    if (!validC1Work(event.work, admission?.event.rateFtPerSecond))
       issues.push({
-        code: "MULTIPLE_UNPUBLISHED_BRUSH_STEPS",
-        intervalId: interval.intervalId,
-        previousIntervalId: previous.intervalId,
+        code: "INVALID_BRUSH_RESERVATION_PROOF",
+        gestureId: event.gestureId,
       });
-    steps.push(step);
-    previousBySession.set(interval.sessionId, step);
   }
   return { passed: issues.length === 0, issues, steps };
 }
 
-/** Account for real accepted/discarded time; nominal press dose is separate. */
+/** Causal windows preserve every accepted path point and may finish after seal. */
 export function evaluateBrushTime(events, inputIds, sessionId) {
   const issues = [],
     wanted = new Set(inputIds),
     epsilon = 1e-6;
-  const inputs = events.filter((e) => e.kind === "input" && wanted.has(e.id));
-  const down = inputs.find((e) => e.inputKind === "edit");
-  const up = inputs.find((e) => e.inputKind === "pointerup");
+  const fail = (code, detail = {}) => issues.push({ code, ...detail });
+  const inputs = events.filter(
+    (event) => event.kind === "input" && wanted.has(event.id),
+  );
+  const down = inputs.find((event) => event.inputKind === "edit");
+  const up = inputs.find((event) => event.inputKind === "pointerup");
   const starts = events.filter(
-    (e) =>
-      e.kind === "brush-start" &&
-      e.sessionId === sessionId &&
-      e.input === down?.id,
+    (event) =>
+      event.kind === "brush-start" &&
+      event.sessionId === sessionId &&
+      event.input === down?.id,
   );
   const start = starts[0];
-  const own = (e) =>
-    e.sessionId === sessionId && e.gestureId === start?.gestureId;
-  const ends = events.filter((e) => e.kind === "brush-end" && own(e));
-  const end = ends[0];
-  // Input facts precede the handler's effects. Tie this release to this
-  // gesture's end; a final dose inside the release handler is already too late.
-  const releaseEvent = up && end?.input === up.id ? events.indexOf(up) : -1;
-  const fail = (code, detail = {}) => issues.push({ code, ...detail });
-  if (starts.length !== 1 || ends.length !== 1)
+  const own = (event) =>
+    event.sessionId === sessionId && event.gestureId === start?.gestureId;
+  const ends = events.filter(
+    (event) => event.kind === "brush-end" && own(event),
+  );
+  const completions = events.filter(
+    (event) => event.kind === "brush-complete" && own(event),
+  );
+  const end = ends[0],
+    complete = completions[0];
+  if (
+    starts.length !== 1 ||
+    ends.length !== 1 ||
+    completions.length !== 1 ||
+    start?.dosing !== "c1"
+  )
     fail("BRUSH_TIME_BOUNDARIES_MISSING");
   if (!down || !up || end?.input !== up.id) fail("BRUSH_RELEASE_UNPROVEN");
   if (
-    ![start?.startAt, end?.endAt, start?.inputAt, end?.inputAt].every(finite) ||
-    end.endAt < start.startAt ||
+    ![
+      start?.startAt,
+      start?.inputAt,
+      end?.inputAt,
+      end?.clock,
+      end?.endAt,
+      complete?.at,
+    ].every(finite) ||
     Math.abs(start.inputAt - down?.createdAt) > epsilon ||
     Math.abs(end.inputAt - up?.createdAt) > epsilon ||
-    start.startAt < start.inputAt ||
-    end.endAt < end.inputAt
+    start.startAt !== start.inputAt ||
+    end.endAt < end.inputAt ||
+    end.clock > end.endAt ||
+    complete.at < end.at
   )
     fail("INVALID_BRUSH_TIME_CLOCK");
-  const intervals = events.filter((e) => e.kind === "brush-interval" && own(e));
-  const discarded = events.filter((e) => e.kind === "brush-discard" && own(e));
-  if (!intervals.length) fail("BRUSH_DOSE_MISSING");
-  if (new Set(intervals.map((e) => e.intervalId)).size !== intervals.length)
-    fail("DUPLICATE_BRUSH_INTERVAL");
-  const point = (p) => Array.isArray(p) && p.length === 2 && p.every(finite);
-  const validIntervals = [],
-    spans = [],
-    submissions = [];
+  const accepted = events.filter(
+    (event) => event.kind === "brush-accepted" && own(event),
+  );
+  const intervals = events.filter(
+    (event) => event.kind === "brush-interval" && own(event),
+  );
   const publication = evaluateBrushPublicationOrder(events, sessionId);
   issues.push(...publication.issues);
-  let acceptedMs = 0,
-    timedDoseMs = 0,
-    pressDoseMs = 0,
-    acceptedDoseFt = 0;
-  for (const interval of intervals) {
-    const detail = { intervalId: interval.intervalId };
-    const press = interval.cause === "press";
-    const valid =
-      [
-        interval.fromAt,
-        interval.toAt,
-        interval.acceptedElapsedMs,
-        interval.rawElapsedMs,
-        interval.rateFtPerSecond,
-        interval.at,
-      ].every(finite) &&
-      interval.toAt >= interval.fromAt &&
-      interval.fromAt >= start?.startAt - epsilon &&
-      interval.toAt <= end?.endAt + epsilon &&
-      interval.at >= interval.toAt &&
-      interval.acceptedElapsedMs > 0 &&
-      interval.acceptedElapsedMs <= 50 + epsilon &&
-      Number.isSafeInteger(interval.intervalId) &&
-      Number.isSafeInteger(interval.revision) &&
-      typeof interval.changed === "boolean" &&
-      interval.rateFtPerSecond === start?.rateFtPerSecond &&
-      validBrushGeometry(interval) &&
-      Array.isArray(interval.inputIds) &&
-      interval.inputIds.every((id) => wanted.has(id)) &&
-      (press
-        ? interval.nominalDose === true &&
-          interval.fromAt === interval.toAt &&
-          interval.rawElapsedMs === 0 &&
-          Math.abs(interval.acceptedElapsedMs - 1000 / 60) < epsilon
-        : interval.nominalDose === false &&
-          ["hold", "move"].includes(interval.cause) &&
-          interval.rawElapsedMs + epsilon >= interval.acceptedElapsedMs &&
-          Math.abs(
-            interval.toAt - interval.fromAt - interval.acceptedElapsedMs,
-          ) < epsilon);
-    if (!valid) {
-      fail("INVALID_OR_EXCESSIVE_BRUSH_DOSE", detail);
-      continue;
-    }
+  if (!accepted.length) fail("BRUSH_ADMISSION_MISSING");
+  if (
+    new Set(intervals.map((event) => event.intervalId)).size !==
+    intervals.length
+  )
+    fail("DUPLICATE_BRUSH_INTERVAL");
+  let clock = start?.startAt,
+    previous = start?.point,
+    terminal = false,
+    acceptedMs = 0,
+    cappedMs = 0,
+    discardedTimeEffect = 0;
+  const valid = [];
+  for (const admission of accepted) {
+    const detail = { admissionId: admission.admissionId };
+    if (!validC1Admission(admission)) continue;
+    valid.push(admission);
     if (
-      (releaseEvent >= 0 && events.indexOf(interval) > releaseEvent) ||
-      events.indexOf(interval) >= events.indexOf(end) ||
-      interval.at > end?.at + epsilon
+      ["rateFtPerSecond", "radius", "level"].some(
+        (key) => admission[key] !== start?.[key],
+      )
     )
-      fail("BRUSH_DOSE_AFTER_RELEASE", detail);
+      fail("BRUSH_PARAMETERS_CHANGED", detail);
+    if (admission.fromAt - clock > epsilon)
+      fail("UNEXPLAINED_BRUSH_TIME", detail);
+    if (clock - admission.fromAt > epsilon)
+      fail("OVERLAPPING_BRUSH_TIME", detail);
+    if (!samePoint(admission.from, previous))
+      fail("DISCONNECTED_BRUSH_PATH", detail);
+    if (terminal || events.indexOf(admission) >= events.indexOf(end))
+      fail("BRUSH_ADMISSION_AFTER_SEAL", detail);
     if (
-      !press &&
-      interval.rawElapsedMs > 50 + epsilon &&
-      interval.segments.some((segment) => !samePoint(segment.from, segment.to))
+      admission.cause === "press" &&
+      (valid.length !== 1 ||
+        admission.rawElapsedMs !== 0 ||
+        admission.offeredElapsedMs !== 0 ||
+        !samePoint(admission.from, admission.to))
     )
-      fail("BRUSH_CAPPED_PATH_REPLAY", detail);
-    validIntervals.push(interval);
-    acceptedMs += interval.acceptedElapsedMs;
-    acceptedDoseFt +=
-      (interval.rateFtPerSecond * interval.acceptedElapsedMs) / 1000;
-    if (press) pressDoseMs += interval.acceptedElapsedMs;
-    else {
-      timedDoseMs += interval.acceptedElapsedMs;
-      spans.push(interval);
+      fail("INVALID_C1_INITIAL_MINIMUM", detail);
+    if (admission.end) {
+      terminal = true;
+      if (
+        events.indexOf(admission) <= events.indexOf(up) ||
+        !admission.inputIds.includes(up?.id) ||
+        Math.abs(admission.toAt - Math.max(clock, up?.createdAt)) > epsilon
+      )
+        fail("INVALID_C1_TERMINAL_TIME", detail);
     }
-    if (!interval.changed) continue;
-    const step = publication.steps.find(
-      (step) =>
-        step.intervalId === interval.intervalId &&
-        step.gestureId === interval.gestureId,
+    for (const id of admission.inputIds) {
+      const input = inputs.find((event) => event.id === id);
+      if (!wanted.has(id) || !input || input.at > admission.at)
+        fail("INVALID_BRUSH_INPUT_BINDING", detail);
+    }
+    for (const sample of admission.samples) {
+      const input = inputs.find((event) => event.id === sample.input);
+      if (!input || Math.abs(input.createdAt - sample.at) > epsilon)
+        fail("INVALID_BRUSH_INPUT_TIME", detail);
+    }
+    clock = admission.toAt;
+    previous = admission.to;
+    acceptedMs += admission.offeredElapsedMs;
+    cappedMs += admission.rawElapsedMs - admission.offeredElapsedMs;
+    discardedTimeEffect += admission.discardedTimeEffect;
+  }
+  if (!terminal) fail("BRUSH_TERMINAL_ADMISSION_MISSING");
+  if (Math.abs(clock - end?.clock) > epsilon) fail("UNEXPLAINED_BRUSH_TIME");
+  if (accepted.filter((event) => event.cause === "press").length !== 1)
+    fail("INVALID_C1_INITIAL_MINIMUM");
+  for (const input of inputs)
+    if (!accepted.some((admission) => admission.inputIds?.includes(input.id)))
+      fail("BRUSH_INPUT_NOT_ADMITTED", { inputId: input.id });
+  const inputManifest = start
+    ? {
+        brush: {
+          level: start.level,
+          radius: start.radius,
+          amount: start.rateFtPerSecond,
+        },
+        start: { point: start.point, at: start.inputAt, input: start.input },
+        windows: accepted
+          .filter((event) => event.cause !== "press")
+          .map((event) => ({
+            at: event.observedAt,
+            points: event.samples,
+            end: event.end,
+          })),
+      }
+    : null;
+  try {
+    if (!inputManifest) throw new Error("Missing C1 input manifest");
+    referenceC1Stroke(inputManifest, [start?.point]);
+  } catch {
+    fail("INVALID_C1_INPUT_MANIFEST");
+  }
+  const submissions = publication.steps.filter(
+    (step) => step.gestureId === start?.gestureId && finite(step.submittedAt),
+  );
+  const stationary =
+    pointValid(start?.point) &&
+    valid.length === accepted.length &&
+    accepted.every(
+      (event) =>
+        samePoint(event.from, start.point) &&
+        event.path.every((point) => samePoint(point, start.point)) &&
+        samePoint(event.to, start.point),
     );
-    if (step && finite(step.submittedAt))
-      submissions.push({
-        intervalId: interval.intervalId,
-        frame: step.frameId,
-        at: step.submittedAt,
-        elapsedMs: step.submittedAt - interval.at,
-      });
-  }
-  if (intervals.filter((e) => e.cause === "press").length > 1)
-    fail("DUPLICATE_PRESS_DOSE");
-  const discardMs = {};
-  for (const span of discarded) {
-    if (
-      ![span.fromAt, span.toAt].every(finite) ||
-      span.toAt < span.fromAt ||
-      span.fromAt < start?.startAt - epsilon ||
-      span.toAt > end?.endAt + epsilon ||
-      ![
-        "feedback",
-        "cap",
-        "sources",
-        "end",
-        "cancel",
-        "blur",
-        "visibility",
-        "project",
-        "destroy",
-        "error",
-        "pointerup",
-        "press",
-        "history",
-        "save",
-        "escape",
-        "input-limit",
-        "stale",
-        "overflow",
-        "navigation",
-      ].includes(span.reason)
-    ) {
-      fail("INVALID_BRUSH_DISCARD");
-      continue;
-    }
-    discardMs[span.reason] =
-      (discardMs[span.reason] ?? 0) + span.toAt - span.fromAt;
-    if (span.toAt > span.fromAt) spans.push(span);
-  }
-  let cursor = start?.startAt;
-  for (const span of spans.sort(
-    (a, b) => a.fromAt - b.fromAt || a.toAt - b.toAt,
-  )) {
-    if (span.fromAt - cursor > epsilon)
-      fail("UNEXPLAINED_BRUSH_TIME", { fromAt: cursor, toAt: span.fromAt });
-    if (cursor - span.fromAt > epsilon)
-      fail("OVERLAPPING_BRUSH_TIME", { fromAt: span.fromAt, toAt: cursor });
-    cursor = Math.max(cursor, span.toAt);
-  }
-  if (end?.endAt - cursor > epsilon)
-    fail("UNEXPLAINED_BRUSH_TIME", { fromAt: cursor, toAt: end.endAt });
   const feedback = [
     start?.startAt,
-    ...submissions.map((s) => s.at).filter((at) => at < end?.endAt),
+    ...submissions
+      .map((step) => step.submittedAt)
+      .filter((at) => at < end?.endAt),
     end?.endAt,
   ]
     .filter(finite)
@@ -1260,46 +1559,40 @@ export function evaluateBrushTime(events, inputIds, sessionId) {
     passed: issues.length === 0,
     issues,
     gestureId: start?.gestureId ?? null,
+    inputManifest,
     inputQueueMs: {
-      down: start ? start.startAt - start.inputAt : null,
+      down: start ? start.at - start.inputAt : null,
       up: end ? end.endAt - end.inputAt : null,
     },
     startAt: start?.startAt ?? null,
-    endAt: end?.endAt ?? null,
-    heldMs: end && start ? end.endAt - start.startAt : null,
+    endAt: end?.inputAt ?? null,
+    completedAt: complete?.at ?? null,
+    heldMs: start && end ? end.inputAt - start.inputAt : null,
     acceptedMs,
-    timedDoseMs,
-    pressDoseMs,
-    acceptedDoseFt,
-    discardMs,
-    maximumStepMs: Math.max(
-      0,
-      ...validIntervals.map((e) => e.acceptedElapsedMs),
-    ),
-    maximumRawStepMs: Math.max(0, ...validIntervals.map((e) => e.rawElapsedMs)),
-    intervalIds: intervals.map((e) => e.intervalId),
-    changedSteps: intervals.filter((e) => e.changed).length,
+    timedDoseMs: acceptedMs,
+    pressDoseMs: 1000 / 60,
+    acceptedDoseFt:
+      stationary && discardedTimeEffect <= 1e-10
+        ? start.rateFtPerSecond * Math.max(1 / 60, acceptedMs / 1000)
+        : null,
+    discardedTimeEffect,
+    discardMs: { cap: cappedMs },
+    maximumStepMs: Math.max(0, ...valid.map((event) => event.offeredElapsedMs)),
+    maximumRawStepMs: Math.max(0, ...valid.map((event) => event.rawElapsedMs)),
+    intervalIds: intervals.map((event) => event.intervalId),
+    changedSteps: intervals.filter((event) => event.changed).length,
     submittedSteps: submissions.length,
-    submissionMs: distribution(submissions.map((s) => s.elapsedMs)),
-    retiredSteps: publication.steps.filter(
-      (step) => step.gestureId === start?.gestureId && finite(step.retiredAt),
-    ).length,
+    submissionMs: distribution(
+      submissions.map((step) => step.submittedAt - step.modelAt),
+    ),
+    retiredSteps: 0,
     maximumFeedbackGapMs: Math.max(
       0,
-      ...feedback.slice(1).map((at, i) => at - feedback[i]),
+      ...feedback.slice(1).map((at, index) => at - feedback[index]),
     ),
-    stationary:
-      point(start?.point) &&
-      validIntervals.length === intervals.length &&
-      intervals.every((e) =>
-        e.segments.every(
-          (segment) =>
-            samePoint(segment.from, start.point) &&
-            samePoint(segment.to, start.point),
-        ),
-      ),
+    stationary,
     interpretation:
-      "Accepted time and explicit discarded time; nominal press dose is additional. Input queue delay is never accumulated. Submission is not native presentation.",
+      "C1 swept minimum prepays causal time; each window offers at most 50 ms. Accepted work may materialize after seal. Submission and GPU completion do not prove native presentation.",
   };
 }
 
@@ -1843,7 +2136,7 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
   for (const sample of samples) {
     const detail = { inputId: sample.inputId };
     if (sample.modelChanged === false) {
-      if (isD10Discard(sample)) continue;
+      if (isNonchangingInput(sample)) continue;
       issues.push({
         code: isProcessedNoop(sample)
           ? sample.accepted === false
@@ -1931,6 +2224,7 @@ export function evaluateSubmissionDiagnostics(samples, limitMs = 50) {
     sampleCount: samples.length,
     processedNoops: samples.filter(isProcessedNoop).length,
     d10DiscardedInputs: samples.filter(isD10Discard).length,
+    prepaidInputs: samples.filter(isC1PrepaidNoop).length,
     notAccepted: samples.filter(
       (sample) => isProcessedNoop(sample) && sample.accepted === false,
     ).length,
@@ -2219,7 +2513,7 @@ export function strokeEvidence(edit) {
     complete,
     passed:
       complete &&
-      processedNoops.every(isD10Discard) &&
+      processedNoops.every(isNonchangingInput) &&
       beforeReleaseFrames.size >= 2 &&
       continuous,
     minimumFrameControlPassed: beforeReleaseFrames.size >= 2,
@@ -2507,13 +2801,55 @@ export function evaluateObservation(observation, { id, kind = "edit" } = {}) {
       coldBeforeNavigation: observation.coldBeforeNavigation === true,
     });
   }
-  return evaluateScenario({
+  const scenario = evaluateScenario({
     id,
     kind,
     samples: selected,
     droppedEvents: observation.droppedEvents,
     contentObserved: false,
   });
+  const publication = evaluateBrushPublicationOrder(events);
+  const gestures = events
+    .filter((event) => event.kind === "brush-start")
+    .map((start) => {
+      const first = events.findIndex(
+        (event) => event.kind === "input" && event.id === start.input,
+      );
+      const last = events.findIndex(
+        (event) =>
+          event.kind === "brush-end" &&
+          event.sessionId === start.sessionId &&
+          event.gestureId === start.gestureId,
+      );
+      const ids = events
+        .slice(Math.max(0, first), last < 0 ? undefined : last + 1)
+        .filter(
+          (event) =>
+            event.kind === "input" &&
+            ["edit", "pointerup"].includes(event.inputKind),
+        )
+        .map((event) => event.id);
+      const own = events.filter(
+        (event) =>
+          event.gestureId === undefined ||
+          (event.sessionId === start.sessionId &&
+            event.gestureId === start.gestureId),
+      );
+      return evaluateBrushTime(own, ids, start.sessionId);
+    });
+  const unique = new Map(
+    [
+      ...publication.issues,
+      ...gestures.flatMap((gesture) => gesture.issues),
+    ].map((issue) => [JSON.stringify(issue), issue]),
+  );
+  const issues = [...unique.values()];
+  return {
+    ...scenario,
+    status: issues.length ? "FAIL" : scenario.status,
+    failures: [...scenario.failures, ...issues],
+    brushWork: { passed: issues.length === 0, issues, gestures },
+  };
 }
 
 /** Each collected case is interpreted once, independently of the selected gate. */
@@ -2609,7 +2945,7 @@ function nativeVerdict(report, requirements, facts, functional, cases) {
       const countedSamples =
         spec.kind === "cold"
           ? firstCold
-          : samples.filter((sample) => !isD10Discard(sample));
+          : samples.filter((sample) => !isNonchangingInput(sample));
       total += countedSamples.length;
       if (countedSamples.length < spec.minSamples)
         fail("INSUFFICIENT_SAMPLES", {
@@ -2655,7 +2991,7 @@ function nativeVerdict(report, requirements, facts, functional, cases) {
         }
         if (spec.kind !== "navigation") {
           if (sample.modelChanged === false) {
-            if (isD10Discard(sample)) continue;
+            if (isNonchangingInput(sample)) continue;
             fail(
               isProcessedNoop(sample)
                 ? sample.accepted === false
@@ -2785,7 +3121,7 @@ function nativeVerdict(report, requirements, facts, functional, cases) {
         result.inputKinds = {};
         for (const kind of spec.requiredInputKinds) {
           const count = samples.filter(
-            (s) => s.inputKind === kind && !isD10Discard(s),
+            (s) => s.inputKind === kind && !isNonchangingInput(s),
           ).length;
           const timings = distribution(byInputKind.get(kind) ?? []);
           result.inputKinds[kind] = {
@@ -3054,9 +3390,9 @@ if (
         throw new Error(
           "Raw observations require --scenario with a fixed P0 scenario ID",
         );
-      if (source.schemaVersion !== 5)
+      if (source.schemaVersion !== 6)
         throw new Error(
-          "Expected current P0 schema 5; evaluate historical evidence with its recorded harness commit",
+          "Expected current P0 schema 6; evaluate historical evidence with its recorded harness commit",
         );
       const result = Array.isArray(source.events)
         ? evaluateObservation(source, spec)

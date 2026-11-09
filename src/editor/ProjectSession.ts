@@ -72,10 +72,17 @@ export class ProjectSession {
   /** New local changes wake the same writer; there is no second pending queue. */
   persist(): void {
     const document = this.document;
-    if (!document || this.writer || this.failure || this.recovery) return;
+    if (
+      !document ||
+      document.disposed ||
+      this.writer ||
+      this.failure ||
+      this.recovery
+    )
+      return;
     if (!document.pendingChanges().length) return;
     const run = async () => {
-      while (document === this.document) {
+      while (document === this.document && !document.disposed) {
         const change = document.pendingChanges()[0];
         if (!change) return;
         const receipt = await this.bridge.commit({
@@ -84,18 +91,19 @@ export class ProjectSession {
           transactionId: change.transactionId,
           patches: change.patches.map(({ key, after }) => ({ key, after })),
         });
-        if (document !== this.document) return;
+        if (document !== this.document || document.disposed) return;
         document.acknowledge(receipt);
         this.observer.persisted(receipt);
       }
     };
     this.writer = run()
       .catch((error: unknown) => {
-        if (document === this.document) {
-          this.failure = asError(error);
+        const failure = asError(error);
+        if (document === this.document && !document.disposed) {
+          this.failure = failure;
           this.observer.failed(this.failure);
         }
-        throw error;
+        throw failure;
       })
       .finally(() => {
         this.writer = null;
@@ -107,15 +115,22 @@ export class ProjectSession {
     this.observer.changed();
   }
 
-  /** Wait for every accepted change, including changes accepted during an ACK. */
+  /** The captured action completes before its journal is drained by the one writer. */
   async flush(): Promise<void> {
+    const document = this.document;
+    if (document) await this.waitForAction(document);
     this.persist();
     while (this.writer) await this.writer;
+    if (document) this.assertCurrentDocument(document);
     if (this.failure) throw this.failure;
   }
 
   preparedDocument(): PreparedDocument {
     const document = this.requireDocument();
+    if (document.active)
+      throw new Error(
+        "Die angenommene Pinselaktion ist noch nicht abgeschlossen.",
+      );
     return {
       sessionId: document.sessionId,
       sequence: document.sequence,
@@ -140,7 +155,14 @@ export class ProjectSession {
 
   /** A failed write still permits the host to offer explicit Discard or Cancel. */
   async prepareFileAction(): Promise<PreparedDocument> {
-    await this.flush().catch(() => {});
+    const document = this.requireDocument();
+    try {
+      await this.flush();
+    } catch (error) {
+      // Only a retained writer failure belongs in the native Save/Discard/Cancel
+      // contract. An incomplete action or abandoned session is not a snapshot.
+      if (document !== this.document || error !== this.failure) throw error;
+    }
     return this.preparedDocument();
   }
 
@@ -156,8 +178,7 @@ export class ProjectSession {
     const document = this.requireDocument();
     if (this.failure) await this.recover();
     await this.flush();
-    if (document !== this.document)
-      throw new Error("Das Projekt wurde inzwischen gewechselt.");
+    this.assertCurrentDocument(document);
     const boundary = {
       sessionId: document.sessionId,
       sequence: document.sequence,
@@ -166,7 +187,12 @@ export class ProjectSession {
       ...boundary,
       saveAs,
     });
-    if (result && document === this.document && this.project) {
+    if (
+      result &&
+      document === this.document &&
+      !document.disposed &&
+      this.project
+    ) {
       if (
         result.sessionId !== boundary.sessionId ||
         result.savedSequence !== boundary.sequence ||
@@ -194,8 +220,11 @@ export class ProjectSession {
     this.recovery = true;
     this.observer.changed();
     try {
+      await this.waitForAction(document);
       await this.writer?.catch(() => {});
+      this.assertCurrentDocument(document);
       const actual = await this.bridge.status();
+      this.assertCurrentDocument(document);
       if (
         document !== this.document ||
         actual.sessionId !== document.sessionId ||
@@ -217,8 +246,7 @@ export class ProjectSession {
           transactionId: change.transactionId,
           patches: change.patches.map(({ key, after }) => ({ key, after })),
         });
-        if (document !== this.document)
-          throw new Error("Das Projekt wurde inzwischen gewechselt.");
+        this.assertCurrentDocument(document);
         document.acknowledge(receipt);
         checkedSequence = Math.max(checkedSequence, receipt.sequence);
         this.observer.persisted(receipt);
@@ -229,17 +257,34 @@ export class ProjectSession {
         );
       this.failure = null;
     } catch (error) {
-      this.failure = asError(error);
-      this.observer.failed(this.failure);
+      if (document === this.document && !document.disposed) {
+        this.failure = asError(error);
+        this.observer.failed(this.failure);
+      }
       throw error;
     } finally {
-      this.recovery = false;
-      this.observer.changed();
+      if (document === this.document) {
+        this.recovery = false;
+        this.observer.changed();
+      }
     }
+  }
+
+  private async waitForAction(document: EditorDocument): Promise<void> {
+    await document.whenActionFinished();
+    this.assertCurrentDocument(document);
+  }
+
+  private assertCurrentDocument(document: EditorDocument): void {
+    if (document.disposed)
+      throw new Error("Die Dokumentsitzung wurde inzwischen beendet.");
+    if (document !== this.document)
+      throw new Error("Das Projekt wurde inzwischen gewechselt.");
   }
 
   private requireDocument(): EditorDocument {
     if (!this.document) throw new Error("Das Projekt ist noch nicht geöffnet.");
+    this.assertCurrentDocument(this.document);
     return this.document;
   }
 }

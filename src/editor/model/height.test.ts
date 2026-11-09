@@ -15,6 +15,7 @@ import {
   heightTilesFromControls,
   prepareHeightSampler,
   quarticBrushSegmentIntegral,
+  quarticBrushSegmentMean,
   requiredHeightSources,
   splineWeights,
   validateHeightTile,
@@ -645,6 +646,95 @@ describe("local gestures, history and persistence patches", () => {
     // At u=1/2 the kernel is 9/16; over this tiny interval its change is <1e-9.
     expect(Math.abs(tiny / 1e-8 - 9 / 16)).toBeLessThan(1e-9);
   });
+
+  it.each([
+    {
+      name: "interior",
+      along: 0.2,
+      perpendicular: 0.3,
+      length: 0.4,
+      lower: -0.2,
+      upper: 0.2,
+      radius: 1,
+    },
+    {
+      name: "support endpoint",
+      along: 0,
+      perpendicular: 0,
+      length: 1,
+      lower: 0,
+      upper: 1,
+      radius: 1,
+    },
+    {
+      name: "beyond support endpoint",
+      along: 0,
+      perpendicular: 0,
+      length: 1 + 1e-9,
+      lower: 0,
+      upper: 1,
+      radius: 1,
+    },
+    {
+      name: "both support endpoints",
+      along: 0.6,
+      perpendicular: 0.8,
+      length: 1.2,
+      lower: -0.6,
+      upper: 0.6,
+      radius: 1,
+    },
+    {
+      name: "world-length clipped segment",
+      along: WORLD_LIMIT,
+      perpendicular: 0.6,
+      length: 2 * WORLD_LIMIT,
+      lower: -0.8,
+      upper: 0.8,
+      radius: 1,
+    },
+    {
+      name: "subnormal radius with an infinite reciprocal",
+      along: 0.25,
+      perpendicular: 0,
+      length: 0.5,
+      lower: -0.25,
+      upper: 0.25,
+      radius: Number.MIN_VALUE * 4096,
+    },
+  ])(
+    "matches independent Gaussian integration for $name",
+    ({ along, perpendicular, length, lower, upper, radius }) => {
+      // These support intervals are fixed by each fixture's geometry. Three
+      // Gaussian samples integrate the quartic exactly, independently of the
+      // production midpoint polynomial and clipping implementation.
+      const midpoint = (lower + upper) / 2;
+      const half = (upper - lower) / 2;
+      const node = Math.sqrt(3 / 5) * half;
+      const kernel = (u: number) =>
+        Math.max(0, 1 - u * u - perpendicular * perpendicular) ** 2;
+      const normalizedIntegral =
+        half *
+        ((5 / 9) * kernel(midpoint - node) +
+          (8 / 9) * kernel(midpoint) +
+          (5 / 9) * kernel(midpoint + node));
+      const expectedMean = normalizedIntegral / length;
+      const expectedIntegral = normalizedIntegral * radius;
+      const args = [
+        along * radius,
+        perpendicular * radius,
+        length * radius,
+        radius,
+      ] as const;
+      const mean = quarticBrushSegmentMean(...args);
+      const integral = quarticBrushSegmentIntegral(...args);
+      expect(Math.abs(mean - expectedMean)).toBeLessThan(5e-14 * expectedMean);
+      expect(integral).toBeGreaterThan(0);
+      expect(Math.abs(integral - expectedIntegral)).toBeLessThanOrEqual(
+        Math.max(2 * Number.MIN_VALUE, 5e-14 * expectedIntegral),
+      );
+    },
+  );
 
   it("deepens during stationary holding at the configured rate and undoes one whole stroke", () => {
     const doc = new EditorDocument("stationary-rate", { empty: true });
