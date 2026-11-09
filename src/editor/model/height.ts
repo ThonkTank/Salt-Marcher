@@ -56,14 +56,48 @@ export function quarticBrushSegmentIntegral(
   length: number,
   radius: number,
 ): number {
+  return quarticBrushSegment(along, perpendicular, length, radius, false);
+}
+
+/** Mean over a nonzero segment; stationary stamps are handled by the caller. */
+export function quarticBrushSegmentMean(
+  along: number,
+  perpendicular: number,
+  length: number,
+  radius: number,
+): number {
+  return quarticBrushSegment(along, perpendicular, length, radius, true);
+}
+
+function quarticBrushSegment(
+  along: number,
+  perpendicular: number,
+  length: number,
+  radius: number,
+  mean: boolean,
+): number {
   const distance = Math.abs(perpendicular) / radius;
   if (distance >= 1 || length <= 0) return 0;
   const h = (1 - distance) * (1 + distance);
-  const reach = radius * Math.sqrt(h);
-  const lower = Math.max(0, along - reach);
-  const upper = Math.min(length, along + reach);
-  if (lower >= upper) return 0;
-  const span = upper - lower;
+  // A segment lies entirely inside the circle exactly when both endpoints do.
+  // Dense short movements therefore need neither a square root nor clipping.
+  // Keep division: reciprocal radii can overflow for valid subnormal radii.
+  const contained =
+    length <= 2 * radius &&
+    (Math.max(Math.abs(along), Math.abs(length - along)) / radius) ** 2 <= h;
+  let lower = 0;
+  let span = length;
+  let scale = mean ? 1 : length;
+  if (!contained) {
+    // Preserve world-coordinate clipping and its stable midpoint for long or
+    // partially supported segments; only the final integral/mean scale differs.
+    const reach = radius * Math.sqrt(h);
+    lower = Math.max(0, along - reach);
+    const upper = Math.min(length, along + reach);
+    if (lower >= upper) return 0;
+    span = upper - lower;
+    scale = mean ? span / length : span;
+  }
   const midpoint = (lower - along + span / 2) / radius;
   const halfWidth = span / (2 * radius);
   const m2 = midpoint * midpoint;
@@ -71,7 +105,7 @@ export function quarticBrushSegmentIntegral(
   const a = h - m2;
   // Integrate around the midpoint instead of subtracting nearly equal values
   // of h²u - 2hu³/3 + u⁵/5 at the ends of a short movement.
-  return span * (a * a + (2 * m2 - (2 * h) / 3) * v2 + (v2 * v2) / 5);
+  return scale * (a * a + (2 * m2 - (2 * h) / 3) * v2 + (v2 * v2) / 5);
 }
 
 interface PreparedLevel {

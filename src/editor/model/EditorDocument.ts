@@ -32,6 +32,13 @@ import {
   type Point,
   type SourceState,
 } from "./types";
+import { PrepaidBrush, type PrepaidBrushChange } from "./PrepaidBrush";
+import {
+  type BrushEffectReceipt,
+  type BrushReservation,
+  type BrushReservationContext,
+} from "./BrushReservations";
+import { preparePrepaidHeight, type HeightBrushBatch } from "./prepaid-height";
 
 export interface HeightDocumentOptions {
   /** Only valid when creation of an empty store has actually succeeded. */
@@ -97,6 +104,61 @@ interface Gesture {
   /** Reserved before/after payloads if this live action finishes now. */
   retainedBytes: number;
   bounds: Bounds | null;
+  finished: Promise<void>;
+  resolveFinished: () => void;
+  rejectFinished: (error: Error) => void;
+}
+
+interface BrushContinuation {
+  account: PrepaidBrush;
+  context: BrushReservationContext;
+  queue: {
+    id: number;
+    reservation: BrushReservation;
+    remaining: number;
+    total: number;
+    points: number;
+  }[];
+  pendingPoints: number;
+  pendingCells: number;
+  sealed: boolean;
+  complete: boolean;
+  invalidated: boolean;
+  lastAdmissionId: number;
+  reservedRegions: Map<string, Bounds>;
+  appliedRegions: Map<string, Bounds>;
+  reservedBounds: Bounds | null;
+  appliedBounds: Bounds | null;
+}
+
+export interface BrushAdmission {
+  admissionId: number;
+  bounds: Bounds | null;
+  regions: Bounds[];
+  reserved: boolean;
+  reservedCells: number;
+  /** Coefficient-effect sums, not normalized elapsed time. */
+  acceptedTime: number;
+  discardedTime: number;
+  pendingPoints: number;
+  examinedCells: number;
+  /** Dense lookup reference capacity; not a heap-byte estimate. */
+  lookupSlotCount: number;
+}
+
+export interface BrushAdvance {
+  update: HeightUpdate | null;
+  change: ChangeSet | null;
+  complete: boolean;
+  appliedAdmissionIds: number[];
+  completedAdmissionIds: number[];
+  appliedCells: number;
+  applications: {
+    admissionId: number;
+    fromCell: number;
+    toCell: number;
+    totalCells: number;
+  }[];
 }
 
 export class SourcesNotReadyError extends Error {
@@ -198,6 +260,8 @@ export class EditorDocument {
   private readonly entries = new Map<string, Entry>();
   private coverage: SourceNeed[] = [];
   private gesture: Gesture | null = null;
+  private prepaid: BrushContinuation | null = null;
+  private invalidationError: Error | null = null;
   private history: HistoryAction[] = [];
   private historyPosition = 0;
   private readonly pending = new Map<
@@ -238,6 +302,58 @@ export class EditorDocument {
 
   get active(): boolean {
     return this.gesture !== null;
+  }
+
+  get finishing(): boolean {
+    return Boolean(this.gesture && this.prepaid?.sealed);
+  }
+
+  get disposed(): boolean {
+    return this.invalidationError !== null;
+  }
+
+  /** Capture this action's completion, not a future gesture or a GPU receipt. */
+  whenActionFinished(): Promise<void> {
+    if (this.invalidationError) {
+      const failed = Promise.reject<void>(this.invalidationError);
+      void failed.catch(() => {});
+      return failed;
+    }
+    return this.gesture?.finished ?? Promise.resolve();
+  }
+
+  get brushWork() {
+    const work = this.prepaid;
+    if (!work) return null;
+    return {
+      ...work.account.usage,
+      context: { ...work.context },
+      sealed: work.sealed,
+      complete: work.complete,
+      pendingPoints: work.pendingPoints,
+      pendingCells: work.pendingCells,
+      pendingAdmissions: work.queue.length,
+      reservedBounds:
+        work.reservedBounds && ([...work.reservedBounds] as Bounds),
+      appliedBounds: work.appliedBounds && ([...work.appliedBounds] as Bounds),
+      appliedRegions: [...work.appliedRegions.values()].map(
+        (bounds) => [...bounds] as Bounds,
+      ),
+      effectLimit: work.account.limit,
+      maxOutstandingEffect: work.account.usage.maximumOutstanding,
+    };
+  }
+
+  /** Detached documents must never resume an incomplete save or continuation. */
+  invalidateContinuation(): void {
+    if (this.invalidationError) return;
+    this.invalidationError = new Error(
+      "Die Dokumentsitzung wurde beendet; ihre unvollständige Aktion wurde verworfen.",
+    );
+    this.gesture?.rejectFinished(this.invalidationError);
+    if (this.prepaid) this.prepaid.invalidated = true;
+    this.gesture = null;
+    this.prepaid = null;
   }
 
   /** The one accepted-change journal, borrowed read-only by the ordered writer. */
@@ -315,6 +431,7 @@ export class EditorDocument {
     storeSequence: number,
     sessionId: string,
   ): void {
+    if (this.invalidationError) throw this.invalidationError;
     if (sessionId !== this.sessionId)
       throw new Error("Geländedaten gehören zu einer anderen Sitzung.");
     if (
@@ -350,10 +467,7 @@ export class EditorDocument {
     for (const key of affectedKeys) {
       const prior = this.entries.get(key);
       // A valid store read can still lag an active or unacknowledged local edit.
-      if (
-        this.gesture?.before.has(key) ||
-        (prior?.localSequence ?? 0) > storeSequence
-      )
+      if (this.pinnedSource(key) || (prior?.localSequence ?? 0) > storeSequence)
         continue;
       const next = received.get(key) ?? null;
       nextBytes +=
@@ -361,7 +475,7 @@ export class EditorDocument {
         (prior?.state === "ready" ? HEIGHT_TILE_BYTES : 0);
       changes.push([key, next]);
     }
-    if (nextBytes > this.options.maxSourceBytes)
+    if (nextBytes + this.reservedSourceBytes() > this.options.maxSourceBytes)
       throw new RangeError(
         "Aktive Höhenquellen überschreiten das Speicherbudget; bestätigte Quellen zuerst verdrängen.",
       );
@@ -402,9 +516,10 @@ export class EditorDocument {
   isReady(bounds: Bounds, levels: readonly number[] = HEIGHT_LEVELS): boolean {
     assertBounds(bounds);
     levels.forEach(assertLevel);
+    const coverages = this.retainedCoverage();
     const coverageReady = levels.every((level) => {
       let remaining: Bounds[] = [bounds];
-      for (const coverage of this.coverage) {
+      for (const coverage of coverages) {
         if (!coversLevel(coverage, level)) continue;
         if (contained(coverage.bounds, bounds)) return true;
         remaining = remaining.flatMap((area) =>
@@ -471,6 +586,37 @@ export class EditorDocument {
     return prepareHeightSampler(this.snapshot(bounds))(x, y);
   }
 
+  /** Accepted local source proofs remain valid while their contributors are pinned. */
+  private retainedCoverage(): readonly SourceNeed[] {
+    if (!this.gesture || !this.prepaid) return this.coverage;
+    return [
+      ...this.coverage,
+      ...[...this.prepaid.reservedRegions.values()].map((bounds) => ({
+        bounds,
+        minLevel: this.gesture!.brush.level,
+      })),
+    ];
+  }
+
+  private pinnedSource(key: string): boolean {
+    if (this.gesture?.before.has(key)) return true;
+    if (!this.gesture || !this.prepaid) return false;
+    const tile = parseHeightTileKey(key);
+    if (tile.level < this.gesture.brush.level) return false;
+    const support = heightTileSupport(tile);
+    for (const bounds of this.prepaid.reservedRegions.values())
+      if (intersectsBounds(support, bounds)) return true;
+    return false;
+  }
+
+  private reservedSourceBytes(): number {
+    if (!this.gesture || !this.prepaid) return 0;
+    let missing = 0;
+    for (const key of this.gesture.before.keys())
+      if (this.entries.get(key)?.state !== "ready") missing++;
+    return missing * HEIGHT_TILE_BYTES;
+  }
+
   /** Keep display/tool requirements and pinned edits; return discarded copies. */
   retainSources(needs: readonly SourceNeed[]): string[] {
     if (needs.length > 2)
@@ -478,9 +624,13 @@ export class EditorDocument {
         "Höchstens Darstellungs- und Werkzeugbedarf halten.",
       );
     needs.forEach(assertSourceNeed);
+    const retainedNeeds = [...needs];
+    if (this.gesture && this.prepaid)
+      for (const bounds of this.prepaid.reservedRegions.values())
+        retainedNeeds.push({ bounds, minLevel: this.gesture.brush.level });
     const clipped: SourceNeed[] = [];
     for (const coverage of this.coverage)
-      for (const need of needs) {
+      for (const need of retainedNeeds) {
         const bounds: Bounds = [
           Math.max(coverage.bounds[0], need.bounds[0]),
           Math.max(coverage.bounds[1], need.bounds[1]),
@@ -501,7 +651,7 @@ export class EditorDocument {
     for (const [key, entry] of this.entries) {
       if (
         entry.localSequence > this.persistedSequence ||
-        this.gesture?.before.has(key)
+        this.pinnedSource(key)
       )
         continue;
       if (
@@ -524,6 +674,7 @@ export class EditorDocument {
   }
 
   beginGesture(brush: HeightBrush): void {
+    if (this.invalidationError) throw this.invalidationError;
     if (this.gesture) throw new Error("Eine Höhengeste ist bereits aktiv.");
     assertLevel(brush.level);
     if (
@@ -539,6 +690,15 @@ export class EditorDocument {
       throw new RangeError(
         "Höhenpinsel zu groß; eine gröbere Autorenstufe wählen.",
       );
+    let resolveFinished!: () => void;
+    let rejectFinished!: (error: Error) => void;
+    const finished = new Promise<void>((resolve, reject) => {
+      resolveFinished = resolve;
+      rejectFinished = reject;
+    });
+    // Preserve rejection for real waiters without unhandled disposal promises.
+    void finished.catch(() => {});
+    this.prepaid = null;
     this.gesture = {
       brush: { ...brush },
       before: new Map(),
@@ -546,7 +706,360 @@ export class EditorDocument {
       cellCount: 0,
       retainedBytes: 0,
       bounds: null,
+      finished,
+      resolveFinished,
+      rejectFinished,
     };
+  }
+
+  /** One C1 account and one bounded continuation belong to the active document. */
+  beginPrepaidGesture(
+    brush: HeightBrush,
+    context: BrushReservationContext,
+  ): void {
+    if (this.gesture) throw new Error("Eine Höhengeste ist bereits aktiv.");
+    if (context.sessionId !== this.sessionId)
+      throw new Error("Die Pinselreserve gehört zu einer anderen Sitzung.");
+    const account = new PrepaidBrush({
+      rate: brush.amount,
+      level: brush.level,
+      context,
+      maxCells: this.options.maxGestureCells,
+    });
+    this.beginGesture(brush);
+    this.prepaid = {
+      account,
+      context: { ...context },
+      queue: [],
+      pendingPoints: 0,
+      pendingCells: 0,
+      sealed: false,
+      complete: false,
+      invalidated: false,
+      lastAdmissionId: -1,
+      reservedRegions: new Map(),
+      appliedRegions: new Map(),
+      reservedBounds: null,
+      appliedBounds: null,
+    };
+  }
+
+  /** Reserve the whole immutable contribution before returning from an input handler. */
+  admitBrushBatch(batch: HeightBrushBatch): BrushAdmission {
+    const gesture = this.gesture;
+    const work = this.prepaid;
+    if (!gesture || !work || work.sealed || work.invalidated)
+      throw new Error("Keine annehmende vorausbezahlte Höhengeste.");
+    if (
+      !Number.isSafeInteger(batch.admissionId) ||
+      batch.admissionId <= work.lastAdmissionId
+    )
+      throw new RangeError("Pinselfenster sind nicht eindeutig geordnet.");
+    if (
+      !Number.isSafeInteger(batch.pointCount) ||
+      batch.pointCount < batch.path.points.length ||
+      batch.pointCount < 0 ||
+      work.pendingPoints + batch.pointCount > (batch.path.end ? 128 : 127)
+    )
+      throw new RangeError(
+        "Pinselweg übergelaufen; der letzte Platz bleibt für das Loslassen reserviert.",
+      );
+    if (batch.path.end && batch.pointCount === 0)
+      throw new RangeError("Pinselende benötigt seinen erfassten Endpunkt.");
+    if (batch.time.length > 129)
+      throw new RangeError(
+        "Pinsel-Zeitfenster überschreitet das Segmentbudget.",
+      );
+    const prepared = preparePrepaidHeight(
+      gesture.brush,
+      batch,
+      this.options.maxGestureCells,
+    );
+    const levels = HEIGHT_LEVELS.slice(gesture.brush.level);
+    for (const bounds of prepared.regions.values())
+      if (!this.isReady(bounds, levels)) throw new SourcesNotReadyError(bounds);
+
+    let prospectiveBytes = gesture.retainedBytes;
+    const validate = (changes: readonly PrepaidBrushChange[]) => {
+      let newCells = 0;
+      const newKeys = new Set<string>();
+      for (const change of changes) {
+        if (!change.delta) continue;
+        if (!gesture.cells.get(change.key)?.has(change.index)) newCells++;
+        if (!gesture.before.has(change.key)) newKeys.add(change.key);
+        const before = gesture.before.has(change.key)
+          ? gesture.before.get(change.key)
+          : this.entries.get(change.key)?.tile;
+        if (
+          !Number.isFinite(
+            (before?.values[change.index] ?? 0) +
+              Math.sign(gesture.brush.amount) * change.total,
+          )
+        )
+          throw new RangeError("Relative Höhe ist nicht endlich.");
+      }
+      if (gesture.cellCount + newCells > this.options.maxGestureCells)
+        throw new RangeError(
+          "Höchstens 100.000 Höhenpunkte je Aktion; einen kürzeren Strich malen.",
+        );
+      const tileCount = gesture.before.size + newKeys.size;
+      if (tileCount > HEIGHT_MAX_ACTION_TILES)
+        throw new RangeError(
+          "Eine Höhengeste darf höchstens 512 Höhenkacheln ändern.",
+        );
+      prospectiveBytes = gesture.retainedBytes;
+      for (const key of newKeys)
+        prospectiveBytes +=
+          HEIGHT_TILE_BYTES * (this.entries.get(key)?.tile ? 2 : 1);
+      if (this.pendingBytes + prospectiveBytes > this.options.maxPendingBytes)
+        throw new RangeError(
+          "Die Arbeitskopie muss vorhandene Änderungen sichern, bevor dieser Pinselabschnitt angenommen werden kann.",
+        );
+      if (tileCount * HEIGHT_TILE_BYTES * 2 > this.options.maxHistoryBytes)
+        throw new RangeError(
+          "Diese Aktion überschreitet die lokale History; einen kürzeren Strich malen.",
+        );
+      const reservedKeys = new Set([...gesture.before.keys(), ...newKeys]);
+      let missing = 0;
+      for (const key of reservedKeys)
+        if (this.entries.get(key)?.state !== "ready") missing++;
+      if (
+        this.sourceBytes + missing * HEIGHT_TILE_BYTES >
+        this.options.maxSourceBytes
+      )
+        throw new RangeError(
+          "Aktive Höhenquellen überschreiten das Speicherbudget.",
+        );
+    };
+    const result = work.account.offer(prepared.offers, validate);
+    if (!result.accepted)
+      throw new RangeError(
+        `Pinselreserve überschritten (${result.reason}); der angenommene Strich bleibt erhalten.`,
+      );
+    let changedCells = 0;
+    for (const change of result.changes) {
+      if (!change.delta) continue;
+      changedCells++;
+      if (!gesture.before.has(change.key))
+        // COW materialization keeps this exact original source immutable.
+        gesture.before.set(
+          change.key,
+          this.entries.get(change.key)?.tile ?? null,
+        );
+      let cells = gesture.cells.get(change.key);
+      if (!cells) gesture.cells.set(change.key, (cells = new Set()));
+      if (!cells.has(change.index)) {
+        cells.add(change.index);
+        gesture.cellCount++;
+      }
+    }
+    gesture.retainedBytes = prospectiveBytes;
+    for (const [key, bounds] of prepared.regions) {
+      const old = work.reservedRegions.get(key);
+      work.reservedRegions.set(key, old ? unionBounds(old, bounds) : bounds);
+      work.reservedBounds = work.reservedBounds
+        ? unionBounds(work.reservedBounds, bounds)
+        : bounds;
+    }
+    if (result.reservation) {
+      work.queue.push({
+        id: batch.admissionId,
+        reservation: result.reservation,
+        remaining: changedCells,
+        total: changedCells,
+        points: batch.pointCount,
+      });
+      work.pendingPoints += batch.pointCount;
+      work.pendingCells += changedCells;
+    }
+    work.lastAdmissionId = batch.admissionId;
+    if (batch.path.end) this.sealBrushGesture();
+    return {
+      admissionId: batch.admissionId,
+      bounds: prepared.regions.size
+        ? [...prepared.regions.values()].reduce(unionBounds)
+        : null,
+      regions: [...prepared.regions.values()].map((bounds) => [...bounds]),
+      reserved: result.reservation !== null,
+      reservedCells: changedCells,
+      acceptedTime: result.changes.reduce(
+        (sum, change) => sum + change.acceptedTime,
+        0,
+      ),
+      discardedTime: result.changes.reduce(
+        (sum, change) => sum + change.discardedTime,
+        0,
+      ),
+      pendingPoints: work.pendingPoints,
+      examinedCells: prepared.examinedCells,
+      lookupSlotCount: prepared.lookupSlotCount,
+    };
+  }
+
+  sealBrushGesture(): void {
+    if (!this.gesture || !this.prepaid || this.prepaid.invalidated) return;
+    this.prepaid.sealed = true;
+    this.prepaid.account.seal();
+  }
+
+  freezeBrushEffect(): BrushEffectReceipt | null {
+    return this.prepaid && !this.prepaid.invalidated
+      ? this.prepaid.account.freeze()
+      : null;
+  }
+
+  acknowledgeBrushEffect(receipt: BrushEffectReceipt): boolean {
+    return this.prepaid && !this.prepaid.invalidated
+      ? this.prepaid.account.acknowledge(receipt)
+      : false;
+  }
+
+  changeBrushContext(context: BrushReservationContext): void {
+    const work = this.prepaid;
+    if (!work || work.invalidated) return;
+    if (
+      context.sessionId === work.context.sessionId &&
+      context.gestureId === work.context.gestureId &&
+      context.viewId === work.context.viewId &&
+      context.preparationId === work.context.preparationId
+    )
+      return;
+    work.account.changeContext(context);
+    work.context = { ...context };
+    work.sealed = true;
+  }
+
+  /** Materialize one RAF's bounded portion; each changed tile is copied once. */
+  advanceBrushGesture(
+    options: { maxCells?: number; maxMs?: number } = {},
+  ): BrushAdvance {
+    const result: BrushAdvance = {
+      update: null,
+      change: null,
+      complete: this.prepaid?.complete ?? true,
+      appliedAdmissionIds: [],
+      completedAdmissionIds: [],
+      appliedCells: 0,
+      applications: [],
+    };
+    const gesture = this.gesture;
+    const work = this.prepaid;
+    if (!gesture || !work || work.invalidated) return result;
+    result.complete = false;
+    const maxCells = options.maxCells ?? 2048;
+    const maxMs = options.maxMs ?? 2;
+    if (
+      !Number.isSafeInteger(maxCells) ||
+      maxCells < 0 ||
+      !Number.isFinite(maxMs) ||
+      maxMs < 0
+    )
+      throw new RangeError("Ungültiges Pinsel-Fortsetzungsbudget.");
+    const started = performance.now();
+    const patches = new Map<string, HeightPatch>();
+    const step = heightSpacing(gesture.brush.level);
+    const direction = Math.sign(gesture.brush.amount);
+    const revision = this.revision + 1;
+    let dirty: Bounds | null = null;
+    while (work.queue.length && result.appliedCells < maxCells) {
+      if (result.appliedCells > 0 && performance.now() - started >= maxMs)
+        break;
+      const pending = work.queue[0];
+      const part = work.account.materializeSlice(
+        pending.reservation,
+        Math.min(256, maxCells - result.appliedCells),
+        ({ key, index, delta }) => {
+          const original = gesture.before.get(key)?.values[index] ?? 0;
+          const account = work.account.valueAt(key, index);
+          const outstanding = work.account.effectAt(key, index);
+          const value =
+            original +
+            direction *
+              (account.total - outstanding.reserved + Math.abs(delta));
+          const live = this.entries.get(key)?.tile;
+          if ((live?.values[index] ?? 0) === value) return;
+          let patch = patches.get(key);
+          if (!patch) {
+            const parsed = parseHeightTileKey(key);
+            const after: HeightTile = live
+              ? { ...live, revision, values: live.values.slice() }
+              : {
+                  ...parsed,
+                  key,
+                  revision,
+                  values: new Float64Array(HEIGHT_TILE_CELLS),
+                };
+            patch = { key, before: live ?? null, after };
+            patches.set(key, patch);
+            this.entries.set(key, {
+              state: "ready",
+              tile: after,
+              localSequence: this.sequence + 1,
+            });
+            if (!live) this.sourceBytes += HEIGHT_TILE_BYTES;
+          }
+          patch.after!.values[index] = value;
+          const tile = patch.after!;
+          const x =
+            (tile.tileX * HEIGHT_TILE_SIZE + (index % HEIGHT_TILE_SIZE)) * step;
+          const y =
+            (tile.tileY * HEIGHT_TILE_SIZE +
+              Math.floor(index / HEIGHT_TILE_SIZE)) *
+            step;
+          const support = clipBounds([
+            x - 2 * step,
+            y - 2 * step,
+            x + 2 * step,
+            y + 2 * step,
+          ]);
+          dirty = dirty ? unionBounds(dirty, support) : support;
+          const old = work.appliedRegions.get(key);
+          work.appliedRegions.set(
+            key,
+            old ? unionBounds(old, support) : support,
+          );
+          work.appliedBounds = work.appliedBounds
+            ? unionBounds(work.appliedBounds, support)
+            : support;
+        },
+      );
+      if (!part) throw new Error("Angenommene Pinselreserve fehlt.");
+      const count = part.toCell - part.fromCell;
+      result.appliedCells += count;
+      pending.remaining -= count;
+      work.pendingCells -= count;
+      if (!result.appliedAdmissionIds.includes(pending.id))
+        result.appliedAdmissionIds.push(pending.id);
+      const last = result.applications.at(-1);
+      if (last?.admissionId === pending.id && last.toCell === part.fromCell)
+        last.toCell = part.toCell;
+      else
+        result.applications.push({
+          admissionId: pending.id,
+          fromCell: part.fromCell,
+          toCell: part.toCell,
+          totalCells: part.totalCells,
+        });
+      if (part.complete) {
+        work.queue.shift();
+        work.pendingPoints -= pending.points;
+        result.completedAdmissionIds.push(pending.id);
+      }
+    }
+    if (patches.size) {
+      this.revision = revision;
+      this.generation++;
+      gesture.bounds = gesture.bounds
+        ? unionBounds(gesture.bounds, dirty!)
+        : dirty;
+      result.update = { bounds: dirty!, patches: [...patches.values()] };
+    }
+    if (work.sealed && work.queue.length === 0) {
+      result.change = this.finishGesture();
+      work.complete = true;
+      result.complete = true;
+    }
+    return result;
   }
 
   /** Existing single-segment callers share the atomic path integrator. */
@@ -558,6 +1071,10 @@ export class EditorDocument {
   applySegments(segments: readonly HeightSegment[]): HeightUpdate | null {
     const gesture = this.gesture;
     if (!gesture) throw new Error("Keine aktive Höhengeste.");
+    if (this.prepaid)
+      throw new Error(
+        "Vorausbezahlte Höhengesten nur über ihre Reserve materialisieren.",
+      );
     const { brush } = gesture;
     const step = heightSpacing(brush.level);
     const levels = HEIGHT_LEVELS.slice(brush.level);
@@ -714,12 +1231,8 @@ export class EditorDocument {
     const patches: HeightPatch[] = [];
     for (const [key, update] of updates) {
       let entry = this.entries.get(key);
-      const before = entry?.tile ? cloneHeightTile(entry.tile) : null;
-      if (!gesture.before.has(key))
-        gesture.before.set(
-          key,
-          entry?.tile ? cloneHeightTile(entry.tile) : null,
-        );
+      const before = entry?.tile ?? null;
+      if (!gesture.before.has(key)) gesture.before.set(key, before);
       if (entry?.state !== "ready") {
         entry = {
           state: "ready",
@@ -735,7 +1248,8 @@ export class EditorDocument {
         };
         this.entries.set(key, entry);
         this.sourceBytes += HEIGHT_TILE_BYTES;
-      }
+      } else
+        entry.tile = { ...entry.tile!, values: entry.tile!.values.slice() };
       let cells = gesture.cells.get(key);
       if (!cells) gesture.cells.set(key, (cells = new Set()));
       for (const [index, value] of update.values) {
@@ -744,7 +1258,7 @@ export class EditorDocument {
       }
       entry.localSequence = this.sequence + 1;
       entry.tile!.revision = this.revision;
-      patches.push({ key, before, after: cloneHeightTile(entry.tile!) });
+      patches.push({ key, before, after: entry.tile! });
     }
     gesture.cellCount += newCells;
     gesture.retainedBytes = retainedBytes;
@@ -760,13 +1274,15 @@ export class EditorDocument {
   finishGesture(): ChangeSet | null {
     const gesture = this.gesture;
     if (!gesture) return null;
+    if (this.prepaid && (!this.prepaid.sealed || this.prepaid.queue.length))
+      throw new Error(
+        "Angenommene Pinselarbeit muss vor dem Aktionsabschluss materialisiert werden.",
+      );
     const patches: HeightPatch[] = [];
     for (const [key, before] of gesture.before) {
-      const live = this.entries.get(key)!.tile!;
-      const after = live.values.some((v) => v !== 0)
-        ? cloneHeightTile(live)
-        : null;
-      if (!after) {
+      const live = this.entries.get(key)?.tile;
+      const after = live?.values.some((v) => v !== 0) ? live : null;
+      if (!after && live) {
         this.entries.set(key, {
           state: "absent",
           localSequence: this.sequence + 1,
@@ -776,7 +1292,11 @@ export class EditorDocument {
       if (!sameValues(before, after)) patches.push({ key, before, after });
     }
     this.gesture = null;
-    if (!patches.length) return null;
+    if (this.prepaid) this.prepaid.complete = true;
+    if (!patches.length) {
+      gesture.resolveFinished();
+      return null;
+    }
     const action: HistoryAction = {
       label:
         gesture.brush.label ??
@@ -797,7 +1317,9 @@ export class EditorDocument {
       this.historyBytes -= this.history.shift()!.bytes;
       this.historyPosition--;
     }
-    return this.commit(action.label, patches, action.dirtyBounds);
+    const change = this.commit(action.label, patches, action.dirtyBounds);
+    gesture.resolveFinished();
+    return change;
   }
 
   private commit(

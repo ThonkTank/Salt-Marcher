@@ -4,6 +4,7 @@ import "pixi.js/unsafe-eval";
 import { editorBudgets } from "../budgets";
 import {
   clipBounds,
+  cloneHeightTile,
   HEIGHT_LEVELS,
   heightTileSupport,
   intersectsBounds,
@@ -57,6 +58,47 @@ export interface RegionInspection {
   viewGeneration: number;
 }
 
+/** A bounded proof of the actually completed local foundation of one gesture. */
+export interface RegionFoundation {
+  readonly id: number;
+  readonly sessionId: string;
+  readonly viewGeneration: number;
+  readonly preparationId: number;
+}
+
+/** Identity of one immutable source/overview group, not a physical presentation. */
+export interface FrozenRenderReceipt extends RegionFoundation {
+  readonly revision: number;
+  readonly bounds: readonly Bounds[];
+}
+
+interface FrozenTarget {
+  tile: DisplayTile;
+  revision: number;
+  contentVersion: number;
+  preparation: number;
+  dirty: Rect | null;
+  painted: boolean;
+}
+
+interface FrozenRender {
+  receipt: FrozenRenderReceipt;
+  targets: FrozenTarget[];
+  overviews: Map<string, HeightOverviewTile>;
+}
+
+interface QueuedSource {
+  before: HeightTile | null;
+  after: HeightTile | null;
+  local: boolean;
+}
+
+interface FoundationTile {
+  version: number;
+  /** 128×128 bits; all 96 retained tiles use at most 192 KiB. */
+  pixels: Uint32Array;
+}
+
 type Rect = [number, number, number, number];
 interface DisplayTile {
   key: string;
@@ -73,6 +115,9 @@ interface DisplayTile {
   completedFrame: number;
   submittedPreparation: number;
   completedPreparation: number;
+  /** Own brush changes keep the baseline; actual imported changes do not. */
+  foundationVersion: number;
+  contentVersion: number;
   visible: boolean;
   touched: number;
   field: HeightFieldTile;
@@ -110,6 +155,43 @@ function pixelRect(tile: DisplayTile, bounds: Bounds): Rect {
   ];
 }
 
+function foundationCoverage(
+  pixels: Uint32Array,
+  rect: Rect,
+  write = false,
+): boolean {
+  for (let y = rect[1]; y < rect[3]; y++) {
+    const start = y * SIZE + rect[0];
+    const end = y * SIZE + rect[2];
+    for (
+      let word = Math.floor(start / 32);
+      word < Math.ceil(end / 32);
+      word++
+    ) {
+      const left = Math.max(0, start - word * 32);
+      const right = Math.min(32, end - word * 32);
+      const mask = (0xffffffff << left) & (0xffffffff >>> (32 - right));
+      if (write) pixels[word] |= mask;
+      else if ((pixels[word] & mask) >>> 0 !== mask >>> 0) return false;
+    }
+  }
+  return true;
+}
+
+function outsideRect(area: Rect, dirty: Rect | null): Rect[] {
+  if (!dirty || !overlaps(area, dirty)) return [area];
+  const x0 = Math.max(area[0], dirty[0]);
+  const y0 = Math.max(area[1], dirty[1]);
+  const x1 = Math.min(area[2], dirty[2]);
+  const y1 = Math.min(area[3], dirty[3]);
+  return [
+    [area[0], area[1], x0, area[3]],
+    [x1, area[1], area[2], area[3]],
+    [x0, area[1], x1, y0],
+    [x0, y1, x1, area[3]],
+  ].filter((rect) => rect[0] < rect[2] && rect[1] < rect[3]) as Rect[];
+}
+
 /** Retained display tiles. Camera transforms never read or write the store. */
 export class WorldRenderer {
   readonly renderer = new WebGLRenderer();
@@ -135,10 +217,21 @@ export class WorldRenderer {
   private submittedViewGeneration = -1;
   private lastCompletedFrame = 0;
   private lastCompletedViewGeneration = -1;
+  private preparationId = 0;
+  private nextProofId = 1;
+  private foundation: {
+    receipt: RegionFoundation;
+    tiles: Map<DisplayTile, FoundationTile>;
+  } | null = null;
+  private frozen: FrozenRender | null = null;
+  private completedRender: FrozenRenderReceipt | null = null;
+  private readonly queuedSources = new Map<string, QueuedSource>();
+  private readonly queuedOverviewInvalidations = new Set<string>();
   private pendingGpu: {
     sync: WebGLSync;
     submission: FrameSubmission;
     tiles: { tile: DisplayTile; revision: number; preparation: number }[];
+    renderReceipt: FrozenRenderReceipt | null;
   } | null = null;
   camera: Camera = { x: 0, y: 0, scale: 0.25 };
   width = 1000;
@@ -208,6 +301,8 @@ export class WorldRenderer {
 
   private invalidateGpuSubmission(): void {
     this.releaseFence();
+    this.invalidateProofs();
+    this.applyQueuedSources();
     this.lastSubmittedViewGeneration = -1;
     this.lastCompletedFrame = 0;
     this.lastCompletedViewGeneration = -1;
@@ -231,6 +326,9 @@ export class WorldRenderer {
 
   reset(document: EditorDocument): void {
     this.releaseFence();
+    this.invalidateProofs();
+    this.queuedSources.clear();
+    this.queuedOverviewInvalidations.clear();
     this.document = document;
     this.sessionId = document.sessionId;
     for (const tile of this.tiles.values()) this.destroyTile(tile);
@@ -268,6 +366,7 @@ export class WorldRenderer {
   }
 
   moveCamera(camera: Camera): void {
+    this.invalidateProofs();
     this.camera = { ...camera };
     this.viewGeneration++;
     this.observation.event("view-change", {
@@ -278,6 +377,7 @@ export class WorldRenderer {
     });
     this.requestFrame = true;
     this.positionTiles();
+    if (!this.pendingGpu) this.applyQueuedSources();
   }
 
   /** A read changes only its actual sources; identical warm regions stay current. */
@@ -310,14 +410,21 @@ export class WorldRenderer {
       else this.overviews.delete(key);
       const tile = this.tiles.get(key.slice("height-overview:".length));
       if (tile) {
-        tile.field.invalidateTotal();
+        tile.foundationVersion++;
+        tile.contentVersion++;
+        if (this.sourcesFrozen) this.queuedOverviewInvalidations.add(key);
+        else tile.field.invalidateTotal();
         tile.dirty = [...WHOLE];
         tile.preparedRevision = -1;
         tile.revision = this.document.revision;
       }
     }
-    for (const bounds of this.field.updateSources(tiles))
-      this.invalidateTiles(bounds, true);
+    if (this.sourcesFrozen) {
+      for (const tile of tiles) this.queueSource(tile.key, tile, false);
+    } else {
+      for (const bounds of this.field.updateSources(tiles))
+        this.invalidateTiles(bounds, true);
+    }
     this.pruneOverviews(overviewKeys);
     this.checkBudgets();
     this.requestFrame = true;
@@ -326,6 +433,10 @@ export class WorldRenderer {
   /** Remove derived copies when the document releases author sources. */
   forgetSources(keys: readonly string[]): void {
     if (!keys.length) return;
+    if (this.sourcesFrozen) {
+      for (const key of keys) this.queueSource(key, null, false);
+      return;
+    }
     this.field.updateSources([], keys);
     for (const key of keys) {
       const at = parseHeightTileKey(key);
@@ -359,9 +470,99 @@ export class WorldRenderer {
           }
         }
     }
-    this.field.applySourcePatches(patches);
+    if (this.sourcesFrozen) {
+      for (const patch of patches)
+        this.queueSource(patch.key, patch.after, true, patch.before);
+    } else this.field.applySourcePatches(patches);
     this.checkBudgets();
     this.requestFrame = true;
+  }
+
+  private get sourcesFrozen(): boolean {
+    return this.frozen !== null || this.pendingGpu !== null;
+  }
+
+  private queueSource(
+    key: string,
+    after: HeightTile | null,
+    local: boolean,
+    before?: HeightTile | null,
+  ): void {
+    const queued = this.queuedSources.get(key);
+    const current = queued
+      ? queued.after
+      : (this.field.readSource(key) ?? null);
+    if (
+      (current === after && !(local && !current && before)) ||
+      (current &&
+        after &&
+        current.values.every((value, i) => value === after.values[i]))
+    )
+      return;
+    const source = after ?? current ?? before;
+    if (!source) return;
+    this.queuedSources.set(key, {
+      before: queued
+        ? queued.before
+        : (this.field.readSource(key) ?? before ?? null),
+      after: after ? (local ? after : cloneHeightTile(after)) : null,
+      local: (queued?.local ?? true) && local,
+    });
+    if (!local)
+      this.invalidateTiles(heightTileSupport(source), true, source.level);
+    this.requestFrame = true;
+  }
+
+  private applyQueuedSources(): void {
+    if (this.sourcesFrozen) return;
+    const local: HeightPatch[] = [];
+    const imported: HeightTile[] = [];
+    const removed: string[] = [];
+    for (const [key, source] of this.queuedSources) {
+      if (source.local)
+        local.push({ key, before: source.before, after: source.after });
+      else if (source.after) imported.push(source.after);
+      else removed.push(key);
+    }
+    if (imported.length || removed.length)
+      for (const bounds of this.field.updateSources(imported, removed))
+        this.invalidateTiles(bounds, true);
+    if (local.length) this.field.applySourcePatches(local);
+    this.queuedSources.clear();
+    for (const key of this.queuedOverviewInvalidations) {
+      const tile = this.tiles.get(key.slice("height-overview:".length));
+      tile?.field.invalidateTotal();
+    }
+    this.queuedOverviewInvalidations.clear();
+    for (const tile of this.tiles.values())
+      if (tile.dirty) tile.field.markHeightChanged();
+    this.checkBudgets();
+  }
+
+  private retainedBufferBytes(): number {
+    const buffers = new Set<ArrayBufferLike>();
+    const add = (values: Float64Array) => buffers.add(values.buffer);
+    for (const tile of this.overviews.values()) add(tile.values);
+    for (const tile of this.frozen?.overviews.values() ?? []) add(tile.values);
+    for (const [key, queued] of this.queuedSources) {
+      const held = this.field.readSource(key)?.values.buffer;
+      if (queued.before && queued.before.values.buffer !== held)
+        add(queued.before.values);
+      if (queued.after && queued.after.values.buffer !== held)
+        add(queued.after.values);
+    }
+    let bytes = 0;
+    for (const buffer of buffers) bytes += buffer.byteLength;
+    for (const proof of this.foundation?.tiles.values() ?? [])
+      bytes += proof.pixels.byteLength;
+    return bytes;
+  }
+
+  private invalidateProofs(): void {
+    this.preparationId++;
+    this.foundation = null;
+    this.frozen = null;
+    this.completedRender = null;
   }
 
   private checkBudgets(): void {
@@ -371,7 +572,7 @@ export class WorldRenderer {
         "Die Darstellungsquellen überschreiten das Speicherbudget.",
       );
     if (
-      metrics.cpuBytes + this.overviews.size * HEIGHT_OVERVIEW_BYTES >
+      metrics.cpuBytes + this.retainedBufferBytes() >
       editorBudgets.presentationBytes
     )
       throw new Error(
@@ -400,7 +601,10 @@ export class WorldRenderer {
 
   /** Product tool demand prepares its render strategy before accepting a Down. */
   setToolLevel(level: number): void {
+    if (this.field.toolLevel === level) return;
+    this.invalidateProofs();
     if (!this.field.setToolLevel(level)) return;
+    if (!this.pendingGpu) this.applyQueuedSources();
     for (const tile of this.tiles.values()) {
       tile.dirty = [...WHOLE];
       tile.preparedRevision = -1;
@@ -479,6 +683,8 @@ export class WorldRenderer {
             completedFrame: 0,
             submittedPreparation: -1,
             completedPreparation: -1,
+            foundationVersion: 0,
+            contentVersion: 0,
             visible: true,
             touched: performance.now(),
             field,
@@ -522,7 +728,10 @@ export class WorldRenderer {
       if (!intersectsBounds(tile.bounds, bounds)) continue;
       const rect = pixelRect(tile, bounds);
       if (rect[0] >= rect[2] || rect[1] >= rect[3]) continue;
-      if (!sourcesChanged) tile.field.markHeightChanged();
+      if (!sourcesChanged && !this.sourcesFrozen)
+        tile.field.markHeightChanged();
+      if (sourcesChanged) tile.foundationVersion++;
+      tile.contentVersion++;
       tile.dirty = tile.dirty ? merged(tile.dirty, rect) : rect;
       tile.revision = this.document.revision;
       if (sourcesChanged) tile.preparedRevision = -1;
@@ -547,6 +756,202 @@ export class WorldRenderer {
   /** CPU submission evidence remains separate from completed GPU work. */
   inspectSubmittedRegion(bounds: Bounds): RegionInspection {
     return this.inspect(bounds, false);
+  }
+
+  /** Capture actually completed pixels; later own edits may reuse this baseline. */
+  captureFoundation(): RegionFoundation {
+    const receipt = Object.freeze({
+      id: this.nextProofId++,
+      sessionId: this.sessionId,
+      viewGeneration: this.viewGeneration,
+      preparationId: this.preparationId,
+    });
+    const tiles = new Map<DisplayTile, FoundationTile>();
+    for (const tile of this.tiles.values()) {
+      if (!tile.visible) continue;
+      const area = intersection(tile.bounds, this.bounds());
+      if (!area) continue;
+      for (const rect of outsideRect(pixelRect(tile, area), tile.dirty)) {
+        const step = (tile.bounds[2] - tile.bounds[0]) / SIZE;
+        const bounds: Bounds = [
+          tile.bounds[0] + rect[0] * step,
+          tile.bounds[1] + rect[1] * step,
+          tile.bounds[0] + rect[2] * step,
+          tile.bounds[1] + rect[3] * step,
+        ];
+        if (this.inspectRegion(bounds).status !== "current") continue;
+        let proof = tiles.get(tile);
+        if (!proof)
+          tiles.set(
+            tile,
+            (proof = {
+              version: tile.foundationVersion,
+              pixels: new Uint32Array((SIZE * SIZE) / 32),
+            }),
+          );
+        foundationCoverage(proof.pixels, rect, true);
+      }
+    }
+    this.foundation = { receipt, tiles };
+    return receipt;
+  }
+
+  /** Pure readiness inspection; only acceptance below expands the stored proof. */
+  inspectFoundation(
+    bounds: Bounds,
+    receipt: RegionFoundation,
+  ): RegionInspection {
+    const result = this.inspectRegion(bounds);
+    if (
+      this.foundation?.receipt !== receipt ||
+      receipt.sessionId !== this.sessionId ||
+      receipt.viewGeneration !== this.viewGeneration ||
+      receipt.preparationId !== this.preparationId ||
+      this.contextLost
+    )
+      return {
+        ...result,
+        status: result.status === "outside" ? "outside" : "missing",
+      };
+    const area = intersection(bounds, this.bounds());
+    if (!area) return result;
+    let covered = false;
+    for (const tile of this.tiles.values()) {
+      if (!tile.visible || !intersectsBounds(tile.bounds, area)) continue;
+      covered = true;
+      const proof = this.foundation.tiles.get(tile);
+      if (proof && proof.version !== tile.foundationVersion)
+        return { ...result, status: "missing" };
+      const local = intersection(tile.bounds, area)!;
+      if (!proof || !foundationCoverage(proof.pixels, pixelRect(tile, local))) {
+        if (this.inspectRegion(local).status !== "current")
+          return { ...result, status: "missing" };
+      }
+    }
+    return { ...result, status: covered ? "current" : "missing" };
+  }
+
+  acceptFoundation(
+    influence: Bounds | readonly Bounds[],
+    receipt: RegionFoundation,
+  ): boolean {
+    const bounds: readonly Bounds[] =
+      typeof influence[0] === "number"
+        ? [influence as Bounds]
+        : (influence as readonly Bounds[]);
+    if (
+      this.foundation?.receipt !== receipt ||
+      bounds.some(
+        (area) => this.inspectFoundation(area, receipt).status !== "current",
+      )
+    )
+      return false;
+    for (const boundsPart of bounds) {
+      const area = intersection(boundsPart, this.bounds());
+      if (!area) return false;
+      for (const tile of this.tiles.values()) {
+        if (!tile.visible || !intersectsBounds(tile.bounds, area)) continue;
+        let proof = this.foundation.tiles.get(tile);
+        if (!proof)
+          this.foundation.tiles.set(
+            tile,
+            (proof = {
+              version: tile.foundationVersion,
+              pixels: new Uint32Array((SIZE * SIZE) / 32),
+            }),
+          );
+        foundationCoverage(
+          proof.pixels,
+          pixelRect(tile, intersection(tile.bounds, area)!),
+          true,
+        );
+      }
+    }
+    return true;
+  }
+
+  /** Freeze one complete visible influence against immutable numeric sources. */
+  freezeRender(
+    influence: Bounds | readonly Bounds[],
+  ): FrozenRenderReceipt | null {
+    if (
+      this.destroyed ||
+      this.contextLost ||
+      this.sourcesFrozen ||
+      this.preparedViewGeneration !== this.viewGeneration
+    )
+      return null;
+    this.applyQueuedSources();
+    const bounds: Bounds[] =
+      typeof influence[0] === "number"
+        ? [[...(influence as Bounds)]]
+        : (influence as readonly Bounds[]).map((area) => [...area]);
+    const areas = bounds
+      .map((area) => intersection(area, this.bounds()))
+      .filter((area): area is Bounds => area !== null);
+    if (!areas.length) return null;
+    const targets: FrozenTarget[] = [];
+    for (const tile of this.tiles.values()) {
+      if (
+        !tile.visible ||
+        !areas.some((area) => intersectsBounds(tile.bounds, area))
+      )
+        continue;
+      if (!this.isPresentationReady(tile.bounds, tile.power)) return null;
+      const dirty =
+        tile.dirty ??
+        (tile.field.preparedVersion !== tile.field.preparationVersion
+          ? [...WHOLE]
+          : null);
+      targets.push({
+        tile,
+        revision: tile.revision,
+        contentVersion: tile.contentVersion,
+        preparation: tile.field.preparationVersion,
+        dirty: dirty ? ([...dirty] as Rect) : null,
+        painted: !dirty && tile.paintedRevision >= tile.revision,
+      });
+    }
+    if (!targets.length) return null;
+    const receipt = Object.freeze({
+      id: this.nextProofId++,
+      sessionId: this.sessionId,
+      viewGeneration: this.viewGeneration,
+      preparationId: this.preparationId,
+      revision: this.document.revision,
+      bounds: Object.freeze(
+        bounds.map((area) => Object.freeze(area) as Bounds),
+      ),
+    });
+    if (areas.every((area) => this.inspectRegion(area).status === "current")) {
+      this.completedRender = receipt;
+      this.observation.event("render-current", {
+        sessionId: this.sessionId,
+        frame: this.lastCompletedFrame,
+        viewGeneration: this.viewGeneration,
+        renderReceipt: receipt,
+      });
+      return receipt;
+    }
+    this.frozen = { receipt, targets, overviews: new Map(this.overviews) };
+    this.checkBudgets();
+    this.requestFrame = true;
+    return receipt;
+  }
+
+  inspectRenderReceipt(
+    receipt: FrozenRenderReceipt,
+  ): "pending" | "complete" | "invalid" {
+    if (
+      receipt.sessionId !== this.sessionId ||
+      receipt.viewGeneration !== this.viewGeneration ||
+      receipt.preparationId !== this.preparationId ||
+      this.contextLost ||
+      this.destroyed
+    )
+      return "invalid";
+    if (this.completedRender === receipt) return "complete";
+    return this.frozen?.receipt === receipt ? "pending" : "invalid";
   }
 
   private inspect(bounds: Bounds, completed: boolean): RegionInspection {
@@ -599,8 +1004,7 @@ export class WorldRenderer {
     return {
       tiles: this.tiles.size,
       presentationPower: this.tilePower(),
-      presentationBytes:
-        metrics.cpuBytes + this.overviews.size * HEIGHT_OVERVIEW_BYTES,
+      presentationBytes: metrics.cpuBytes + this.retainedBufferBytes(),
       gpuBytes: metrics.gpuBytes,
       sourceBytes: metrics.sourceBytes,
       sourceCount: metrics.sourceCount,
@@ -622,6 +1026,9 @@ export class WorldRenderer {
       lastCompletedFrame: this.lastCompletedFrame,
       lastCompletedViewGeneration: this.lastCompletedViewGeneration,
       gpuPending: this.pendingGpu !== null,
+      preparationId: this.preparationId,
+      frozenRevision: this.frozen?.receipt.revision ?? null,
+      queuedSourceTiles: this.queuedSources.size,
       fault: this.fault,
       contextLost: this.contextLost,
       heldForPointerup: this.heldForPointerup,
@@ -669,34 +1076,44 @@ export class WorldRenderer {
     )
       return null;
 
+    const group = this.frozen;
+    const frozenTargets = new Map(
+      group?.targets.map((target) => [target.tile, target]),
+    );
     const prepared: DisplayTile[] = [];
-    for (const tile of this.tiles.values()) {
+    for (const tile of group ? frozenTargets.keys() : this.tiles.values()) {
+      const target = frozenTargets.get(tile);
+      if (target?.painted) continue;
       // A resident-subset or tool change can invalidate preparation without
       // changing document revision or an already displayed colour tile.
       if (
+        !target &&
         !tile.dirty &&
         tile.field.preparedVersion !== tile.field.preparationVersion
       )
         tile.dirty = [...WHOLE];
       if (
         !tile.visible ||
-        !tile.dirty ||
-        !this.isPresentationReady(tile.bounds, tile.power)
+        !(target?.dirty ?? tile.dirty) ||
+        (!target && !this.isPresentationReady(tile.bounds, tile.power))
       )
         continue;
       if (
-        tile.preparedRevision !== tile.revision ||
-        tile.preparedIntent !== tile.field.preparationVersion ||
+        tile.preparedRevision !== (target?.revision ?? tile.revision) ||
+        tile.preparedIntent !==
+          (target?.preparation ?? tile.field.preparationVersion) ||
         tile.field.needsPreparation
       ) {
         const overview =
-          this.overviews.get(`height-overview:${tile.key}`) ?? null;
+          (group?.overviews ?? this.overviews).get(
+            `height-overview:${tile.key}`,
+          ) ?? null;
         tile.field.update(
           overview === tile.overview ? undefined : overview,
-          tile.dirty,
+          (target?.dirty ?? tile.dirty)!,
         );
         tile.overview = overview;
-        tile.preparedRevision = tile.revision;
+        tile.preparedRevision = target?.revision ?? tile.revision;
         tile.preparedIntent = tile.field.preparationVersion;
       }
       prepared.push(tile);
@@ -773,11 +1190,16 @@ export class WorldRenderer {
     this.frame++;
     this.lastSubmittedViewGeneration = this.viewGeneration;
     for (const tile of prepared) {
-      tile.paintedRevision = tile.revision;
-      tile.dirty = null;
+      const target = frozenTargets.get(tile);
+      tile.paintedRevision = target?.revision ?? tile.revision;
+      if (target) target.painted = true;
+      if (!target || target.contentVersion === tile.contentVersion)
+        tile.dirty = null;
     }
     this.requestFrame =
       pending ||
+      Boolean(group?.targets.some((target) => !target.painted)) ||
+      this.queuedSources.size > 0 ||
       [...this.tiles.values()].some(
         (tile) =>
           tile.visible &&
@@ -791,6 +1213,8 @@ export class WorldRenderer {
       tile.submittedPreparation = tile.field.preparedVersion;
     }
     const exact =
+      this.queuedSources.size === 0 &&
+      (!group || group.receipt.revision === this.document.revision) &&
       this.preparedViewGeneration === this.viewGeneration &&
       [...this.tiles.values()]
         .filter((tile) => tile.visible)
@@ -805,7 +1229,7 @@ export class WorldRenderer {
       sessionId: this.sessionId,
       frame: this.frame,
       viewGeneration: this.viewGeneration,
-      revision: this.document.revision,
+      revision: group?.receipt.revision ?? this.document.revision,
       uploadStart,
       uploadedAt,
       submittedAt,
@@ -820,7 +1244,7 @@ export class WorldRenderer {
       sessionId: this.sessionId,
       frame: this.frame,
       viewGeneration: this.viewGeneration,
-      revision: this.document.revision,
+      revision: group?.receipt.revision ?? this.document.revision,
       exactRevision,
       at: submittedAt,
       uploadedBytes: uploaded,
@@ -835,6 +1259,15 @@ export class WorldRenderer {
           revision: tile.paintedRevision,
           preparation: tile.field.preparedVersion,
         })),
+      renderReceipt:
+        group &&
+        group.targets.every(
+          (target) =>
+            target.painted &&
+            target.tile.field.preparedVersion === target.preparation,
+        )
+          ? group.receipt
+          : null,
     };
     return submission;
   }
@@ -861,12 +1294,22 @@ export class WorldRenderer {
       tile.completedFrame = submission.frame;
       tile.completedPreparation = preparation;
     }
+    const completedReceipt =
+      pending.renderReceipt && this.frozen?.receipt === pending.renderReceipt
+        ? pending.renderReceipt
+        : null;
+    if (completedReceipt) {
+      this.completedRender = completedReceipt;
+      this.frozen = null;
+    }
+    this.applyQueuedSources();
     this.observation.event("gpu-completed", {
       sessionId: submission.sessionId,
       frame: submission.frame,
       viewGeneration: submission.viewGeneration,
       revision: submission.revision,
       submittedAt: submission.at,
+      renderReceipt: completedReceipt,
     });
     return submission;
   }
@@ -967,6 +1410,9 @@ export class WorldRenderer {
 
   destroy(): void {
     this.releaseFence();
+    this.invalidateProofs();
+    this.queuedSources.clear();
+    this.queuedOverviewInvalidations.clear();
     this.destroyed = true;
     this.canvas?.removeEventListener(
       "webglcontextlost",

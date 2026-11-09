@@ -1,12 +1,14 @@
 import {
   BrushReservations,
   type BrushEffectReceipt,
+  type BrushControlEffect,
   type BrushReservation,
   type BrushReservationContext,
   type BrushReservationResult,
 } from "./BrushReservations";
 import {
   HEIGHT_TILE_CELLS,
+  HEIGHT_MAX_ACTION_TILES,
   WORLD_LIMIT,
   assertPoint,
   heightSpacing,
@@ -77,7 +79,7 @@ export function prepaidMinimumAt(
 }
 
 /**
- * R1 C1 dosing proof, not the active controller. Author magnitude is max(F,T):
+ * The active document's C1 account. Author magnitude is max(F,T):
  * F is a once-only swept minimum and T is cumulative accepted temporal effect.
  * The initial click is part of F, never an extra addition. Time below F uses
  * prepaid credit; repeated zero-time visits do not accumulate more floor.
@@ -137,13 +139,21 @@ export class PrepaidBrush {
   }
 
   /** Each coefficient appears once; caller integrates the complete new window. */
-  offer(offers: readonly PrepaidBrushOffer[]): PrepaidBrushResult {
+  offer(
+    offers: readonly PrepaidBrushOffer[],
+    validate?: (changes: readonly PrepaidBrushChange[]) => void,
+  ): PrepaidBrushResult {
     if (!this.ledger.usage.accepting)
       return { accepted: false, reason: "closed" };
     if (offers.length > this.minimum.length)
       return { accepted: false, reason: "cells" };
     const seen = new Set<string>();
     const changes: PrepaidBrushChange[] = [];
+    const step = heightSpacing(this.level);
+    const parsedTiles = new Map<
+      string,
+      ReturnType<typeof parseHeightTileKey>
+    >();
     for (const offer of offers) {
       if (
         !Number.isInteger(offer.index) ||
@@ -157,8 +167,12 @@ export class PrepaidBrush {
         (this.direction === 0 && offer.time !== 0)
       )
         throw new RangeError("Ungültiger Mindest- oder Zeitauftrag.");
-      const parsed = parseHeightTileKey(offer.key);
-      const step = heightSpacing(this.level);
+      let parsed = parsedTiles.get(offer.key);
+      if (!parsed) {
+        if (parsedTiles.size === HEIGHT_MAX_ACTION_TILES)
+          return { accepted: false, reason: "tiles" };
+        parsedTiles.set(offer.key, (parsed = parseHeightTileKey(offer.key)));
+      }
       if (
         parsed.level !== this.level ||
         Math.abs((parsed.tileX * 64 + (offer.index % 64)) * step) >
@@ -209,6 +223,9 @@ export class PrepaidBrush {
       });
     }
 
+    // Future source/history/work budgets must be accepted before either C1
+    // account or reservation ledger changes, including prepaid zero-delta time.
+    validate?.(changes);
     const effects = changes
       .filter((change) => change.delta !== 0)
       .map(({ key, index, delta }) => ({ key, index, delta }));
@@ -229,6 +246,22 @@ export class PrepaidBrush {
 
   materialize(reservation: BrushReservation | null): boolean {
     return reservation === null || this.ledger.materialize(reservation);
+  }
+
+  materializeSlice(
+    reservation: BrushReservation,
+    maxCells: number,
+    apply: (effect: BrushControlEffect) => void,
+  ) {
+    return this.ledger.materializeSlice(reservation, maxCells, apply);
+  }
+
+  effectAt(key: string, index: number) {
+    return this.ledger.effectAt(key, index);
+  }
+
+  get limit(): number {
+    return this.ledger.limit;
   }
 
   freeze(): BrushEffectReceipt | null {
