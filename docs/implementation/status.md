@@ -1,41 +1,76 @@
 # Aktueller Stand
 
-Stand: 10. November 2026. Ausgangspunkt ist der gesicherte
-[Bereinigungscommit `6357f2c`](https://github.com/ThonkTank/Salt-Marcher/commit/6357f2c1b99d378fa0bc08dabb096c63ecbc6dc1).
-[PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
-Atlas V7 ist der reguläre Einstieg mit Dateiformat 22; der optionale
-Electron-/Pixi-Editor wird für P3.1 auf Format 25 erweitert.
-Der [Neubauplan](atlas-rebuild-plan.md) bleibt der einzige Ausführungsplan.
+Stand: 10. November 2026. **P3.1 „Wald und Lichtung“ ist implementiert und
+fachlich geprüft.** Der [Neubauplan](atlas-rebuild-plan.md) bleibt der einzige
+Ausführungsplan; [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469)
+bleibt Draft. Atlas V7 ist der reguläre Einstieg mit Dateiformat 22;
+der optionale Electron-/Pixi-Editor verwendet jetzt Format 25.
 
 ## Arbeitsentscheidung
 
 Der Nutzer hat die begrenzte R5-Fortsetzung ausdrücklich freigegeben und
-anschließend P3.1 „Wald und Lichtung“ sowie dessen Bereinigung und Sicherung
-im Repository beauftragt. Nur die dafür nötigen P1/P2-Erweiterungen gehören dazu.
+anschließend P3.1 sowie dessen Bereinigung und Sicherung im Repository
+beauftragt. Nur die dafür nötigen P1/P2-Erweiterungen gehören dazu.
 Die formale R4-Auswertung bleibt bestehen; ihre offene Leistungsabnahme
 widerruft diese begrenzte Nutzerentscheidung nicht. Vollständige P0-Abnahme und
 bestandener gemeinsamer P3-Fall bleiben Voraussetzungen für P4–P9.
 
 ## P3.1 und aktueller Nachweis
 
-P3.1 verbindet maskierte Landschaftsquellen, vier Deckungswerte und feste
-Übersichten mit dem gemeinsamen Dokument, Journal, Undo/Redo und Dateipfad.
-Fehlend erbt; explizit leer schützt eine feine Lichtung vor grobem Wald.
-Der kleine Pinsel, sichtbare Rücknahme und Landschaft über Wasser/Land gehören
-zu demselben Fachfall. Der Höhen-C1-Vertrag bleibt erhalten.
+Maskierte Landschaftsquellen mit vier Deckungswerten und festen Übersichten
+verwenden dasselbe Dokument, Journal, Undo/Redo und denselben Dateipfad wie
+Höhen. Fehlend erbt; explizit leer schützt die feine Lichtung vor grobem Wald.
+Der begrenzte Pinsel erreicht im inneren Radius die gewählte Zieldichte in
+einem Strich. Wasser maskiert die Darstellung und erhält die Autoren.
 
-**Dieser Sicherungsstand ist noch nicht abschließend geprüft.** Nach dem
-Ausfall der vorherigen Arbeitsumgebung war deren ungesicherter Checkout nicht
-mehr verfügbar. Die Änderungen werden am gesicherten Ausgangscommit erneut
-aufgebaut. Frühere grüne Testzahlen sind keine Nachweise für diesen neuen Stand.
+Up versiegelt die angenommene Aktion. Späteres Escape, Blur oder ein
+Sichtbarkeitswechsel widerruft sie nicht; vor Up wird die sichtbare Vorschau
+vollständig zurückgenommen. History und Dateiaktionen warten auf denselben
+Abschluss. Darstellungscaches halten unveränderliche Eingaben und zählen alle
+Puffer. Geänderte Landschaft erzwingt den Farbpass auch bei warmer Höhe und
+nach einer unterbrochenen Vorbereitung. Beide Weltachsen ordnen die geschlossene
+positive Grenze nach innen zu.
 
-Bereits frisch geprüft sind die unabhängige Landschaftsreferenz mit 13 Fällen
-und Höhenprojektion/Landmaske mit 17 Fällen. Die isolierte Negativkontrolle
-scheitert bei ausgelassener feiner Ownership und besteht nach Wiederherstellung.
-Gesamte Typprüfung, Editor-/Storetests, Desktop-/Dateirundlauf, GPU-Referenz und
-abschließende Veröffentlichung bleiben bis zu ihren neuen Ergebnissen offen.
-Rohbelege liegen ignoriert unter `src-tauri/target/diagnostics/p3-recovery/`
-und `src-tauri/target/diagnostics/p3-landscape-recovery-negative-control/`.
+Der nach dem Verlust des ungesicherten Checkouts wiederaufgebaute Stand wurde
+vollständig neu geprüft; frühere Testzahlen wurden nicht übernommen.
+Geprüfter Produktquellhash (`product-inputs-v1`):
+
+`b67e06519107ac210ad3bfc6603ad1ef134572f1895a63acba45e270c92eb7d9`
+
+| Prüfung                                               | Ergebnis                                                                                         |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Gesamte TypeScript-Typprüfung                         | Bestanden.                                                                                       |
+| Editor-Modell, Controller, Session und Darstellung    | 811/811 Tests in 26 Dateien bestanden.                                                           |
+| Tool-Typprüfung und frischer P0-Desktop-Build         | Bestanden.                                                                                       |
+| Echter Electron-/SQLite-Store und Skalierungsreferenz | 20/20 Tests bestanden.                                                                           |
+| Vollständiger Electron-Smoke                          | 147/147 Prüfungen bestanden, einschließlich 27 Landschaftsprüfungen.                             |
+| GPU-Pixelreferenz                                     | 6/6 Fälle bestanden, einschließlich aller 22 Höhenstufen, Weltgrenzen und endlicher Auslöschung. |
+| Formatierung                                          | Alle 45 geänderten oder neuen Dateien geprüft.                                                   |
+
+Der echte Landschaftsrundlauf prüft feine Lichtung → grobe Waldänderung →
+Detailrückkehr → Undo/Redo → Save/Neu/Open und einen frischen Prozess ohne
+Diagnosebindung. Neun dargestellte Punkte stimmen mit dem unabhängigen
+Sampler der gespeicherten Quellen überein. Feine Landschaftsquellen und
+sämtliche Höhenquellen bleiben bei der groben Waldänderung bytegleich.
+
+Der begrenzte Quellenfall verwendet 520 feine Kacheln mit 10,15625 MiB bei
+einem tatsächlich auf 80 KiB gesetzten Dokumentbudget. Eine zu große
+Quellenübernahme wird atomar abgewiesen; der echte grobe Strich, Commit und ACK
+bleiben mit vier Quellen innerhalb dieses Budgets, ohne feine Quellen zu lesen
+oder zu übertragen. Das ist ein Funktionsnachweis der Arbeitsbegrenzung,
+keine Lastabnahme am normalen 256-MiB-Budget.
+
+Isolierte Negativkontrollen machen ausgelassene feine Ownership, Abbruch nach
+Up, Verlust des versiegelten Zustands bei Pointerfreigabe und falsche
+Weltkantenzuordnung tatsächlich rot; nach Wiederherstellung bestehen dieselben
+Fälle. Die Produktdateien wurden für diese Kontrollen nicht verändert.
+
+Rohbelege liegen ignoriert unter `src-tauri/target/diagnostics/p3-recovery/`,
+`src-tauri/target/diagnostics/p3-landscape-recovery-negative-control/`,
+`src-tauri/target/diagnostics/atlas-gpu-reference/` und
+`artifacts/atlas-rebuild/smoke-2026-11-10T19-24-44.334Z/`.
+Die GitHub-CI wird für den jeweiligen PR-Head separat ausgewiesen;
+ein erfolgreicher Ausgangscommit ersetzt dessen Ergebnis nicht.
 
 ## Offene Messbefunde
 
@@ -52,11 +87,10 @@ keine native Leistungsabnahme.
 
 ## Nächster Planschritt
 
-Zuerst den wiederhergestellten P3.1-Stand vollständig prüfen und sichern:
-feine Lichtung → grobe Waldänderung → Detailrückkehr → Undo/Redo →
-Save/Neustart/Reopen; gespeicherte und dargestellte Werte gegen die unabhängige
-Referenz, gemeinsame Aktionsbarrieren und begrenzte Quellenarbeit nachweisen.
-Danach folgt P3.2 „Ein echtes Haus“ mit räumlichem Hausheader und demselben
-History-/Dateipfad. Gewässerquellen, reale Fachkonkurrenz und der gemeinsame
-Rundlauf folgen innerhalb P3. K1–K6 bleiben erledigt; zusätzliche allgemeine
+Als Nächstes folgt P3.2
+„Ein echtes Haus“: rechteckiger, rotierbarer Hausheader mit stabiler ID, Pose
+und Fundamenteinstellung; räumliches Laden, Auswahl und Verschieben mit
+Abbruch, Undo/Redo und Reopen im gemeinsamen Pfad. Innenpayloads bleiben
+getrennt. Gewässerquellen, reale Fachkonkurrenz und der gemeinsame Rundlauf
+folgen innerhalb P3. K1–K6 bleiben erledigt; zusätzliche allgemeine
 Konsolidierung ist keine vorgeschaltete Aufgabe.

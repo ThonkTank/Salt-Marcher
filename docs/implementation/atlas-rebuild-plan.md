@@ -1461,8 +1461,8 @@ History und Dateirundlauf. Keine zusätzlichen Architekturschichten auf Vorrat.
    Feine Lichtung → grobe Waldänderung → Detailrückkehr → Undo/Redo/Reopen prüfen.
    Als Übersichtskandidat feinen Eigenbeitrag und Restvererbung getrennt halten;
    an festen Abtastpunkten gegen einen unabhängigen vollständigen Sampler prüfen.
-   Diese Rechenstruktur ist noch zu beweisen, keine Übernahme der additiven
-   Höhenformel. Ein Bestand oberhalb des aktiven Budgets darf keinen feinen
+   Der unabhängige Nachweis folgt den Masken- und Vererbungsregeln dieser
+   Rechenstruktur. Ein Bestand oberhalb des aktiven Budgets darf keinen feinen
    Nachfahrenscan und keine globale Neuauflösung auslösen.
 2. **Ein echtes Haus:** Einen rechteckigen, rotierbaren Hausheader mit stabiler
    ID, Pose und Fundamenteinstellung platzieren, auswählen und verschieben.
@@ -2058,7 +2058,7 @@ Rohbelege werden nicht umgeschrieben.
 | P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1 wählt C1; R2/R3 und R4-Prüfpfad integriert. Begrenzter R5-Fachfall zur Umsetzung freigegeben; formale R4-/P0-Abnahme offen. Entscheidung und Belege im Status. |
 | P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Für R5 nur benötigte P3-Erweiterungen freigegeben; weiterer Ausbau erst nach P0 und P3. Arbeitsentscheidung im Status.                                            |
 | P2    | F19, A07 und vollständige Projektdateien.                               | P3.1-Landschaft im gemeinsamen Dateipfad; weiterer Ausbau folgt mit dem jeweiligen Fachfall. Nachweis im Status.                                                  |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | P3.1 Wald und Lichtung in Umsetzung; danach P3.2 Hausheader. Gemeinsame P3-/P0-Abnahme offen; Nachweis im Status.                                                 |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | P3.1 Wald und Lichtung implementiert und fachlich geprüft; als Nächstes P3.2 Hausheader. Gemeinsame P3-/P0-Abnahme offen; Nachweis im Status.                     |
 | P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                            |
 | P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                            |
 | P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                            |

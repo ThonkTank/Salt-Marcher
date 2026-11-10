@@ -18,6 +18,7 @@ import type {
 } from "./HeightProjectionService";
 import { prepareHeightGrid } from "../model/height-grid";
 import { rasterize } from "./raster";
+import type { LandscapeFrame } from "./LandscapeView";
 
 interface Uploader {
   id: string;
@@ -694,6 +695,73 @@ it("captures only one new level from valid H before editing, and bounds actual d
   }
   expect(field.metrics().anchorRebases).toBe(1);
 });
+
+it.each([false, true])(
+  "renders changed landscape over warm height after basis invalidation (restart after encoding: %s)",
+  async (restart) => {
+    const { field, gpu } = setup();
+    field.updateSources([author(0, 100), author(1, 10)]);
+    const tile = field.createTile([0, 0, 512, 512], 2);
+    await drain(field, gpu);
+    compose(tile, gpu);
+    field.setToolLevel(1);
+    expect(tile.preparationState()).toMatchObject({
+      numericCurrent: true,
+      basisValid: false,
+    });
+    let encoded = 0;
+    const landscape: LandscapeFrame = {
+      buffers: new Set(),
+      *prepare() {
+        encoded++;
+        return () => [180, 0, 0, 0];
+      },
+    };
+    tile.setLandscape(landscape);
+    tile.update();
+    gpu.render.mockClear();
+    await drain(field, gpu);
+    expect(encoded).toBe(1);
+    expect(tile.sampleLandscape([2, 2])).toEqual([180, 0, 0, 0]);
+    expect(gpu.render).not.toHaveBeenCalled();
+    if (restart) {
+      // Encoding and upload have completed, but no colour pass has consumed
+      // this landscape. A resumed prepare sees the same encoded frame object.
+      tile.cancelPreparation();
+      tile.update();
+      await drain(field, gpu);
+      expect(encoded).toBe(1);
+    }
+    compose(tile, gpu);
+    expect(tile.compositionStats).toMatchObject({
+      colourSamples: 128 ** 2,
+      basisCaptureSamples: 0,
+    });
+    const colourCalls = gpu.render.mock.calls.filter(
+      ([request]) => "uLandscape" in request.container.shader.resources,
+    );
+    expect(colourCalls.length).toBeGreaterThan(0);
+    const resources = colourCalls[0][0].container.shader.resources as {
+      uLandscape: BufferImageSource;
+      heightUniforms: { uniforms: { uHasLandscape: number } };
+    };
+    expect(resources.heightUniforms.uniforms.uHasLandscape).toBe(1);
+    expectUploaded(gpu, resources.uLandscape);
+    expect(gpu.sources.get(resources.uLandscape)!.memory.slice(0, 4)).toEqual(
+      new Uint8Array([180, 0, 0, 0]),
+    );
+    // Once the colour pass really finishes, an unchanged landscape must not
+    // disable the existing cheap numerical capture for a later tool change.
+    field.setToolLevel(0);
+    tile.update();
+    await drain(field, gpu);
+    compose(tile, gpu);
+    expect(tile.compositionStats).toMatchObject({
+      colourSamples: 0,
+      basisCaptureSamples: 128 ** 2,
+    });
+  },
+);
 
 it("does not pair an old numeric total with new authors when a level change overtakes a queued edit", async () => {
   const { field, gpu } = setup();

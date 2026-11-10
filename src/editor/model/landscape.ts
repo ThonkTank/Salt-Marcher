@@ -464,8 +464,8 @@ export function prepareLandscapePresentation(
       Math.abs(y) > WORLD_LIMIT
     )
       throw new RangeError("Punkt liegt außerhalb der endlichen Atlaswelt.");
-    const px = Math.floor(x / step),
-      py = Math.floor(y / step);
+    const px = landscapeCellCoordinate(x, step),
+      py = landscapeCellCoordinate(y, step);
     const tileX = Math.floor(px / LANDSCAPE_OVERVIEW_SIZE),
       tileY = Math.floor(py / LANDSCAPE_OVERVIEW_SIZE);
     const key = landscapeOverviewKey(read.power, tileX, tileY);

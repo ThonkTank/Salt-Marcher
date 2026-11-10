@@ -4,7 +4,7 @@ Verhalten, Format und Grenzen des Atlas-Editors. Umsetzung: [Architektur](archit
 Prüfstand: [Status](implementation/status.md); Befehle: [README](../README.md).
 
 Die bestehenden Abschnitte beschreiben den weiterhin aktiven Atlas V7. Für den
-separat gestarteten, begrenzten P0-Höhenversuch gilt ausschließlich der ergänzende
+separat gestarteten, begrenzten P0-Editor gilt ausschließlich der ergänzende
 [P0-Abschnitt](#optionaler-atlas-p0-versuch); er übernimmt noch nicht den gesamten
 V7-Funktionsumfang oder die Arbeitspakete P1–P9.
 

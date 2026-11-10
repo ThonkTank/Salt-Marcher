@@ -681,9 +681,11 @@ Nur exakt rechteckige Vereinigungen werden zusammengefasst; ein kaltes Inneres
 einer L-Kurve wird dadurch nicht zusätzlich verlangt oder als gesehen erklärt.
 
 Der Eingabezustand unterscheidet idle, blocked, active, finishing und den
-gegebenenfalls versiegelten Landschaftsstrich. Down und Move
-reservieren zulässige Arbeit; Up reserviert seinen tatsächlichen Endpunkt und
-versiegelt die Eingabe vor Handler-Rückkehr. Die Autorenfortsetzung gehört
+gegebenenfalls versiegelten Landschaftsstrich. Beim Höhenpinsel reservieren
+Down und Move zulässige Arbeit; Up reserviert seinen tatsächlichen Endpunkt.
+Landschaft prüft Quellen und sichtbare Grundlage vor der Wegannahme und
+Abschnitts- sowie Speicherbudgets vor der Mutation. Up versiegelt in beiden
+Fällen die Eingabe vor Handler-Rückkehr. Die Autorenfortsetzung gehört
 weiterhin derselben Dokumentaktion. Ihr Status ist sichtbar.
 
 Der einzige Frameablauf ist gerichtet:
@@ -691,8 +693,8 @@ Der einzige Frameablauf ist gerichtet:
 1. Die höchstens zwei ausstehenden GPU-Fences in Einreichungsreihenfolge ohne
    Wartezeit prüfen und vollständige passende Rückmeldung übernehmen.
 2. Den nächsten fehlenden Quellenread starten.
-3. Ein kausales Haltefenster annehmen und höchstens eine begrenzte Autorenscheibe
-   materialisieren.
+3. Für Höhen ein kausales Haltefenster annehmen; höchstens eine begrenzte
+   Autorenscheibe als Höhenzeitfenster oder Landschaftsabschnitt materialisieren.
 4. Priorisierte Quellen und Übersichten in kleinen Schritten übernehmen. Erst
    vollständige Abhängigkeiten erlauben den eingefrorenen Renderstand.
 5. Innerhalb desselben Vorbereitungsbudgets Deskriptoren und Projektionsstreifen

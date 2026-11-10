@@ -142,6 +142,39 @@ function resolvedGrid(
 }
 
 describe("independent complete landscape reference", () => {
+  it.each([1, 2])(
+    "keeps the closed positive corner inside its last display cell at power %i",
+    (power) => {
+      const sources = [full(0, 1562499, 1562499, [40, 30, 20, 10])];
+      const span = 128 * 2 ** power;
+      const last = Math.ceil(limit / span) - 1;
+      const outside = Math.floor(limit / span);
+      const read = readFor(sources, power, last, last);
+      read.bounds = [limit - 64, limit - 64, limit, limit];
+      // Certify the bordering exterior tiles as empty too: selecting one of them
+      // must fail the value comparison, not merely throw for an unknown key.
+      read.overviewKeys = [
+        ...new Set([
+          `landscape-overview:${power}:${last}:${last}`,
+          `landscape-overview:${power}:${outside}:${last}`,
+          `landscape-overview:${power}:${last}:${outside}`,
+          `landscape-overview:${power}:${outside}:${outside}`,
+        ]),
+      ];
+      const presented = prepareLandscapePresentation(read);
+      for (const [x, y] of [
+        [limit - 1, limit - 1],
+        [limit, limit - 1],
+        [limit - 1, limit],
+        [limit, limit],
+      ]) {
+        const expected = referenceLandscapeSample(sources, x, y);
+        expect(expected).toEqual([40, 30, 20, 10]);
+        expect(presented(x, y)).toEqual(expected);
+      }
+    },
+  );
+
   it("distinguishes missing inheritance, explicit empty and mixed four-channel authors", () => {
     const coarse = full(4, 0, 0, [80, 40, 30, 10]);
     const fine = raw(0, 0, 0, [
