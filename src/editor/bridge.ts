@@ -1,4 +1,10 @@
-import type { Bounds, HeightTile, LandscapeTile, SourcePatch } from "./model";
+import type {
+  Bounds,
+  HeightTile,
+  LandscapeTile,
+  HouseHeader,
+  SourcePatch,
+} from "./model";
 import type {
   LandscapePresentationRead,
   LandscapePresentationRequest,
@@ -16,7 +22,7 @@ import type {
 export interface ProjectInfo {
   sessionId: string;
   projectId: string;
-  format: 25;
+  format: 26;
   title: string;
   sequence: number;
   savedSequence: number | null;
@@ -24,6 +30,7 @@ export interface ProjectInfo {
   activeLevels: number[];
   sourceTiles: number;
   landscapeTiles: number;
+  houses: number;
   activeLandscapeLevels: number[];
 }
 
@@ -75,9 +82,20 @@ export interface LandscapeRegionRead extends SourceBoundary {
   tiles: LandscapeTile[];
 }
 
+export interface ReadHouseRegionRequest {
+  sessionId: string;
+  bounds: Bounds;
+}
+
+export interface HouseRegionRead extends SourceBoundary {
+  bounds: Bounds;
+  headers: HouseHeader[];
+}
+
 export type CommitPatch =
   | Omit<Extract<SourcePatch, { kind: "height" }>, "before">
-  | Omit<Extract<SourcePatch, { kind: "landscape" }>, "before">;
+  | Omit<Extract<SourcePatch, { kind: "landscape" }>, "before">
+  | Omit<Extract<SourcePatch, { kind: "house" }>, "before">;
 
 export interface CommitRequest extends SourceBoundary {
   transactionId: string;
@@ -120,6 +138,7 @@ export interface AtlasDesktop {
   readLandscapePresentation(
     request: LandscapePresentationRequest,
   ): Promise<LandscapePresentationRead>;
+  readHouseRegion(request: ReadHouseRegionRequest): Promise<HouseRegionRead>;
   commit(request: CommitRequest): Promise<CommitReceipt>;
   /** Null means the user cancelled the native file/unsaved-changes dialog. */
   newProject(prepared: PreparedDocument): Promise<ProjectInfo | null>;

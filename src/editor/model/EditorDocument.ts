@@ -1,6 +1,17 @@
 import { prepareHeightSampler } from "./height";
 import { prepareLandscapeSampler } from "./landscape";
 import {
+  HOUSE_HEADER_BYTES,
+  HOUSE_MAX_REGION_HEADERS,
+  cloneHouseHeader,
+  houseBounds,
+  houseKey,
+  sameHouseAuthors,
+  validateHouseHeader,
+  type HouseHeader,
+  type HousePatch,
+} from "./house";
+import {
   HEIGHT_LEVELS,
   HEIGHT_MAX_ACTION_TILES,
   HEIGHT_TILE_BYTES,
@@ -62,6 +73,8 @@ export interface EditorDocumentOptions {
   empty?: boolean;
   /** Independent from height absence: opening terrain alone proves no landscape absence. */
   landscapeEmpty?: boolean;
+  /** Header absence is independent from both raster source families. */
+  housesEmpty?: boolean;
   sequence?: number;
   maxSourceBytes?: number;
   maxPendingBytes?: number;
@@ -80,6 +93,26 @@ interface LandscapeEntry {
   state: Exclude<SourceState, "unknown">;
   tile?: LandscapeTile;
   localSequence: number;
+}
+
+interface HouseEntry {
+  header: HouseHeader | null;
+  localSequence: number;
+}
+
+export interface HouseUpdate {
+  bounds: Bounds;
+  patches: HousePatch[];
+}
+
+interface HouseGesture {
+  key: string;
+  label: string;
+  before: HouseHeader | null;
+  previousSequence: number;
+  finished: Promise<void>;
+  resolveFinished(): void;
+  rejectFinished(error: Error): void;
 }
 
 export interface LandscapeUpdate {
@@ -347,7 +380,11 @@ function retainedPatchBytes(patches: readonly SourcePatch[]): number {
     (sum, patch) =>
       sum +
       (Number(!!patch.before) + Number(!!patch.after)) *
-        (patch.kind === "height" ? HEIGHT_TILE_BYTES : LANDSCAPE_TILE_BYTES),
+        (patch.kind === "height"
+          ? HEIGHT_TILE_BYTES
+          : patch.kind === "landscape"
+            ? LANDSCAPE_TILE_BYTES
+            : HOUSE_HEADER_BYTES),
     0,
   );
 }
@@ -376,17 +413,22 @@ export class EditorDocument {
   readonly sessionId: string;
   revision = 0;
   generation = 0;
+  /** Header presentation identity; terrain changes never rebuild roof geometry. */
+  houseGeneration = 0;
   sequence: number;
   persistedSequence: number;
   private readonly options: Required<
-    Omit<EditorDocumentOptions, "empty" | "landscapeEmpty">
+    Omit<EditorDocumentOptions, "empty" | "landscapeEmpty" | "housesEmpty">
   >;
   private readonly entries = new Map<string, Entry>();
   private readonly landscapeEntries = new Map<string, LandscapeEntry>();
+  private readonly houseEntries = new Map<string, HouseEntry>();
   private coverage: SourceNeed[] = [];
   private landscapeCoverage: SourceNeed[] = [];
+  private houseCoverage: Bounds[] = [];
   private gesture: Gesture | null = null;
   private landscapeGesture: LandscapeGesture | null = null;
+  private houseGesture: HouseGesture | null = null;
   private prepaid: BrushContinuation | null = null;
   private invalidationError: Error | null = null;
   private history: HistoryAction[] = [];
@@ -397,6 +439,7 @@ export class EditorDocument {
   >();
   private sourceBytes = 0;
   private landscapeSourceBytes = 0;
+  private houseSourceBytes = 0;
   private historyBytes = 0;
   private pendingBytes = 0;
 
@@ -431,10 +474,21 @@ export class EditorDocument {
         bounds: [-WORLD_LIMIT, -WORLD_LIMIT, WORLD_LIMIT, WORLD_LIMIT],
         minLevel: 0,
       });
+    if (options.housesEmpty)
+      this.houseCoverage.push([
+        -WORLD_LIMIT,
+        -WORLD_LIMIT,
+        WORLD_LIMIT,
+        WORLD_LIMIT,
+      ]);
   }
 
   get active(): boolean {
-    return this.gesture !== null || this.landscapeGesture !== null;
+    return (
+      this.gesture !== null ||
+      this.landscapeGesture !== null ||
+      this.houseGesture !== null
+    );
   }
 
   get finishing(): boolean {
@@ -457,6 +511,7 @@ export class EditorDocument {
     return (
       this.gesture?.finished ??
       this.landscapeGesture?.finished ??
+      this.houseGesture?.finished ??
       Promise.resolve()
     );
   }
@@ -491,9 +546,11 @@ export class EditorDocument {
     );
     this.gesture?.rejectFinished(this.invalidationError);
     this.landscapeGesture?.rejectFinished(this.invalidationError);
+    this.houseGesture?.rejectFinished(this.invalidationError);
     if (this.prepaid) this.prepaid.invalidated = true;
     this.gesture = null;
     this.landscapeGesture = null;
+    this.houseGesture = null;
     this.prepaid = null;
   }
 
@@ -530,19 +587,27 @@ export class EditorDocument {
     return {
       sourceBytes: this.sourceBytes,
       landscapeSourceBytes: this.landscapeSourceBytes,
+      houseSourceBytes: this.houseSourceBytes,
       historyBytes: this.historyBytes,
       pendingBytes: this.pendingBytes,
       gestureBeforeBytes:
         (this.gesture?.before.size ?? 0) * HEIGHT_TILE_BYTES +
-        (this.landscapeGesture?.before.size ?? 0) * LANDSCAPE_TILE_BYTES,
+        (this.landscapeGesture?.before.size ?? 0) * LANDSCAPE_TILE_BYTES +
+        Number(!!this.houseGesture?.before) * HOUSE_HEADER_BYTES,
       gestureCells:
         this.gesture?.cellCount ?? this.landscapeGesture?.cellCount ?? 0,
       historyActions: this.history.length,
       readyTiles:
-        (this.sourceBytes - this.landscapeSourceBytes) / HEIGHT_TILE_BYTES,
+        (this.sourceBytes - this.landscapeSourceBytes - this.houseSourceBytes) /
+        HEIGHT_TILE_BYTES,
       landscapeReadyTiles: this.landscapeSourceBytes / LANDSCAPE_TILE_BYTES,
-      sourceEntries: this.entries.size + this.landscapeEntries.size,
-      coverageRegions: this.coverage.length + this.landscapeCoverage.length,
+      readyHouses: this.houseSourceBytes / HOUSE_HEADER_BYTES,
+      sourceEntries:
+        this.entries.size + this.landscapeEntries.size + this.houseEntries.size,
+      coverageRegions:
+        this.coverage.length +
+        this.landscapeCoverage.length +
+        this.houseCoverage.length,
     };
   }
 
@@ -570,6 +635,360 @@ export class EditorDocument {
     )
       ? "absent"
       : "unknown";
+  }
+
+  /** A loaded, immutable header; null does not certify global ID absence. */
+  house(id: string): HouseHeader | null {
+    return this.houseEntries.get(houseKey(id))?.header ?? null;
+  }
+
+  /** Complete spatial answers certify absence independently from terrain. */
+  acceptHouseCoverage(
+    bounds: Bounds,
+    headers: readonly HouseHeader[],
+    storeSequence = this.persistedSequence,
+    sessionId = this.sessionId,
+  ): void {
+    assertBounds(bounds);
+    if (bounds[0] === bounds[2] || bounds[1] === bounds[3])
+      throw new RangeError("Ein Hausbereich benötigt eine positive Fläche.");
+    if (this.invalidationError) throw this.invalidationError;
+    if (sessionId !== this.sessionId)
+      throw new Error("Hausdaten gehören zu einer anderen Sitzung.");
+    if (
+      !Number.isSafeInteger(storeSequence) ||
+      storeSequence < 0 ||
+      storeSequence > this.sequence
+    )
+      throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
+    if (storeSequence < this.persistedSequence) return;
+    if (!Array.isArray(headers) || headers.length > HOUSE_MAX_REGION_HEADERS)
+      throw new RangeError(
+        "Die räumliche Hausantwort überschreitet ihr Budget.",
+      );
+    const received = new Map<string, HouseHeader>();
+    for (const header of headers) {
+      validateHouseHeader(header);
+      const key = houseKey(header.id);
+      if (!intersectsBounds(houseBounds(header), bounds) || received.has(key))
+        throw new Error(
+          "Unvollständige oder unpassende räumliche Hausantwort.",
+        );
+      received.set(key, header);
+    }
+    const affected = new Set(received.keys());
+    for (const [key, entry] of this.houseEntries)
+      if (entry.header && intersectsBounds(houseBounds(entry.header), bounds))
+        affected.add(key);
+    const changes: [string, HouseHeader | null][] = [];
+    let nextBytes = this.sourceBytes;
+    for (const key of affected) {
+      const prior = this.houseEntries.get(key);
+      // A read from before a move can contain its old position or omit its new
+      // one. The same local sequence marker protects both spatial directions.
+      if (
+        this.houseGesture?.key === key ||
+        (prior?.localSequence ?? 0) > storeSequence
+      )
+        continue;
+      const next = received.get(key) ?? null;
+      if (
+        sameHouseAuthors(prior?.header ?? null, next) &&
+        prior?.header?.revision === next?.revision
+      )
+        continue;
+      nextBytes +=
+        (Number(!!next) - Number(!!prior?.header)) * HOUSE_HEADER_BYTES;
+      changes.push([key, next]);
+    }
+    if (nextBytes + this.reservedSourceBytes() > this.options.maxSourceBytes)
+      throw new RangeError(
+        "Aktive Quellen überschreiten das Speicherbudget; bestätigte Quellen zuerst verdrängen.",
+      );
+    for (const [key, header] of changes) {
+      const localSequence = this.houseEntries.get(key)?.localSequence ?? 0;
+      if (header) {
+        this.houseEntries.set(key, {
+          header: Object.freeze(cloneHouseHeader(header)),
+          localSequence,
+        });
+        this.revision = Math.max(this.revision, header.revision);
+      } else this.houseEntries.delete(key);
+    }
+    this.houseSourceBytes += nextBytes - this.sourceBytes;
+    this.sourceBytes = nextBytes;
+    const coverageChanged = this.rememberHouseCoverage(bounds);
+    if (changes.length || coverageChanged) this.houseGeneration++;
+    this.generation++;
+  }
+
+  private rememberHouseCoverage(bounds: Bounds): boolean {
+    if (this.houseCoverage.some((prior) => contained(prior, bounds)))
+      return false;
+    this.houseCoverage = this.houseCoverage.filter(
+      (prior) => !contained(bounds, prior),
+    );
+    this.houseCoverage.push([...bounds]);
+    if (this.houseCoverage.length > 256) this.houseCoverage.shift();
+    return true;
+  }
+
+  isHouseRegionReady(bounds: Bounds): boolean {
+    assertBounds(bounds);
+    let remaining: Bounds[] = [bounds];
+    for (const coverage of this.houseCoverage) {
+      if (contained(coverage, bounds)) return true;
+      remaining = remaining.flatMap((area) => subtract(area, coverage));
+      if (!remaining.length) return true;
+    }
+    return false;
+  }
+
+  /** Bounded resident headers only; a missing spatial proof remains unknown. */
+  housesInBounds(bounds: Bounds): readonly HouseHeader[] {
+    if (!this.isHouseRegionReady(bounds))
+      throw new Error(
+        "Die benötigten lokalen Hausdaten sind noch nicht geladen.",
+      );
+    const headers: HouseHeader[] = [];
+    for (const { header } of this.houseEntries.values())
+      if (header && intersectsBounds(houseBounds(header), bounds)) {
+        if (headers.length === HOUSE_MAX_REGION_HEADERS)
+          throw new RangeError(
+            "Der Hausbereich überschreitet sein Darstellungsbudget; näher heranzoomen.",
+          );
+        headers.push(header);
+      }
+    // IDs use ASCII only. This order is independent of read arrival or locale,
+    // so roof stacking and reversed hit testing survive cold loads and Reopen.
+    return headers.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  }
+
+  retainHouseSources(needs: readonly Bounds[]): string[] {
+    if (needs.length > 2)
+      throw new RangeError(
+        "Höchstens Darstellungs- und Werkzeugbedarf halten.",
+      );
+    needs.forEach(assertBounds);
+    const retained = [...needs];
+    const gesture = this.houseGesture;
+    if (gesture?.before) retained.push(houseBounds(gesture.before));
+    const live = gesture && this.houseEntries.get(gesture.key)?.header;
+    if (live) retained.push(houseBounds(live));
+    const clipped: Bounds[] = [];
+    for (const coverage of this.houseCoverage)
+      for (const need of retained) {
+        const bounds: Bounds = [
+          Math.max(coverage[0], need[0]),
+          Math.max(coverage[1], need[1]),
+          Math.min(coverage[2], need[2]),
+          Math.min(coverage[3], need[3]),
+        ];
+        if (bounds[0] < bounds[2] && bounds[1] < bounds[3])
+          clipped.push(bounds);
+      }
+    const previousCoverage = this.houseCoverage;
+    this.houseCoverage = [];
+    for (const bounds of clipped) this.rememberHouseCoverage(bounds);
+    const removed: string[] = [];
+    for (const [key, entry] of this.houseEntries) {
+      if (entry.localSequence > this.persistedSequence || gesture?.key === key)
+        continue;
+      if (
+        entry.header &&
+        retained.some((bounds) =>
+          intersectsBounds(houseBounds(entry.header!), bounds),
+        )
+      )
+        continue;
+      this.houseEntries.delete(key);
+      if (entry.header) {
+        this.sourceBytes -= HOUSE_HEADER_BYTES;
+        this.houseSourceBytes -= HOUSE_HEADER_BYTES;
+        removed.push(key);
+      }
+    }
+    const coverageChanged =
+      previousCoverage.length !== this.houseCoverage.length ||
+      previousCoverage.some((bounds, index) =>
+        bounds.some(
+          (value, axis) => value !== this.houseCoverage[index]?.[axis],
+        ),
+      );
+    if (removed.length || coverageChanged) this.houseGeneration++;
+    this.generation++;
+    return removed;
+  }
+
+  /** A string edits a loaded ID; a fresh header creates a placement preview. */
+  beginHouseGesture(
+    target: string | HouseHeader,
+    label?: string,
+  ): HouseUpdate | null {
+    if (this.invalidationError) throw this.invalidationError;
+    if (this.active) throw new Error("Eine Autorenaktion ist bereits aktiv.");
+    const creating = typeof target !== "string";
+    const key = houseKey(creating ? target.id : target);
+    const entry = this.houseEntries.get(key);
+    const before = entry?.header ?? null;
+    if (!creating && !before)
+      throw new Error("Das gewählte Haus ist noch nicht geladen.");
+    if (
+      creating &&
+      (this.houseEntries.has(key) ||
+        this.history.some((action) =>
+          action.patches.some(
+            (patch) => patch.kind === "house" && patch.key === key,
+          ),
+        ))
+    )
+      throw new Error("Die Hausidentität ist bereits vergeben.");
+    const header = creating ? target : before!;
+    validateHouseHeader(header);
+    if (!this.isHouseRegionReady(houseBounds(header)))
+      throw new Error(
+        "Die benötigten lokalen Hausdaten sind noch nicht geladen.",
+      );
+    if (creating) this.checkHouseBudget(null, null);
+    let resolveFinished!: () => void;
+    let rejectFinished!: (error: Error) => void;
+    const finished = new Promise<void>((resolve, reject) => {
+      resolveFinished = resolve;
+      rejectFinished = reject;
+    });
+    void finished.catch(() => {});
+    this.prepaid = null;
+    this.houseGesture = {
+      key,
+      label: label ?? (creating ? "Haus platzieren" : "Haus verschieben"),
+      before,
+      previousSequence: entry?.localSequence ?? 0,
+      finished,
+      resolveFinished,
+      rejectFinished,
+    };
+    return creating ? this.updateHouseGesture(header) : null;
+  }
+
+  private checkHouseBudget(
+    before: HouseHeader | null,
+    current: HouseHeader | null,
+  ): void {
+    const retainedBytes = (Number(!!before) + 1) * HOUSE_HEADER_BYTES;
+    if (this.pendingBytes + retainedBytes > this.options.maxPendingBytes)
+      throw new RangeError(
+        "Die Arbeitskopie muss vorhandene Änderungen zuerst sichern.",
+      );
+    if (retainedBytes > this.options.maxHistoryBytes)
+      throw new RangeError(
+        "Diese Hausaktion überschreitet die lokale History.",
+      );
+    if (
+      this.sourceBytes + Number(!current) * HOUSE_HEADER_BYTES >
+      this.options.maxSourceBytes
+    )
+      throw new RangeError("Aktive Quellen überschreiten das Speicherbudget.");
+  }
+
+  updateHouseGesture(header: HouseHeader): HouseUpdate | null {
+    if (this.invalidationError) throw this.invalidationError;
+    const gesture = this.houseGesture;
+    if (!gesture) throw new Error("Keine aktive Hausgeste.");
+    validateHouseHeader(header);
+    if (houseKey(header.id) !== gesture.key)
+      throw new Error("Eine Hausgeste darf ihre Identität nicht wechseln.");
+    const before = this.houseEntries.get(gesture.key)?.header ?? null;
+    if (sameHouseAuthors(before, header)) return null;
+    const bounds = houseBounds(header);
+    if (!this.isHouseRegionReady(bounds))
+      throw new Error(
+        "Die benötigten lokalen Hausdaten sind noch nicht geladen.",
+      );
+    this.checkHouseBudget(gesture.before, before);
+    const after = Object.freeze({
+      ...cloneHouseHeader(header),
+      revision: this.revision + 1,
+    });
+    this.houseEntries.set(gesture.key, {
+      header: after,
+      localSequence: this.sequence + 1,
+    });
+    if (!before) {
+      this.sourceBytes += HOUSE_HEADER_BYTES;
+      this.houseSourceBytes += HOUSE_HEADER_BYTES;
+    }
+    this.revision++;
+    this.generation++;
+    this.houseGeneration++;
+    return {
+      bounds: before ? unionBounds(houseBounds(before), bounds) : bounds,
+      patches: [{ key: gesture.key, before, after }],
+    };
+  }
+
+  finishHouseGesture(): ChangeSet | null {
+    const gesture = this.houseGesture;
+    if (!gesture) return null;
+    const after = this.houseEntries.get(gesture.key)?.header ?? null;
+    this.houseGesture = null;
+    let change: ChangeSet | null = null;
+    if (!sameHouseAuthors(gesture.before, after)) {
+      const dirtyBounds = [gesture.before, after]
+        .filter((value): value is HouseHeader => !!value)
+        .map(houseBounds);
+      change = this.recordHistory(
+        gesture.label,
+        [
+          {
+            kind: "house",
+            key: gesture.key,
+            before: gesture.before,
+            after,
+          },
+        ],
+        dirtyBounds,
+      );
+    } else if (gesture.before) {
+      // Returning to the original pose is a no-op, including its content identity.
+      this.houseEntries.set(gesture.key, {
+        header: gesture.before,
+        localSequence: gesture.previousSequence,
+      });
+      if (after !== gesture.before) this.houseGeneration++;
+    }
+    gesture.resolveFinished();
+    return change;
+  }
+
+  /** Restore exact author identity without making a second transaction. */
+  cancelHouseGesture(): HouseUpdate | null {
+    const gesture = this.houseGesture;
+    if (!gesture) return null;
+    const before = this.houseEntries.get(gesture.key)?.header ?? null;
+    const after = gesture.before;
+    this.houseGesture = null;
+    if (after || gesture.previousSequence > this.persistedSequence)
+      this.houseEntries.set(gesture.key, {
+        header: after,
+        localSequence: gesture.previousSequence,
+      });
+    else this.houseEntries.delete(gesture.key);
+    const delta = (Number(!!after) - Number(!!before)) * HOUSE_HEADER_BYTES;
+    this.sourceBytes += delta;
+    this.houseSourceBytes += delta;
+    if (before === after) {
+      gesture.resolveFinished();
+      return null;
+    }
+    this.revision++;
+    this.generation++;
+    this.houseGeneration++;
+    const bounds =
+      before && after
+        ? unionBounds(houseBounds(before), houseBounds(after))
+        : houseBounds((before ?? after)!);
+    gesture.resolveFinished();
+    return { bounds, patches: [{ key: gesture.key, before, after }] };
   }
 
   /** One keyed cell lookup: undefined is unknown, null inherits, zero weights own. */
@@ -1944,6 +2363,20 @@ export class EditorDocument {
       );
     const revision = this.revision + 1;
     const patches = action.patches.map((patch): SourcePatch => {
+      if (patch.kind === "house") {
+        const expected = forward ? patch.before : patch.after;
+        const entry = this.houseEntries.get(patch.key);
+        if (entry && !sameHouseAuthors(entry.header, expected))
+          throw new Error("History passt nicht zum aktuellen Hausstand.");
+        return {
+          kind: "house",
+          key: patch.key,
+          before: expected,
+          // Header content identity is restored; the document revision remains
+          // monotone for presentation invalidation and stale-job rejection.
+          after: forward ? patch.after : patch.before,
+        };
+      }
       if (patch.kind === "height") {
         const expected = forward ? patch.before : patch.after;
         const entry = this.entries.get(patch.key);
@@ -1982,11 +2415,18 @@ export class EditorDocument {
           sum +
           (Number(!!p.after) -
             Number(
-              (p.kind === "height" ? this.entries : this.landscapeEntries).get(
-                p.key,
-              )?.state === "ready",
+              p.kind === "house"
+                ? !!this.houseEntries.get(p.key)?.header
+                : (p.kind === "height"
+                    ? this.entries
+                    : this.landscapeEntries
+                  ).get(p.key)?.state === "ready",
             )) *
-            (p.kind === "height" ? HEIGHT_TILE_BYTES : LANDSCAPE_TILE_BYTES),
+            (p.kind === "height"
+              ? HEIGHT_TILE_BYTES
+              : p.kind === "landscape"
+                ? LANDSCAPE_TILE_BYTES
+                : HOUSE_HEADER_BYTES),
         0,
       );
     if (nextSourceBytes > this.options.maxSourceBytes)
@@ -1994,7 +2434,16 @@ export class EditorDocument {
         "History benötigt mehr aktive Quellen als das Speicherbudget erlaubt.",
       );
     for (const patch of patches) {
-      if (patch.kind === "height")
+      if (patch.kind === "house") {
+        this.houseSourceBytes +=
+          (Number(!!patch.after) -
+            Number(!!this.houseEntries.get(patch.key)?.header)) *
+          HOUSE_HEADER_BYTES;
+        this.houseEntries.set(patch.key, {
+          header: patch.after && Object.freeze(cloneHouseHeader(patch.after)),
+          localSequence: this.sequence + 1,
+        });
+      } else if (patch.kind === "height")
         this.entries.set(
           patch.key,
           patch.after
@@ -2025,6 +2474,7 @@ export class EditorDocument {
     this.sourceBytes = nextSourceBytes;
     this.revision = revision;
     this.generation++;
+    if (patches.some((patch) => patch.kind === "house")) this.houseGeneration++;
     return this.commit(
       `${forward ? "Wiederholen" : "Rückgängig"}: ${action.label}`,
       patches,
@@ -2059,6 +2509,13 @@ export class EditorDocument {
         !this.landscapeGesture?.before.has(key)
       )
         this.landscapeEntries.delete(key);
+    for (const [key, entry] of this.houseEntries)
+      if (
+        !entry.header &&
+        entry.localSequence <= sequence &&
+        this.houseGesture?.key !== key
+      )
+        this.houseEntries.delete(key);
   }
 
   /** Overlay only changes absent from this store read, then the current live action.

@@ -1,11 +1,12 @@
 import type {
   AtlasDesktop,
   CommitReceipt,
+  CommitPatch,
   PreparedDocument,
   ProjectInfo,
   SaveResult,
 } from "./bridge";
-import type { EditorDocument } from "./model";
+import type { EditorDocument, SourcePatch } from "./model";
 
 type FileActionOwner = "renderer" | "native";
 
@@ -17,6 +18,18 @@ interface SessionObserver {
 
 const asError = (error: unknown) =>
   error instanceof Error ? error : new Error(String(error));
+
+/** Keep the discriminant and payload coupled while excluding history before-images. */
+function commitPatch(patch: SourcePatch): CommitPatch {
+  switch (patch.kind) {
+    case "height":
+      return { kind: "height", key: patch.key, after: patch.after };
+    case "landscape":
+      return { kind: "landscape", key: patch.key, after: patch.after };
+    case "house":
+      return { kind: "house", key: patch.key, after: patch.after };
+  }
+}
 
 /** File lifecycle and one ordered writer; accepted changes belong to the document. */
 export class ProjectSession {
@@ -89,15 +102,7 @@ export class ProjectSession {
           sessionId: change.sessionId,
           sequence: change.sequence,
           transactionId: change.transactionId,
-          patches: change.patches.map((patch) =>
-            patch.kind === "height"
-              ? { kind: "height" as const, key: patch.key, after: patch.after }
-              : {
-                  kind: "landscape" as const,
-                  key: patch.key,
-                  after: patch.after,
-                },
-          ),
+          patches: change.patches.map(commitPatch),
         });
         if (document !== this.document || document.disposed) return;
         document.acknowledge(receipt);
@@ -252,15 +257,7 @@ export class ProjectSession {
           sessionId: change.sessionId,
           sequence: change.sequence,
           transactionId: change.transactionId,
-          patches: change.patches.map((patch) =>
-            patch.kind === "height"
-              ? { kind: "height" as const, key: patch.key, after: patch.after }
-              : {
-                  kind: "landscape" as const,
-                  key: patch.key,
-                  after: patch.after,
-                },
-          ),
+          patches: change.patches.map(commitPatch),
         });
         this.assertCurrentDocument(document);
         document.acknowledge(receipt);

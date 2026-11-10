@@ -623,13 +623,17 @@ describe("R2 document-owned C1 admission and bounded continuation", () => {
       expect(patch.after!.values).toEqual(original[index]),
     );
     const history = doc.pendingChanges()[0];
-    const saved = history.patches.map((patch) => patch.after!.values.slice());
+    const saved = history.patches.map((patch) => {
+      if (patch.kind !== "height") throw new Error("Expected a height patch");
+      return patch.after!.values.slice();
+    });
     beginTestBrush(doc, brush);
     applyTestBrush(doc, [20, 20], [20, 20], 50);
     finishTestBrush(doc);
-    history.patches.forEach((patch, index) =>
-      expect(patch.after!.values).toEqual(saved[index]),
-    );
+    history.patches.forEach((patch, index) => {
+      if (patch.kind !== "height") throw new Error("Expected a height patch");
+      expect(patch.after!.values).toEqual(saved[index]);
+    });
   });
 
   it.each([

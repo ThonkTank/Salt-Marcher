@@ -529,6 +529,16 @@ async function run(directory) {
         stroke = await movingStroke(session, [point, point, point], {
           intervalMs: 64,
         });
+      let strokeEvidence = null;
+      if (stroke && (stroke.timedOut || !stroke.time.passed)) {
+        strokeEvidence = `action-${result.actions.length + 1}-${kind}-failure.json`;
+        // Retain the failed boundary before a later settling wait can throw.
+        // This is observation only; the action's acceptance predicate is unchanged.
+        await writeFile(
+          join(session.directory, strokeEvidence),
+          JSON.stringify(stroke, null, 2),
+        );
+      }
       await settled();
       const after = await snapshot(page, [], {
         sinceEvent: beforePreparation.eventCount,
@@ -574,7 +584,16 @@ async function run(directory) {
         kind,
         diameter,
         level: before.brush.level,
+        fromSequence: before.document.sequence,
         sequence: after.document.sequence,
+        stroke: stroke
+          ? {
+              timedOut: stroke.timedOut,
+              missingInputKinds: stroke.missingInputKinds,
+              time: stroke.time,
+              evidence: strokeEvidence,
+            }
+          : null,
         draws: draws.length,
         terrainPackets: terrain.length,
         droppedEvents: after.droppedEvents,
@@ -1235,6 +1254,7 @@ async function run(directory) {
         session.errors.length === 0;
     } catch (error) {
       result.error = String(error);
+      result.errorStack = error.stack;
       try {
         result.failureState = await stateSnapshot(session.page);
         result.failureEvents = (
@@ -1245,6 +1265,20 @@ async function run(directory) {
       } catch (observationError) {
         result.failureObservationError = String(observationError);
       }
+      await writeFile(
+        join(sessionDirectory, "failure.json"),
+        JSON.stringify(
+          {
+            error: result.error,
+            stack: result.errorStack,
+            state: result.failureState,
+            events: result.failureEvents,
+            observationError: result.failureObservationError,
+          },
+          null,
+          2,
+        ),
+      );
     } finally {
       result.pageErrors = session.errors;
       await session.close();

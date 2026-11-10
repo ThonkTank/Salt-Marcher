@@ -189,6 +189,7 @@ let pendingFileAction: {
   timer: ReturnType<typeof setTimeout>;
 } | null = null;
 let diagnosticCommitAttempts = 0;
+let releaseDiagnosticCommit: (() => void) | null = null;
 
 function trustedSender(
   event: Pick<IpcMainInvokeEvent, "sender" | "senderFrame">,
@@ -429,6 +430,7 @@ function registerBridge() {
           return store.request("metrics");
         case "readRegion":
         case "readPresentation":
+        case "readHouseRegion":
         case "readLandscapeRegion":
         case "readLandscapePresentation":
           if (
@@ -449,11 +451,10 @@ function registerBridge() {
           // Full numeric/payload validation belongs to the utility process, not UI Main.
           const attempt = ++diagnosticCommitAttempts;
           if (diagnostics) {
-            const delay = Number(process.env.ATLAS_P0_COMMIT_DELAY_MS ?? 0);
-            if (attempt === 1 && Number.isFinite(delay) && delay > 0)
-              await new Promise((resolveDelay) =>
-                setTimeout(resolveDelay, Math.min(delay, 5_000)),
-              );
+            if (attempt === 1 && process.env.ATLAS_P0_HOLD_FIRST_COMMIT === "1")
+              await new Promise<void>((release) => {
+                releaseDiagnosticCommit = release;
+              });
             const commitFault = process.env.ATLAS_P0_COMMIT_FAULT;
             if (
               commitFault === "always-before" ||
@@ -644,8 +645,9 @@ function registerDiagnostics() {
       tracing = false;
     }
   };
-  // This is main-process test instrumentation. Nothing here is exposed to the
-  // renderer, and these observations never create readiness or source changes.
+  // Main-process test instrumentation is never exposed to the renderer.
+  // The explicit diagnostic gate delays only the first existing commit; release
+  // resumes the ordinary transaction path without altering sources or readiness.
   Object.assign(globalThis, {
     __atlasHost: {
       info: async () => ({
@@ -671,6 +673,12 @@ function registerDiagnostics() {
       storeActivity: (options?: { sinceEvent?: number }) =>
         store.activity(options),
       fileActionPending: () => fileActionPending,
+      commitHeld: () => releaseDiagnosticCommit !== null,
+      releaseCommit: () => {
+        const release = releaseDiagnosticCommit;
+        releaseDiagnosticCommit = null;
+        release?.();
+      },
       startTrace,
       stopTrace,
     },

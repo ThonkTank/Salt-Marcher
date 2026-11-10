@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { EditorController, type EditorState } from "./EditorController";
-import type { Point } from "./model";
+import type { HouseHeader, Point } from "./model";
 import type { ObservationOptions } from "./observation";
 import "./editor.css";
 
@@ -16,6 +16,49 @@ declare global {
   }
 }
 
+function HouseField({
+  label,
+  value,
+  unit,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  min: number;
+  max: number;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <div className="field">
+      <label htmlFor={`house-${label}`}>
+        {label}
+        <span>{unit}</span>
+      </label>
+      <input
+        id={`house-${label}`}
+        aria-label={label}
+        type="number"
+        min={min}
+        max={max}
+        step="any"
+        value={draft ?? +value.toFixed(3)}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          if (draft !== null && draft.trim() !== "") onCommit(Number(draft));
+          setDraft(null);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+        }}
+      />
+    </div>
+  );
+}
+
 function Atlas() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const controller = useRef<EditorController | null>(null);
@@ -28,11 +71,22 @@ function Atlas() {
   const [y, setY] = useState("0");
   const mode = state?.mode ?? "raise";
   const landscape = mode === "forest" || mode === "clearing";
+  const houseMode = mode === "house" || mode === "select";
   const landscapeNames = ["Wald", "Buschland", "Wiese", "Felsgebiet"];
   const landscapeKind = state?.landscapeKind ?? 0;
   const landscapeDensity = state?.landscapeDensity ?? 100;
   const diameter = state?.diameter ?? 80;
   const amount = state?.amount ?? 20;
+  const selectedHouse = mode === "select" ? state?.selectedHouse : null;
+  const houseSettings = {
+    width: selectedHouse?.width ?? state?.houseWidth ?? 40,
+    depth: selectedHouse?.depth ?? state?.houseDepth ?? 30,
+    rotation: selectedHouse?.rotation ?? state?.houseRotation ?? 0,
+    foundationHeight:
+      selectedHouse?.foundationHeight ?? state?.foundationHeight ?? 1,
+    foundationTransition:
+      selectedHouse?.foundationTransition ?? state?.foundationTransition ?? 10,
+  };
   const diagnostics = window.atlasDesktop?.diagnostics ?? false;
 
   useEffect(() => {
@@ -163,129 +217,191 @@ function Atlas() {
             <span>◯</span>Lichtung
           </button>
           <button
+            aria-pressed={mode === "house"}
+            onClick={() => selectMode("house")}
+          >
+            <span>⌂</span>Haus platzieren
+          </button>
+          <button
+            aria-pressed={mode === "select"}
+            onClick={() => selectMode("select")}
+          >
+            <span>↖</span>Haus auswählen
+          </button>
+          <button
             aria-pressed={mode === "pan"}
             onClick={() => selectMode("pan")}
           >
             <span>✥</span>Verschieben
           </button>
         </div>
-        <div className="field">
-          <label htmlFor="diameter">
-            Pinselgröße <span>px</span>
-          </label>
-          <input
-            id="diameter"
-            aria-label="Pinselgröße"
-            type="number"
-            min="8"
-            max={landscape ? 128 : 512}
-            value={diameterDraft ?? diameter}
-            onChange={(e) => {
-              setDiameterDraft(e.target.value);
-            }}
-            onBlur={() => {
-              if (diameterDraft !== null && diameterDraft.trim() !== "")
-                action((editor) =>
-                  editor.setBrush(Number(diameterDraft), editor.amount),
-                );
-              setDiameterDraft(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-          />
-        </div>
-        {landscape ? (
+        {houseMode ? (
           <>
-            <div className="field">
-              <label htmlFor="landscape-kind">Landschaft</label>
-              <select
-                id="landscape-kind"
-                aria-label="Landschaft"
-                value={landscapeKind}
-                disabled={mode === "clearing"}
-                onChange={(event) =>
+            <p className="hint">
+              {mode === "house"
+                ? "Klicken oder ziehen, um ein Haus zu platzieren."
+                : selectedHouse
+                  ? "Haus ausgewählt. Zum Verschieben ziehen; Escape bricht die Bewegung ab."
+                  : "Ein Haus anklicken und zum Verschieben ziehen."}
+            </p>
+            {(
+              [
+                ["width", "Hausbreite", "m", 0.3048, 3048, 0.3048],
+                ["depth", "Haustiefe", "m", 0.3048, 3048, 0.3048],
+                ["rotation", "Hausdrehung", "°", 0, 360, 1],
+                ["foundationHeight", "Fundamenthöhe", "m", 0, 30.48, 0.3048],
+                [
+                  "foundationTransition",
+                  "Fundamentübergang",
+                  "m",
+                  0,
+                  152.4,
+                  0.3048,
+                ],
+              ] as const
+            ).map(([field, label, unit, min, max, factor]) => (
+              <HouseField
+                key={`${selectedHouse?.id ?? "new"}:${field}`}
+                label={label}
+                unit={unit}
+                min={min}
+                max={max}
+                value={houseSettings[field] * factor}
+                onCommit={(value) =>
                   action((editor) =>
-                    editor.setLandscape(
-                      Number(event.target.value),
-                      editor.state.landscapeDensity,
-                    ),
+                    editor.setHouseSettings({
+                      [field]: value / factor,
+                    } as Partial<HouseHeader>),
                   )
                 }
-              >
-                {landscapeNames.map((name, index) => (
-                  <option key={name} value={index}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+              />
+            ))}
+            <p className="hint">
+              Die Fundamenteinstellungen werden gespeichert. Das Fundament wird
+              in dieser Version noch nicht im Gelände dargestellt.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="field">
+              <label htmlFor="diameter">
+                Pinselgröße <span>px</span>
+              </label>
+              <input
+                id="diameter"
+                aria-label="Pinselgröße"
+                type="number"
+                min="8"
+                max={landscape ? 128 : 512}
+                value={diameterDraft ?? diameter}
+                onChange={(e) => {
+                  setDiameterDraft(e.target.value);
+                }}
+                onBlur={() => {
+                  if (diameterDraft !== null && diameterDraft.trim() !== "")
+                    action((editor) =>
+                      editor.setBrush(Number(diameterDraft), editor.amount),
+                    );
+                  setDiameterDraft(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+              />
             </div>
-            {mode === "forest" ? (
-              <div className="field">
-                <label htmlFor="landscape-density">
-                  Dichte <span>%</span>
-                </label>
-                <input
-                  id="landscape-density"
-                  aria-label="Landschaftsdichte"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={densityDraft ?? landscapeDensity}
-                  onChange={(event) => setDensityDraft(event.target.value)}
-                  onBlur={() => {
-                    if (densityDraft !== null && densityDraft.trim() !== "")
+            {landscape ? (
+              <>
+                <div className="field">
+                  <label htmlFor="landscape-kind">Landschaft</label>
+                  <select
+                    id="landscape-kind"
+                    aria-label="Landschaft"
+                    value={landscapeKind}
+                    disabled={mode === "clearing"}
+                    onChange={(event) =>
                       action((editor) =>
                         editor.setLandscape(
-                          editor.state.landscapeKind,
-                          Number(densityDraft),
+                          Number(event.target.value),
+                          editor.state.landscapeDensity,
+                        ),
+                      )
+                    }
+                  >
+                    {landscapeNames.map((name, index) => (
+                      <option key={name} value={index}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {mode === "forest" ? (
+                  <div className="field">
+                    <label htmlFor="landscape-density">
+                      Dichte <span>%</span>
+                    </label>
+                    <input
+                      id="landscape-density"
+                      aria-label="Landschaftsdichte"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={densityDraft ?? landscapeDensity}
+                      onChange={(event) => setDensityDraft(event.target.value)}
+                      onBlur={() => {
+                        if (densityDraft !== null && densityDraft.trim() !== "")
+                          action((editor) =>
+                            editor.setLandscape(
+                              editor.state.landscapeKind,
+                              Number(densityDraft),
+                            ),
+                          );
+                        setDensityDraft(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur();
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <p className="hint">
+                    Feine Lichtungen bleiben bei späteren groben Waldänderungen
+                    frei.
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="field">
+                <label htmlFor="amount">
+                  Pinselstärke <span>m/s</span>
+                </label>
+                <input
+                  id="amount"
+                  aria-label="Pinselstärke"
+                  type="number"
+                  min="0.03048"
+                  max="3048"
+                  step="1"
+                  value={amountDraft ?? +(amount * 0.3048).toFixed(3)}
+                  onChange={(e) => {
+                    setAmountDraft(e.target.value);
+                  }}
+                  onBlur={() => {
+                    if (amountDraft !== null && amountDraft.trim() !== "")
+                      action((editor) =>
+                        editor.setBrush(
+                          editor.diameter,
+                          Number(amountDraft) / 0.3048,
                         ),
                       );
-                    setDensityDraft(null);
+                    setAmountDraft(null);
                   }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") event.currentTarget.blur();
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
                   }}
                 />
               </div>
-            ) : (
-              <p className="hint">
-                Feine Lichtungen bleiben bei späteren groben Waldänderungen
-                frei.
-              </p>
             )}
           </>
-        ) : (
-          <div className="field">
-            <label htmlFor="amount">
-              Pinselstärke <span>m/s</span>
-            </label>
-            <input
-              id="amount"
-              aria-label="Pinselstärke"
-              type="number"
-              min="0.03048"
-              max="3048"
-              step="1"
-              value={amountDraft ?? +(amount * 0.3048).toFixed(3)}
-              onChange={(e) => {
-                setAmountDraft(e.target.value);
-              }}
-              onBlur={() => {
-                if (amountDraft !== null && amountDraft.trim() !== "")
-                  action((editor) =>
-                    editor.setBrush(
-                      editor.diameter,
-                      Number(amountDraft) / 0.3048,
-                    ),
-                  );
-                setAmountDraft(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-              }}
-            />
-          </div>
         )}
         <div className="history">
           <button
@@ -420,7 +536,11 @@ function Atlas() {
           </span>
           <span>
             {state
-              ? `${((landscape ? 1 : 5) * 2 ** state.level * 0.3048).toLocaleString("de-DE", { maximumFractionDigits: 2 })} m · ${landscape ? "Landschaftsraster" : "Höhenraster"}`
+              ? houseMode
+                ? selectedHouse
+                  ? "Haus ausgewählt"
+                  : "Häuser"
+                : `${((landscape ? 1 : 5) * 2 ** state.level * 0.3048).toLocaleString("de-DE", { maximumFractionDigits: 2 })} m · ${landscape ? "Landschaftsraster" : "Höhenraster"}`
               : ""}
           </span>
         </footer>

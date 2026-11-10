@@ -148,7 +148,13 @@ async function sealAndAct(page, action) {
   }, action);
 }
 
-async function nativeClose(session, shouldClose, requestClose) {
+async function nativeClose(
+  session,
+  shouldClose,
+  requestClose,
+  releaseHeldCommit = false,
+) {
+  const closeDeadline = Date.now() + 10_000;
   let closed = false;
   const exited = new Promise((resolve) =>
     session.app.once("close", () => {
@@ -178,6 +184,30 @@ async function nativeClose(session, shouldClose, requestClose) {
     await session.app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0].close(),
     );
+  if (releaseHeldCommit) {
+    // Wait until the real native-close prepare request has reached the renderer.
+    // A fixed delay can expire while the second stroke waits for a ready image,
+    // silently turning the intended pending-writer fixture into an idle writer.
+    await session.page.waitForFunction(
+      () => {
+        const { state } = window.atlasObserve([], { events: false });
+        return state.fileAction && state.writing;
+      },
+      undefined,
+      { timeout: Math.max(1, closeDeadline - Date.now()) },
+    );
+    result = await session.app.evaluate(() => {
+      const host = globalThis.__atlasHost;
+      const boundary = {
+        commitHeld: host.commitHeld(),
+        fileActionPending: host.fileActionPending(),
+      };
+      if (!boundary.commitHeld || !boundary.fileActionPending)
+        throw new Error("Native close did not reach the held commit boundary");
+      host.releaseCommit();
+      return boundary;
+    });
+  }
   if (!shouldClose) {
     if (requestClose) {
       const deadline = Date.now() + 10_000;
@@ -204,7 +234,7 @@ async function nativeClose(session, shouldClose, requestClose) {
       new Promise((_, reject) => {
         timer = setTimeout(
           () => reject(new Error("Native close did not finish")),
-          10_000,
+          Math.max(1, closeDeadline - Date.now()),
         );
       }),
     ]);
@@ -252,7 +282,7 @@ export async function runLifecycleScenarios({ launch, out, recordCheck }) {
         env: {
           ATLAS_P0_DIALOG_UNSAVED: decision,
           ATLAS_P0_DIALOG_SAVE: file,
-          ...(mode === "pending" ? { ATLAS_P0_COMMIT_DELAY_MS: "1000" } : {}),
+          ...(mode === "pending" ? { ATLAS_P0_HOLD_FIRST_COMMIT: "1" } : {}),
           ...(mode === "failed"
             ? { ATLAS_P0_COMMIT_FAULT: "before-once" }
             : {}),
@@ -286,6 +316,18 @@ export async function runLifecycleScenarios({ launch, out, recordCheck }) {
           await session.page.waitForFunction(
             () => window.atlasObserve([], { events: false }).state.writing,
           );
+        if (mode === "pending") {
+          const deadline = Date.now() + 10_000;
+          while (
+            !(await session.app.evaluate(() =>
+              globalThis.__atlasHost.commitHeld(),
+            ))
+          ) {
+            if (Date.now() > deadline)
+              throw new Error("First diagnostic commit was not held");
+            await new Promise((resolve) => setTimeout(resolve, 10));
+          }
+        }
         if (mode === "failed")
           await session.page.waitForFunction(
             () =>
@@ -324,7 +366,12 @@ export async function runLifecycleScenarios({ launch, out, recordCheck }) {
                   evidence.storeBefore.sequence === 0,
         );
         if (mode !== "finishing")
-          await nativeClose(session, decision !== "cancel");
+          evidence.closeBoundary = await nativeClose(
+            session,
+            decision !== "cancel",
+            undefined,
+            mode === "pending",
+          );
         if (decision === "cancel") {
           evidence.after = await observation(session.page);
           recordCheck(
@@ -415,6 +462,10 @@ export async function runLifecycleScenarios({ launch, out, recordCheck }) {
         await captureFailure(session, evidence, error);
         throw error;
       } finally {
+        if (mode === "pending" && !session.page.isClosed())
+          await session.app
+            .evaluate(() => globalThis.__atlasHost.releaseCommit())
+            .catch(() => {});
         await writeFile(
           join(session.directory, "lifecycle.json"),
           JSON.stringify(evidence, null, 2),

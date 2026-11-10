@@ -2,6 +2,7 @@ import { ProjectStore } from "./project-store";
 import type {
   CommitRequest,
   ReadRegionRequest,
+  ReadHouseRegionRequest,
   ReadPresentationRequest,
   ReadLandscapeRegionRequest,
   LandscapePresentationRequest,
@@ -47,6 +48,8 @@ async function dispatch({ method, argument }: ParentMessage) {
       return store.readRegion(argument as ReadRegionRequest);
     case "readPresentation":
       return store.readPresentation(argument as ReadPresentationRequest);
+    case "readHouseRegion":
+      return store.readHouseRegion(argument as ReadHouseRegionRequest);
     case "readLandscapeRegion":
       return store.readLandscapeRegion(argument as ReadLandscapeRegionRequest);
     case "readLandscapePresentation":
@@ -99,6 +102,7 @@ port.on("message", ({ data }: { data: ParentMessage }) => {
     [
       "readRegion",
       "readPresentation",
+      "readHouseRegion",
       "readLandscapeRegion",
       "readLandscapePresentation",
     ].includes(data.method)

@@ -1,3 +1,5 @@
+import type { HousePatch } from "./house";
+
 export type Point = [number, number];
 export type Bounds = [number, number, number, number];
 
@@ -44,7 +46,9 @@ export interface LandscapePatch {
 
 /** The closed author set shares one journal, history and persistence boundary. */
 export type SourcePatch =
-  ({ kind: "height" } & HeightPatch) | ({ kind: "landscape" } & LandscapePatch);
+  | ({ kind: "height" } & HeightPatch)
+  | ({ kind: "landscape" } & LandscapePatch)
+  | ({ kind: "house" } & HousePatch);
 
 export interface LandscapeBrush {
   level: number;

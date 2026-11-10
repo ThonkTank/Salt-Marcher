@@ -33,6 +33,7 @@ import type { LandscapePresentationRead } from "../model/landscape";
 import { Observation } from "../observation";
 import type { HeightProjectionService } from "./HeightProjectionService";
 import { CursorOverlay } from "./CursorOverlay";
+import { HouseView } from "./HouseView";
 import {
   HeightField,
   type HeightCompositionStats,
@@ -252,6 +253,7 @@ export class WorldRenderer {
   private stage = new Container();
   private terrain = new Container();
   private overlay = new Graphics();
+  private houses = new HouseView();
   private tiles = new Map<string, DisplayTile>();
   private field: HeightField;
   private readonly retiredFields = new Set<HeightField>();
@@ -340,7 +342,7 @@ export class WorldRenderer {
     private extraComputeBytes: () => number = () => 0,
   ) {
     this.field = this.newField();
-    this.stage.addChild(this.terrain, this.overlay);
+    this.stage.addChild(this.terrain, this.houses.graphics, this.overlay);
     this.terrain.sortableChildren = true;
   }
 
@@ -424,6 +426,7 @@ export class WorldRenderer {
     this.invalidateProofs();
     this.resetSourceQueue();
     this.document = document;
+    this.houses.reset();
     this.landscape = new LandscapeView(document, landscapeEmpty);
     this.sessionId = document.sessionId;
     for (const tile of this.tiles.values())
@@ -1290,6 +1293,11 @@ export class WorldRenderer {
     this.redrawCursor();
     this.requestFrame = true;
     this.sceneRequested = true;
+  }
+
+  selectHouse(id: string | null): void {
+    this.houses.selectedId = id;
+    this.redraw();
   }
 
   redrawCursor(): void {
@@ -2278,6 +2286,15 @@ export class WorldRenderer {
         this.resizePending = false;
       }
       this.drawOverlay();
+      this.houses.draw(
+        this.document,
+        this.camera,
+        this.bounds(),
+        this.width,
+        this.height,
+        (bytes) =>
+          this.reservePreparation(null, { cpuBytes: bytes, gpuBytes: bytes }),
+      );
       this.renderer.render(this.stage);
     } catch (error) {
       if (!this.scenePending && !this.graphicsFailed)
@@ -2376,8 +2393,8 @@ export class WorldRenderer {
   }
 
   private reservePreparation(
-    tile: DisplayTile,
-    reserve = tile.field.nextPreparationBytes,
+    tile: DisplayTile | null,
+    reserve = tile?.field.nextPreparationBytes,
   ): boolean {
     if (!reserve) return true;
     const metrics = this.resourceMetrics();
@@ -2414,6 +2431,8 @@ export class WorldRenderer {
     }
     if (this.projections) metrics.cpuBytes += this.projections.metrics().bytes;
     metrics.cpuBytes += this.extraComputeBytes();
+    metrics.cpuBytes += this.houses.bytes;
+    metrics.gpuBytes += this.houses.bytes;
     return metrics;
   }
 

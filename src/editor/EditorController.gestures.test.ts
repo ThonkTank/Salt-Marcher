@@ -6,7 +6,13 @@ import type {
   SaveRequest,
 } from "./bridge";
 import { EditorController } from "./EditorController";
-import { EditorDocument, type Bounds } from "./model";
+import {
+  EditorDocument,
+  houseBounds,
+  intersectsBounds,
+  type Bounds,
+  type HouseHeader,
+} from "./model";
 
 // Only presentation is substituted. DOM handlers, RAF draining, the document,
 // history and ProjectSession's ordered writer all run their production code.
@@ -86,6 +92,8 @@ vi.mock("./render/WorldRenderer", () => ({
     refresh() {}
     setToolLevel() {}
     redrawCursor() {}
+    redraw() {}
+    selectHouse() {}
     forgetSources() {}
     updateLandscape() {}
     finishFrame() {}
@@ -104,7 +112,7 @@ async function settle() {
   for (let turn = 0; turn < 16; turn++) await Promise.resolve();
 }
 
-async function readyController() {
+async function readyController(houses: HouseHeader[] = []) {
   let now = 1000,
     nextFrame = 0;
   let resized!: () => void;
@@ -145,7 +153,7 @@ async function readyController() {
   const info: ProjectInfo = {
     sessionId: "landscape-controller",
     projectId: "landscape-controller",
-    format: 25,
+    format: 26,
     title: "Controller test",
     sequence: 0,
     savedSequence: 0,
@@ -153,6 +161,7 @@ async function readyController() {
     activeLevels: [],
     sourceTiles: 0,
     landscapeTiles: 0,
+    houses: houses.length,
     activeLandscapeLevels: [],
   };
   const unexpectedRead = async () => {
@@ -169,6 +178,15 @@ async function readyController() {
     readPresentation: vi.fn(unexpectedRead),
     readLandscapeRegion: vi.fn(unexpectedRead),
     readLandscapePresentation: vi.fn(unexpectedRead),
+    readHouseRegion: vi.fn(
+      async (request: { sessionId: string; bounds: Bounds }) => ({
+        ...request,
+        sequence: info.sequence,
+        headers: houses.filter((house) =>
+          intersectsBounds(houseBounds(house), request.bounds),
+        ),
+      }),
+    ),
     commit: vi.fn(async (request: CommitRequest) => {
       info.sequence = request.sequence;
       return {
@@ -266,6 +284,215 @@ async function readyController() {
 
 const FOREST = [0, 0, 255, 0];
 const CLEAR = [0, 0, 0, 0];
+
+describe("house gestures through the shared controller and writer", () => {
+  it("loads the offscreen part of a selected header and a rotated property edit through the shared read slot", async () => {
+    const header: HouseHeader = {
+      id: "wide-cold-house",
+      revision: 0,
+      x: 0,
+      y: 0,
+      width: 2000,
+      depth: 100,
+      rotation: 0,
+      foundationHeight: 1,
+      foundationTransition: 10,
+    };
+    const test = await readyController([header]);
+    test.controller.setMode("select");
+    expect(test.doc.isHouseRegionReady(houseBounds(header))).toBe(false);
+    test.pointer("pointerdown");
+    expect(test.doc.active).toBe(false);
+    test.frame();
+    await settle();
+    expect(test.doc.isHouseRegionReady(houseBounds(header))).toBe(true);
+    test.pointer("pointerup");
+    test.pointer("pointerdown");
+    expect(test.doc.active).toBe(true);
+    test.pointer("pointerup");
+    expect(test.controller.state.selectedHouse?.id).toBe(header.id);
+    expect(test.doc.sequence).toBe(0);
+    await test.controller.setHouseSettings({ rotation: 90 });
+    await test.drain();
+    expect(test.doc.house(header.id)).toMatchObject({ rotation: 90 });
+    expect(
+      test.bridge.readHouseRegion.mock.calls.some(
+        ([request]) => request.bounds[1] <= -1000 && request.bounds[3] >= 1000,
+      ),
+    ).toBe(true);
+    expect(test.doc.sequence).toBe(1);
+    expect(test.controller.state.error).toBeNull();
+  });
+  it.each([
+    "escape",
+    "blur",
+    "visibility",
+    "tool-change",
+    "resize",
+    "pointercancel",
+  ])(
+    "%s restores a live move, and late Up cannot commit it",
+    async (reason) => {
+      const test = await readyController();
+      test.controller.setMode("house");
+      test.pointer("pointerdown");
+      expect(test.doc.housesInBounds([-100, -100, 100, 100])).toHaveLength(1);
+      expect(test.doc.sequence).toBe(0);
+      test.pointer("pointerup");
+      await test.drain();
+      const original = test.doc.housesInBounds([-100, -100, 100, 100])[0];
+      test.controller.setMode("select");
+      test.pointer("pointerdown");
+      test.pointer("pointermove", 80, 40);
+      expect(test.doc.house(original.id)).toMatchObject({ x: 80, y: 40 });
+      if (reason === "pointercancel") test.pointer("pointercancel", 80, 40);
+      else test.interrupt(reason);
+      expect(test.doc.house(original.id)).toEqual(original);
+      test.pointer("pointerup", 120, 60);
+      await test.drain();
+      expect(test.doc.house(original.id)).toEqual(original);
+      expect(test.doc.sequence).toBe(1);
+      expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+      expect(test.controller.state.error).toBeNull();
+    },
+  );
+
+  it("commits the terminal pose once, and Undo/Redo and Save preserve the identity", async () => {
+    const test = await readyController();
+    test.controller.setMode("house");
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    const placed = test.doc.housesInBounds([-100, -100, 100, 100])[0];
+    test.controller.setMode("select");
+    test.pointer("pointerdown");
+    test.pointer("pointermove", 40, 20);
+    test.pointer("pointerup", 80, 40);
+    test.interrupt("blur");
+    test.pointer("pointerup", 160, 80);
+    await test.drain();
+    expect(test.doc.house(placed.id)).toMatchObject({ x: 80, y: 40 });
+    expect(test.doc.sequence).toBe(2);
+    expect(test.doc.metrics.historyActions).toBe(2);
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.house(placed.id)).toEqual(placed);
+    test.controller.redo();
+    await test.drain();
+    expect(test.doc.house(placed.id)).toMatchObject({
+      id: placed.id,
+      x: 80,
+      y: 40,
+    });
+    await test.controller.save();
+    expect(test.bridge.saveProject).toHaveBeenCalledWith(
+      expect.objectContaining({ sequence: 4 }),
+    );
+    expect(test.controller.state.saved).toBe(true);
+    expect(
+      test.bridge.commit.mock.calls.every(([request]) =>
+        request.patches.every((patch) => patch.kind === "house"),
+      ),
+    ).toBe(true);
+  });
+
+  it("selection and a zero-distance drag are no-ops; rotated AABB corners miss", async () => {
+    const test = await readyController();
+    test.controller.setMode("house");
+    test.controller.setHouseSettings({ width: 40, depth: 10, rotation: 45 });
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    const placed = test.doc.housesInBounds([-100, -100, 100, 100])[0];
+    test.controller.setMode("select");
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    expect(test.controller.state.selectedHouse?.id).toBe(placed.id);
+    expect(test.doc.sequence).toBe(1);
+    test.pointer("pointerdown", 16, 16);
+    test.pointer("pointerup", 16, 16);
+    expect(test.controller.state.selectedHouse).toBeNull();
+    expect(test.doc.sequence).toBe(1);
+    expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("mixed landscape, house and setting edits use one history in author order", async () => {
+    const test = await readyController();
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    test.controller.setMode("house");
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    const id = test.doc.housesInBounds([-100, -100, 100, 100])[0].id;
+    test.controller.setMode("select");
+    test.controller.setHouseSettings({ rotation: 90, foundationHeight: 5 });
+    await test.drain();
+    expect(test.doc.house(id)).toMatchObject({
+      rotation: 90,
+      foundationHeight: 5,
+    });
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.house(id)).toMatchObject({
+      rotation: 0,
+      foundationHeight: 1,
+    });
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.house(id)).toBeNull();
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
+    for (let step = 0; step < 3; step++) {
+      test.controller.redo();
+      await test.drain();
+    }
+    expect(test.doc.house(id)).toMatchObject({
+      rotation: 90,
+      foundationHeight: 5,
+    });
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+  });
+
+  it("a missing terminal surface cancels the whole move instead of saving an older pose", async () => {
+    const test = await readyController();
+    test.controller.setMode("house");
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    const placed = test.doc.housesInBounds([-100, -100, 100, 100])[0];
+    test.controller.setMode("select");
+    test.pointer("pointerdown");
+    test.pointer("pointermove", 40, 20);
+    test.world.inspectionStatus = "missing";
+    test.pointer("pointerup", 80, 40);
+    await test.drain();
+    expect(test.doc.house(placed.id)).toEqual(placed);
+    expect(test.doc.sequence).toBe(1);
+    expect(test.controller.state.error).toMatch(/Hausbewegung abgebrochen/);
+  });
+
+  it("Save during a drag takes its completed current pose and ignores subsequent pointer events", async () => {
+    const test = await readyController();
+    test.controller.setMode("house");
+    test.pointer("pointerdown");
+    test.pointer("pointermove", 40, 20);
+    await test.controller.save();
+    const placed = test.doc.housesInBounds([-100, -100, 100, 100])[0];
+    test.pointer("pointerup", 80, 40);
+    await test.drain();
+    expect(test.doc.house(placed.id)).toMatchObject({ x: 40, y: 20 });
+    expect(test.doc.sequence).toBe(1);
+    expect(test.bridge.saveProject).toHaveBeenCalledWith(
+      expect.objectContaining({ sequence: 1 }),
+    );
+    expect(test.controller.state.saved).toBe(true);
+  });
+});
 
 describe("landscape input completion through the actual controller", () => {
   it.each(["escape", "blur"])(

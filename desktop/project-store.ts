@@ -13,6 +13,8 @@ import { constants as fsConstants } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   CommitReceipt,
+  HouseRegionRead,
+  ReadHouseRegionRequest,
   LandscapeRegionRead,
   ReadLandscapeRegionRequest,
   LandscapePresentationRequest,
@@ -28,6 +30,8 @@ import type {
 } from "../src/editor/bridge";
 import {
   HEIGHT_MAX_ACTION_TILES,
+  HOUSE_HEADER_BYTES,
+  parseHouseKey,
   HEIGHT_TILE_CELLS,
   HEIGHT_TILE_BYTES,
   WORLD_LIMIT,
@@ -72,12 +76,21 @@ import {
   type StoredLandscapeOverview,
 } from "./landscape-store";
 
-export const PROJECT_FORMAT = 25 as const;
+import {
+  createHouseTables,
+  validateHouseMetadata,
+  rebuildHouseSpatialIndex,
+  encodeHouseHeader,
+  readHouseHeaders,
+  houseWriter,
+} from "./house-store";
+
+export const PROJECT_FORMAT = 26 as const;
 export const MAX_TRANSFER_TILES = 512;
 const APPLICATION_ID = 0x5341544c;
 const TILE_VALUES = HEIGHT_TILE_CELLS;
 const TILE_BYTES = HEIGHT_TILE_BYTES;
-const SCHEMA_KIND = "atlas-p3-masked-landscape-1";
+const SCHEMA_KIND = "atlas-p3-house-1";
 const OVERVIEW_ALGORITHM = "fine-cubic-centres-128-scale32-v1";
 const OVERVIEW_CACHE_TILES = 256;
 
@@ -105,6 +118,7 @@ interface WorkingProject extends Metadata {
   savedSequence: number | null;
   levelCounts: Map<number, number>;
   landscapeLevelCounts: Map<number, number>;
+  houses: number;
 }
 
 interface StoredTile {
@@ -436,6 +450,7 @@ function createDatabase(path: string): Database.Database {
       .prepare("INSERT INTO height_overview_state VALUES (1,?,0)")
       .run(OVERVIEW_ALGORITHM);
     createLandscapeTables(database);
+    createHouseTables(database);
     return database;
   } catch (error) {
     database.close();
@@ -447,7 +462,7 @@ function metadata(database: Database.Database): Metadata {
   check(
     database.pragma("application_id", { simple: true }) === APPLICATION_ID &&
       database.pragma("user_version", { simple: true }) === PROJECT_FORMAT,
-    "Diese Datei ist kein unterstütztes Atlas-Projekt (Format 25).",
+    "Diese Datei ist kein unterstütztes Atlas-Projekt (Format 26).",
   );
   const row = database
     .prepare(
@@ -485,6 +500,7 @@ function metadata(database: Database.Database): Metadata {
     )
     .all();
   validateLandscapeMetadata(database, row.sequence);
+  validateHouseMetadata(database);
   return {
     projectId: row.project_id,
     title: row.title,
@@ -639,6 +655,7 @@ export class ProjectStore {
       sessionId: project.sessionId,
       projectId: project.projectId,
       format: PROJECT_FORMAT,
+      houses: project.houses,
       title: project.title,
       sequence: project.sequence,
       savedSequence: project.savedSequence,
@@ -681,6 +698,7 @@ export class ProjectStore {
       savedSequence: null,
       levelCounts: new Map(),
       landscapeLevelCounts: new Map(),
+      houses: 0,
     };
     this.replace(candidate);
     return this.status();
@@ -715,6 +733,7 @@ export class ProjectStore {
       const meta = metadata(candidateDb);
       const counts = rebuildSpatialIndex(candidateDb);
       const landscapeCounts = rebuildLandscapeSpatialIndex(candidateDb);
+      const houses = rebuildHouseSpatialIndex(candidateDb);
       // Do not materialize all source payloads during open. Each selected read
       // validates its binary payload before returning it to the active document.
       candidateDb
@@ -733,6 +752,7 @@ export class ProjectStore {
         savedSequence: meta.sequence,
         levelCounts: counts,
         landscapeLevelCounts: landscapeCounts,
+        houses,
       };
     } catch (error) {
       candidateDb?.close();
@@ -930,6 +950,20 @@ export class ProjectStore {
     };
   }
 
+  readHouseRegion(request: ReadHouseRegionRequest): HouseRegionRead {
+    const project = this.session(request.sessionId);
+    validateBounds(request.bounds);
+    const headers = readHouseHeaders(project.database, request.bounds);
+    this.counters.reads++;
+    this.counters.returnedBytes += headers.length * HOUSE_HEADER_BYTES;
+    return {
+      sessionId: project.sessionId,
+      sequence: project.sequence,
+      bounds: [...request.bounds],
+      headers,
+    };
+  }
+
   commit(request: CommitRequest): CommitReceipt {
     const commitStartedAt = performance.now();
     validateBoundary(request);
@@ -949,11 +983,23 @@ export class ProjectStore {
         "Doppelter Quellenschlüssel in einer Aktion.",
       );
       check(
-        patch.kind === "height" || patch.kind === "landscape",
+        patch.kind === "height" ||
+          patch.kind === "landscape" ||
+          patch.kind === "house",
         "Ungültige Quellenart.",
       );
       seen.add(patch.key);
       hash.update(`${patch.kind}\0${patch.key}\0`);
+      if (patch.kind === "house") {
+        parseHouseKey(patch.key);
+        const after =
+          patch.after === null
+            ? null
+            : encodeHouseHeader(patch.after, patch.key);
+        // Fixed field order, independent of incoming property order or extra data.
+        hash.update(JSON.stringify(after));
+        return { kind: "house" as const, key: patch.key, after };
+      }
       if (patch.kind === "landscape") {
         check(
           typeof patch.key === "string" && patch.key.startsWith("landscape:"),
@@ -1057,6 +1103,7 @@ export class ProjectStore {
       fineSourceLookups: 0,
     };
     const counts = new Map(project.levelCounts);
+    let houseCount = project.houses;
     let derivedMetrics = {
       updatedSamples: 0,
       readBytes: 0,
@@ -1066,7 +1113,13 @@ export class ProjectStore {
     database.transaction(() => {
       const overviews = overviewWriter(database);
       const landscapeOverviews = landscapeOverviewWriter(database);
+      let writeHouse: ReturnType<typeof houseWriter> | undefined;
       for (const patch of patches) {
+        if (patch.kind === "house") {
+          writeHouse ??= houseWriter(database);
+          houseCount += writeHouse(patch.key, patch.after);
+          continue;
+        }
         if (patch.kind === "landscape") {
           const previous = landscapeExisting.get(
             patch.level,
@@ -1198,6 +1251,7 @@ export class ProjectStore {
     project.sequence = request.sequence;
     project.levelCounts = counts;
     project.landscapeLevelCounts = landscapeCounts;
+    project.houses = houseCount;
     this.counters.commits++;
     this.counters.committedTiles += patches.length;
     return {

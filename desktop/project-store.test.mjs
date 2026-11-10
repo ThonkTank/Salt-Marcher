@@ -147,10 +147,259 @@ function fineLandscapeDigest(store) {
   return hash.digest("hex");
 }
 
+const houseHeader = (id = "test-house", fields = {}) => ({
+  id,
+  revision: 1,
+  x: 100,
+  y: 100,
+  width: 30,
+  depth: 20,
+  rotation: 30,
+  foundationHeight: 1,
+  foundationTransition: 10,
+  ...fields,
+});
+const housePatch = (header) => ({
+  kind: "house",
+  key: `house:${header.id}`,
+  after: header,
+});
+const housesRead = (store, bounds) =>
+  store.readHouseRegion({ sessionId: store.status().sessionId, bounds });
+function terrainAuthorDigest(store) {
+  const digest = createHash("sha256");
+  for (const table of ["height_tiles", "landscape_tiles"])
+    for (const row of store.current.database
+      .prepare(`SELECT * FROM ${table} ORDER BY level,tile_x,tile_y`)
+      .all())
+      digest.update(JSON.stringify(row));
+  return digest.digest("hex");
+}
+
+test("house headers share the atomic commit, validation and replay boundary with terrain", async () => {
+  const { store } = await fresh();
+  const initial = store.status();
+  assert.equal(initial.houses, 0);
+  assert.equal(initial.format, 26);
+  assert.deepEqual(housesRead(store, [-200, -200, 200, 200]).headers, []);
+  const header = houseHeader();
+  const height = heightTilesFromControls(0, [[20, 20, 40]])[0];
+  const landscape = createLandscapeTile(0, 1, 1);
+  landscapeCell(landscape, 100, 100, [200, 0, 0, 0]);
+  const request = {
+    sessionId: initial.sessionId,
+    sequence: 1,
+    transactionId: "mixed-house-action",
+    patches: [
+      { kind: "height", key: height.key, after: height },
+      landscapePatch(landscape),
+      housePatch(header),
+    ],
+  };
+  for (const invalid of [
+    { width: 0 },
+    { rotation: 360 },
+    { foundationHeight: 101 },
+    { foundationTransition: -1 },
+    { x: NaN },
+    { x: 100_000_000 },
+    { id: "another-house" },
+    { revision: -1 },
+  ])
+    assert.throws(() =>
+      store.commit({
+        ...request,
+        patches: [
+          ...request.patches.slice(0, 2),
+          { ...request.patches[2], after: { ...header, ...invalid } },
+        ],
+      }),
+    );
+  assert.equal(store.status().sequence, 0);
+  assert.equal(store.status().houses, 0);
+  assert.equal(store.status().sourceTiles, 0);
+  assert.equal(store.status().landscapeTiles, 0);
+  // A late SQL failure must also roll back preceding source/overview writes.
+  store.current.database
+    .exec(`CREATE TRIGGER reject_house BEFORE INSERT ON house_headers
+    BEGIN SELECT RAISE(ABORT, 'isolated house write failure'); END`);
+  assert.throws(() => store.commit(request), /isolated house write failure/);
+  assert.equal(store.status().sequence, 0);
+  for (const table of [
+    "height_tiles",
+    "landscape_tiles",
+    "house_headers",
+    "height_overviews",
+    "landscape_overviews",
+  ])
+    assert.equal(
+      store.current.database.prepare(`SELECT count(*) AS n FROM ${table}`).get()
+        .n,
+      0,
+    );
+  store.current.database.exec("DROP TRIGGER reject_house");
+  const receipt = store.commit(request);
+  assert.deepEqual(store.commit(request), receipt);
+  assert.equal(store.status().houses, 1);
+  assert.deepEqual(housesRead(store, [80, 80, 120, 120]).headers, [header]);
+  assert.throws(
+    () =>
+      store.commit({
+        ...request,
+        patches: [housePatch({ ...header, x: 110 })],
+      }),
+    /Wiederholung/,
+  );
+  assert.deepEqual(housesRead(store, [80, 80, 120, 120]).headers, [header]);
+  assert.throws(
+    () => writeSources(store, [housePatch(header), housePatch(header)]),
+    /Doppelter/,
+  );
+  assert.equal(store.status().sequence, 1);
+});
+
+test("house moves preserve terrain and stable IDs while snapshot S, reopen and removal share the real file path", async () => {
+  const { store, directory } = await fresh();
+  const original = houseHeader("persistent-house");
+  writeSources(store, [housePatch(original)]);
+  const initial = store.status();
+  const snapshot = await store.prepareSave(initial);
+  const terrain = terrainAuthorDigest(store);
+  const moved = {
+    ...original,
+    x: -4000,
+    y: 9000,
+    rotation: 90,
+    revision: 2,
+    foundationHeight: 7,
+    foundationTransition: 20,
+  };
+  writeSources(store, [housePatch(moved)]);
+  assert.equal(terrainAuthorDigest(store), terrain);
+  assert.deepEqual(housesRead(store, [50, 50, 150, 150]).headers, []);
+  assert.deepEqual(housesRead(store, [-4050, 8950, -3950, 9050]).headers, [
+    moved,
+  ]);
+  assert.equal(store.status().houses, 1);
+  const beforeTerrain = JSON.stringify(
+    store.current.database.prepare("SELECT * FROM house_headers").all(),
+  );
+  write(store, heightTilesFromControls(4, [[0, 0, 100]]));
+  assert.equal(
+    JSON.stringify(
+      store.current.database.prepare("SELECT * FROM house_headers").all(),
+    ),
+    beforeTerrain,
+  );
+  const target = join(directory, "houses.saltatlas");
+  const saved = await store.publishSave(snapshot.token, target);
+  assert.equal(saved.savedSequence, 1);
+  assert.equal(saved.sequence, 3);
+  const reopen = new ProjectStore(join(directory, "reopen"));
+  stores.push(reopen);
+  const reopened = await reopen.openProject(target);
+  assert.equal(reopened.sequence, 1);
+  assert.equal(reopened.houses, 1);
+  assert.deepEqual(housesRead(reopen, [50, 50, 150, 150]).headers, [original]);
+  assert.deepEqual(housesRead(reopen, [-4050, 8950, -3950, 9050]).headers, []);
+  await store.saveProject(store.status(), target);
+  await reopen.openProject(target);
+  assert.deepEqual(housesRead(reopen, [-4050, 8950, -3950, 9050]).headers, [
+    moved,
+  ]);
+  writeSources(reopen, [
+    { kind: "house", key: `house:${moved.id}`, after: null },
+  ]);
+  assert.equal(reopen.status().houses, 0);
+  assert.deepEqual(housesRead(reopen, [-4050, 8950, -3950, 9050]).headers, []);
+  await reopen.saveProject(reopen.status(), target);
+  await reopen.openProject(target);
+  assert.equal(reopen.status().houses, 0);
+});
+
+test("house cold loads rebuild spatial bounds, reject corrupt headers and remove Float32 false positives near world edges", async () => {
+  const { store, directory } = await fresh();
+  const header = houseHeader("world-edge-house", {
+    x: 99_999_996,
+    y: 0,
+    width: 1,
+    depth: 1,
+    rotation: 0,
+  });
+  writeSources(store, [housePatch(header)]);
+  const target = join(directory, "cold-house.saltatlas");
+  await store.saveProject(store.status(), target);
+  const file = new Database(target);
+  file.exec(
+    "DELETE FROM house_spatial; UPDATE house_headers SET min_x=0,max_x=1,min_y=0,max_y=1",
+  );
+  file.close();
+  const sourceBytes = await readFile(target);
+  await store.openProject(target);
+  assert.deepEqual(housesRead(store, [99_999_995, -1, 99_999_997, 1]).headers, [
+    header,
+  ]);
+  assert.deepEqual(
+    housesRead(store, [99_999_996.9, -1, 99_999_997.1, 1]).headers,
+    [],
+  );
+  assert.deepEqual(await readFile(target), sourceBytes);
+  const current = store.status();
+  const damaged = new Database(target);
+  damaged.exec("UPDATE house_headers SET x=100000001");
+  damaged.close();
+  await assert.rejects(store.openProject(target), /Haus|Welt|Punkt/);
+  assert.equal(store.status().sessionId, current.sessionId);
+  assert.deepEqual(housesRead(store, [99_999_995, -1, 99_999_997, 1]).headers, [
+    header,
+  ]);
+  const old = join(directory, "format25.saltatlas");
+  await copyFile(target, old);
+  const unsupported = new Database(old);
+  unsupported.pragma("user_version = 25");
+  unsupported.close();
+  await assert.rejects(store.openProject(old), /Format 26/);
+});
+
+test("bounded house region reads never certify a truncated dense view as empty or complete", async () => {
+  const { store } = await fresh();
+  for (let start = 0; start < 4097; start += 512) {
+    const patches = [];
+    for (let index = start; index < Math.min(4097, start + 512); index++)
+      patches.push(
+        housePatch(
+          houseHeader(`dense-${index}`, {
+            x: 2 * index,
+            y: 0,
+            width: 1,
+            depth: 1,
+            rotation: 0,
+          }),
+        ),
+      );
+    writeSources(store, patches);
+  }
+  assert.equal(store.status().houses, 4097);
+  assert.throws(() => housesRead(store, [-1, -1, 8194, 1]), /zu viele Häuser/);
+  const narrow = housesRead(store, [1999, -1, 2001, 1]);
+  assert.equal(narrow.headers.length, 1);
+  assert.equal(narrow.headers[0].id, "dense-1000");
+  const previousSession = store.status().sessionId;
+  store.newProject();
+  assert.throws(
+    () =>
+      store.readHouseRegion({
+        sessionId: previousSession,
+        bounds: [-1, -1, 1, 1],
+      }),
+    /Veraltete Dokumentsitzung/,
+  );
+});
+
 test("landscape starts sparse and shares atomic validation, receipt identity and session boundaries with height", async () => {
   const { store } = await fresh();
   const info = store.status();
-  assert.equal(info.format, 25);
+  assert.equal(info.format, 26);
   assert.equal(info.landscapeTiles, 0);
   assert.deepEqual(info.activeLandscapeLevels, []);
   assert.deepEqual(landscapeRead(store, [-100, -100, 100, 100]).tiles, []);
@@ -612,9 +861,11 @@ test("the utility dispatcher answers local reads during a real snapshot and orde
   const { store, directory } = await fresh();
   const height = heightTilesFromControls(0, [[0, 0, 40]])[0];
   const landscape = landscapeFill(0, 0, 0, [80, 20, 0, 0]);
+  const header = houseHeader("save-overlap-house", { x: 0, y: 0 });
   writeSources(store, [
     { kind: "height", key: height.key, after: height },
     landscapePatch(landscape),
+    housePatch(header),
   ]);
   const fixture = join(directory, "fixture.saltatlas");
   await store.saveProject(store.status(), fixture);
@@ -746,12 +997,14 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
             presentation,
             landscapeRegion,
             landscapePresentation,
+            houseRegion,
             stale,
           ] = await Promise.all([
             request("readRegion", query),
             request("readPresentation", { ...query, power: 0 }),
             request("readLandscapeRegion", { ...query, minLevel: 0 }),
             request("readLandscapePresentation", { ...query, power: 1 }),
+            request("readHouseRegion", query),
             request("readRegion", {
               ...query,
               sessionId: "stale-session",
@@ -804,6 +1057,7 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
               weight: landscapePresentation.overviews[0].own[0],
               fineTiles: landscapePresentation.tiles.length,
             },
+            houseRegion,
             stale,
             saved,
             live: { sequence: live.sequence, height: live.tiles[0].values[0] },
@@ -834,6 +1088,9 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
       weight: 80,
       fineTiles: 0,
     });
+    assert.ok(result.beforeRelease.includes("readHouseRegion"));
+    assert.equal(result.houseRegion.sequence, 1);
+    assert.deepEqual(result.houseRegion.headers, [header]);
     assert.match(result.stale, /Veraltete/);
     const snapshotEnd = result.events.indexOf("snapshot:end");
     assert.ok(
@@ -890,7 +1147,7 @@ test("cancel and invalid opens keep the current document and source file intact"
   const database = new Database(legacy);
   database.pragma("user_version = 22");
   database.close();
-  await assert.rejects(store.openProject(legacy), /Format 25/);
+  await assert.rejects(store.openProject(legacy), /Format 26/);
   await assert.rejects(store.openProject(join(directory, "missing.saltatlas")));
   assert.deepEqual(store.status(), prior);
   assert.deepEqual(await readFile(valid), before);

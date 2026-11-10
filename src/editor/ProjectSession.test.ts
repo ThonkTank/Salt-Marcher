@@ -6,7 +6,7 @@ import type {
   ProjectInfo,
   SaveResult,
 } from "./bridge";
-import { EditorDocument } from "./model";
+import { EditorDocument, type HouseHeader } from "./model";
 import { ProjectSession } from "./ProjectSession";
 import {
   applyTestBrush,
@@ -73,7 +73,7 @@ function fixture() {
   const info: ProjectInfo = {
     sessionId: "session",
     projectId: "project",
-    format: 25,
+    format: 26,
     title: "Testwelt",
     sequence: 0,
     savedSequence: 0,
@@ -81,6 +81,7 @@ function fixture() {
     activeLevels: [],
     sourceTiles: 0,
     landscapeTiles: 0,
+    houses: 0,
     activeLandscapeLevels: [],
   };
   let sequence = 0;
@@ -107,6 +108,7 @@ function fixture() {
     status: vi.fn(async () => ({ ...info, sequence })),
     readRegion: vi.fn(),
     readPresentation: vi.fn(),
+    readHouseRegion: vi.fn(),
     readLandscapeRegion: vi.fn(),
     readLandscapePresentation: vi.fn(),
     commit,
@@ -124,6 +126,7 @@ function fixture() {
   const document = new EditorDocument(info.sessionId, {
     empty: true,
     landscapeEmpty: true,
+    housesEmpty: true,
   });
   const session = new ProjectSession(bridge, observer);
   session.attach(document, info);
@@ -131,6 +134,87 @@ function fixture() {
 }
 
 describe("one document journal and ordered project session", () => {
+  it("waits for a live house action before saving and preserves the house discriminant alongside terrain", async () => {
+    const { document, session, bridge, committed } = fixture();
+    const header: HouseHeader = {
+      id: "session-house",
+      revision: 0,
+      x: 100,
+      y: 100,
+      width: 30,
+      depth: 20,
+      rotation: 45,
+      foundationHeight: 2,
+      foundationTransition: 12,
+    };
+    document.beginHouseGesture(header);
+    const saving = session.save();
+    await Promise.resolve();
+    expect(bridge.commit).not.toHaveBeenCalled();
+    expect(bridge.saveProject).not.toHaveBeenCalled();
+    document.updateHouseGesture({ ...header, x: 150 });
+    document.finishHouseGesture();
+    await saving;
+    expect(document.sequence).toBe(1);
+    expect(bridge.saveProject).toHaveBeenCalledWith({
+      sessionId: document.sessionId,
+      sequence: 1,
+      saveAs: false,
+    });
+    const houseWrite = [...committed.values()][0].patches[0];
+    expect(houseWrite).toMatchObject({
+      kind: "house",
+      key: "house:session-house",
+      after: { ...header, x: 150, revision: expect.any(Number) },
+    });
+    expect(houseWrite).not.toHaveProperty("before");
+    editLandscape(document);
+    edit(document);
+    document.undo();
+    await session.flush();
+    expect(
+      [...committed.values()].map((request) => request.patches[0].kind),
+    ).toEqual(["house", "landscape", "height", "height"]);
+    expect(document.house(header.id)?.x).toBe(150);
+    expect(document.pendingChanges()).toEqual([]);
+  });
+
+  it("replays the original house action after a lost ACK without changing its payload or history", async () => {
+    const { document, session, bridge, commit } = fixture();
+    const header: HouseHeader = {
+      id: "recover-house",
+      revision: 0,
+      x: 10,
+      y: 20,
+      width: 30,
+      depth: 40,
+      rotation: 90,
+      foundationHeight: 1,
+      foundationTransition: 10,
+    };
+    document.beginHouseGesture(header);
+    document.finishHouseGesture();
+    const accepted = document.house(header.id);
+    const writes: CommitRequest[] = [];
+    bridge.commit = vi.fn(async (request) => {
+      writes.push(request);
+      const receipt = await commit(request);
+      if (writes.length === 1) throw new Error("lost house ACK");
+      return receipt;
+    });
+    await expect(session.flush()).rejects.toThrow("lost house ACK");
+    expect(document.pendingChanges()).toHaveLength(1);
+    expect(document.metrics.historyActions).toBe(1);
+    await session.recover();
+    expect(writes).toHaveLength(2);
+    expect(writes[1]).toEqual(writes[0]);
+    expect(document.sequence).toBe(1);
+    expect(document.persistedSequence).toBe(1);
+    expect(document.metrics.historyActions).toBe(1);
+    expect(document.pendingChanges()).toEqual([]);
+    expect(document.house(header.id)).toEqual(accepted);
+  });
+
   it("saves only the full accepted finishing action and restores its terminal endpoint", async () => {
     const { document, session, bridge, committed } = fixture();
     finishingEdit(document);

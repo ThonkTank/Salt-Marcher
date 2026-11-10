@@ -1086,12 +1086,13 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 
 ## Optionaler Atlas-P0-Versuch
 
-P0 ist ein eigener, ausdrücklich gewählter Höhen- und Landschaftseditor.
+P0 ist ein eigener, ausdrücklich gewählter Höhen-, Landschafts- und Hauseditor.
 Er bietet Verschieben und Zoom vom Nahbereich bis zur Welt, Raster ein/aus,
-Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel, Undo/Redo sowie
+Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel, rechteckige
+Häuser mit Auswahl, Drehung und Bewegung, Undo/Redo sowie
 Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
 in Bildschirmpixeln, die Höhenänderungsrate in Metern pro Sekunde eingestellt;
-die Berechnung verwendet Fuß und Sekunden. Straßen, Häuser, Innenräume,
+die Berechnung verwendet Fuß und Sekunden. Straßen, vollständiger Hausbau, Innenräume,
 Regionen und lokale
 Gewässerwerkzeuge gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht
 verfügbar.
@@ -1254,13 +1255,45 @@ machen. Landschaftsübersichten enthalten den feinsten Eigenbeitrag und seine
 Restvererbung an festen Weltpunkten. Die spätere vollständige Symbol-, Kronen-
 und Landschafts-LOD-Darstellung ist Teil von P4.
 
+### Ein Haus im begrenzten P3.2-Fall
+
+**Haus platzieren** setzt ein rechteckiges Haus mit stabiler ID. Seine Breite
+und Tiefe sind positive Werte bis jeweils 3.048 Meter; die Drehung verwendet
+Grad und wird auf 0 bis unter 360 normalisiert. Die gesamte gedrehte Grundfläche
+muss innerhalb der Atlaswelt liegen. **Haus auswählen** trifft die tatsächliche
+gedrehte Grundfläche und ermöglicht direktes Verschieben. Ein Klick oder eine
+Rückkehr zur Ausgangspose ohne Autorenänderung erzeugt keinen Undo-Schritt.
+Breite, Tiefe und Drehung bearbeiten in diesem Modus das ausgewählte Haus.
+
+Die Zwischenpose erscheint während des Ziehens. Escape, Fokusverlust,
+Pointerabbruch, Ansichts- oder Werkzeugwechsel vor dem Loslassen nehmen die
+gesamte Bewegung beziehungsweise Platzierung zurück. Nach dem Loslassen bleibt
+die abgeschlossene Aktion erhalten. Ein nicht bereiter Endpunkt bricht die
+Bewegung mit sichtbarer Meldung ab. Speichern, History und Dateiaktionen während
+des Ziehens schließen die bereits sichtbare Pose über die gemeinsame Aktionsgrenze
+ab. Jede abgeschlossene Änderung zählt als ein gemeinsamer Undo-Schritt.
+
+Fundamenthöhe (0–30,48 Meter, Vorgabe 0,3048 Meter) und Übergangsbreite
+(0–152,4 Meter, Vorgabe 3,048 Meter) werden pro Haus gespeichert und sind
+rückgängig machbar. **Die geländeabhängige Fundamentdarstellung ist noch nicht
+implementiert; sie folgt im P3.3-Fall.** Geländeänderungen lassen die gespeicherte
+Hauspose, ID und Fundamenteinstellungen unverändert. Innenräume und Parzellen
+sind noch nicht mit diesem Hausheader verbunden.
+
+Hausheader werden räumlich geladen. Kalte Bereiche bleiben bis zur vollständigen
+Antwort unbekannt; ein Ausschnitt mit mehr als 4.096 Häusern wird mit einer
+Aufforderung zum näheren Heranzoomen abgewiesen. Bereits bereite Geländebereiche
+bleiben unabhängig davon bearbeitbar. Beim Verlassen eines Bereichs dürfen
+bestätigte Header verdrängt werden; Wiederkehr, Undo/Redo und Wiederöffnen
+erhalten die stabile Identität und die vollständigen Autorenwerte.
+
 ### Gemeinsame P0-Projektdatei
 
-P0-Projekte verwenden `.saltatlas` als SQLite-Format **25** mit Schemakennung
-`atlas-p3-masked-landscape-1`. Gespeichert werden sparse relative Höhenkacheln,
-maskierte Landschaftskacheln, Projektmetadaten und abgeleitete numerische
+P0-Projekte verwenden `.saltatlas` als SQLite-Format **26** mit Schemakennung
+`atlas-p3-house-1`. Gespeichert werden sparse relative Höhenkacheln,
+maskierte Landschaftskacheln, räumliche Hausheader, Projektmetadaten und abgeleitete numerische
 Übersichten desselben bestätigten Sequenzstands. Dieses Versuchsformat ist
-getrennt vom V7-Format 22; frühere P0-Formate 23 und 24 werden verständlich
+getrennt vom V7-Format 22; frühere P0-Formate 23 bis 25 werden verständlich
 abgelehnt und nicht migriert.
 Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
 auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der

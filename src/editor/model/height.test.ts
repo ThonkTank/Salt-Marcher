@@ -342,16 +342,20 @@ describe("local source readiness and ownership", () => {
     expect(doc.sampleHeight(...TRENCH_POINT)).toBe(original);
     const { change } = stroke(doc, [TRENCH_POINT]);
     const after = doc.sampleHeight(...TRENCH_POINT);
-    const acceptedValues = change!.patches.map((patch) =>
-      patch.after?.values.slice(),
-    );
+    const acceptedValues = change!.patches.map((patch) => {
+      if (patch.kind !== "height") throw new Error("Expected a height patch");
+      return patch.after?.values.slice();
+    });
     doc.undo();
     doc.redo();
     expect(doc.sampleHeight(...TRENCH_POINT)).toBe(after);
     stroke(doc, [TRENCH_POINT]);
-    expect(change!.patches.map((patch) => patch.after?.values)).toEqual(
-      acceptedValues,
-    );
+    expect(
+      change!.patches.map((patch) => {
+        if (patch.kind !== "height") throw new Error("Expected a height patch");
+        return patch.after?.values;
+      }),
+    ).toEqual(acceptedValues);
     doc.undo();
     expect(doc.sampleHeight(...TRENCH_POINT)).toBe(after);
   });
@@ -591,7 +595,11 @@ describe("local gestures, history and persistence patches", () => {
       expect(applyTestBrush(doc, [0, 0], [0, 0], 50)).not.toBeNull();
       expect(doc.metrics.gestureCells).toBeLessThan(2000);
       const change = finishTestBrush(doc)!;
-      expect(change.patches.every((p) => p.after?.level === level)).toBe(true);
+      expect(
+        change.patches.every(
+          (p) => p.kind === "height" && p.after?.level === level,
+        ),
+      ).toBe(true);
       expect(doc.sampleHeight(0, 0)).toBeGreaterThan(-100);
       expect(doc.metrics.readyTiles).toBeLessThanOrEqual(4);
       doc.undo();
@@ -641,7 +649,9 @@ describe("local gestures, history and persistence patches", () => {
       before.tiles.filter((t) => t.level > 0),
     );
     const { change } = stroke(doc, [[0, 0]], 4, 1600, 1200);
-    expect(change!.patches.every((p) => p.after?.level === 4)).toBe(true);
+    expect(
+      change!.patches.every((p) => p.kind === "height" && p.after?.level === 4),
+    ).toBe(true);
     const after = doc.snapshot(LOCAL);
     expect(values(after.tiles.filter((t) => t.level === 0))).toEqual(fine);
     const afterSample = prepareHeightSampler(after);
@@ -1226,7 +1236,9 @@ describe("local gestures, history and persistence patches", () => {
     expect(first.sequence).toBe(8);
     expect(first.transactionId).toBe("reopened:8");
     expect(first.patches.length).toBeLessThan(fixture.length);
-    expect(first.patches.every((p) => p.after?.level === 0)).toBe(true);
+    expect(
+      first.patches.every((p) => p.kind === "height" && p.after?.level === 0),
+    ).toBe(true);
     const stored = new Map(fixture.map((t) => [t.key, cloneHeightTile(t)]));
     for (const patch of first.patches.filter(
       (patch) => patch.kind === "height",

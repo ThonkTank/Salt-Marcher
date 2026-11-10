@@ -25,10 +25,14 @@ import {
   HEIGHT_LEVELS,
   heightBrushReadBounds,
   heightSpacing,
+  houseBounds,
+  houseContainsPoint,
+  validateHouseHeader,
   unionBounds,
   type Bounds,
   type HeightBrush,
   type HeightSegment,
+  type HouseHeader,
   type LandscapeBrush,
   type LandscapeWeights,
   type Point,
@@ -48,7 +52,13 @@ import {
 import type { BrushEffectReceipt } from "./model/BrushReservations";
 
 export interface EditorState {
-  mode: "raise" | "lower" | "pan" | "forest" | "clearing";
+  mode: "raise" | "lower" | "pan" | "forest" | "clearing" | "house" | "select";
+  houseWidth: number;
+  houseDepth: number;
+  houseRotation: number;
+  foundationHeight: number;
+  foundationTransition: number;
+  selectedHouse: HouseHeader | null;
   landscapeKind: 0 | 1 | 2 | 3;
   landscapeDensity: number;
   diameter: number;
@@ -90,7 +100,8 @@ interface SourceDemand {
   minLevel: number;
   toolBounds: Bounds;
   toolLevel: number;
-  toolKind: "height" | "landscape";
+  toolKind: "height" | "landscape" | "house";
+  houseBounds: Bounds;
   key: string;
 }
 
@@ -123,6 +134,15 @@ interface LandscapeStroke {
   released: boolean;
 }
 
+interface HouseDrag {
+  kind: "house";
+  pointerId: number;
+  anchor: Point;
+  original: HouseHeader;
+  placement: boolean;
+  selectedBefore: string | null;
+}
+
 class BrushUnavailable extends Error {
   constructor(readonly reason: NonNullable<LocalReadiness["reason"]>) {
     super(reason);
@@ -148,7 +168,10 @@ export class EditorController {
   readonly world: WorldRenderer;
   private doc!: EditorDocument;
   private readonly session: ProjectSession;
-  private brushState: BrushState | LandscapeStroke = { kind: "idle" };
+  private brushState: BrushState | LandscapeStroke | HouseDrag = {
+    kind: "idle",
+  };
+  private selectedHouseId: string | null = null;
   private landscapeDemandVersion = 0;
   private landscapeEnabled = false;
   private pan: { x: number; y: number; camera: Camera } | null = null;
@@ -186,6 +209,12 @@ export class EditorController {
   private backgroundStarting = false;
   state: EditorState = {
     mode: "raise",
+    houseWidth: 40,
+    houseDepth: 30,
+    houseRotation: 0,
+    foundationHeight: 1,
+    foundationTransition: 10,
+    selectedHouse: null,
     landscapeKind: 0,
     landscapeDensity: 100,
     diameter: 80,
@@ -338,12 +367,14 @@ export class EditorController {
       sequence: info.sequence,
       empty: info.sourceTiles === 0,
       landscapeEmpty: info.landscapeTiles === 0,
+      housesEmpty: info.houses === 0,
       maxSourceBytes: editorBudgets.sourceBytes,
       maxPendingBytes: editorBudgets.pendingWriteBytes,
       maxHistoryBytes: editorBudgets.historyBytes,
       maxHistoryActions: editorBudgets.historyActions,
     });
     this.brushState = { kind: "idle" };
+    this.selectedHouseId = null;
     this.foundation = null;
     this.frozenEffect = null;
     this.lastFrozenRevision = -1;
@@ -379,6 +410,14 @@ export class EditorController {
     return this.mode === "forest" || this.mode === "clearing";
   }
 
+  private get houseMode(): boolean {
+    return this.mode === "house" || this.mode === "select";
+  }
+
+  private get houseDrag(): HouseDrag | null {
+    return this.brushState.kind === "house" ? this.brushState : null;
+  }
+
   private get stroke(): BrushStroke | null {
     return this.brushState.kind === "active" ? this.brushState.stroke : null;
   }
@@ -399,6 +438,11 @@ export class EditorController {
         | "amount"
         | "landscapeKind"
         | "landscapeDensity"
+        | "houseWidth"
+        | "houseDepth"
+        | "houseRotation"
+        | "foundationHeight"
+        | "foundationTransition"
         | "grid"
         | "title"
         | "error"
@@ -417,6 +461,9 @@ export class EditorController {
       recovering: this.session.recovering,
       fileAction: this.session.changingProject,
       finishing: this.doc?.finishing ?? false,
+      selectedHouse: this.selectedHouseId
+        ? (this.doc?.house(this.selectedHouseId) ?? null)
+        : null,
       scale: this.world.camera.scale,
       sequence: this.doc?.sequence ?? 0,
       level: this.landscapeMode
@@ -488,7 +535,185 @@ export class EditorController {
           ? Math.min(128, this.diameter)
           : this.diameter,
     });
+    if (!this.houseMode) this.selectHouse(null);
     this.updateToolNeed();
+  }
+
+  private selectHouse(id: string | null): void {
+    this.selectedHouseId = id;
+    this.world.selectHouse(id);
+    this.publish();
+  }
+
+  /** Effective house defaults are also the selected header's editable fields. */
+  async setHouseSettings(
+    settings: Partial<
+      Pick<
+        HouseHeader,
+        | "width"
+        | "depth"
+        | "rotation"
+        | "foundationHeight"
+        | "foundationTransition"
+      >
+    >,
+  ): Promise<void> {
+    if (this.doc.active) this.finishGesture(undefined, "settings");
+    const selected =
+      this.mode === "select" && this.selectedHouseId
+        ? this.doc.house(this.selectedHouseId)
+        : null;
+    const next = { ...(selected ?? this.houseAt([0, 0])), ...settings };
+    if (Number.isFinite(next.rotation))
+      next.rotation = ((next.rotation % 360) + 360) % 360;
+    validateHouseHeader(next);
+    if (selected) {
+      if (!this.session.editable)
+        throw new Error(
+          "Das Haus kann während dieses Dateivorgangs nicht geändert werden.",
+        );
+      const document = this.doc;
+      const bounds = unionBounds(houseBounds(selected), houseBounds(next));
+      if (!document.isHouseRegionReady(bounds)) {
+        const loaded = await this.ensureHouseRegion(document, bounds);
+        if (
+          !loaded ||
+          document !== this.doc ||
+          !this.session.editable ||
+          this.selectedHouseId !== selected.id ||
+          document.house(selected.id) !== selected
+        )
+          throw new Error(
+            "Das gewählte Haus hat sich während des Ladens geändert. Bitte die Einstellung erneut übernehmen.",
+          );
+      }
+      this.doc.beginHouseGesture(selected.id, "Haus ändern");
+      try {
+        this.doc.updateHouseGesture(next);
+        this.doc.finishHouseGesture();
+      } catch (error) {
+        this.doc.cancelHouseGesture();
+        throw error;
+      } finally {
+        this.world.redraw();
+      }
+      this.persist();
+    }
+    this.publish({
+      houseWidth: next.width,
+      houseDepth: next.depth,
+      houseRotation: next.rotation,
+      foundationHeight: next.foundationHeight,
+      foundationTransition: next.foundationTransition,
+    });
+    this.updateToolNeed();
+  }
+
+  private houseAt(point: Point): HouseHeader {
+    return {
+      id: "preview",
+      revision: 0,
+      x: point[0],
+      y: point[1],
+      width: this.state.houseWidth,
+      depth: this.state.houseDepth,
+      rotation: this.state.houseRotation,
+      foundationHeight: this.state.foundationHeight,
+      foundationTransition: this.state.foundationTransition,
+    };
+  }
+
+  private draggedHouse(point: Point, drag = this.houseDrag): HouseHeader {
+    if (!drag) return this.houseAt(point);
+    return {
+      ...drag.original,
+      x: drag.original.x + point[0] - drag.anchor[0],
+      y: drag.original.y + point[1] - drag.anchor[1],
+    };
+  }
+
+  private beginHouseDrag(point: Point, pointerId: number): void {
+    const selectedBefore = this.selectedHouseId;
+    const placement = this.mode === "house";
+    const header = placement
+      ? { ...this.houseAt(point), id: crypto.randomUUID() }
+      : this.pickedHouse(point);
+    this.selectHouse(header?.id ?? null);
+    if (!header) return;
+    this.doc.beginHouseGesture(
+      placement ? header : header.id,
+      placement ? "Haus platzieren" : "Haus verschieben",
+    );
+    this.brushState = {
+      kind: "house",
+      pointerId,
+      anchor: [...point],
+      original: header,
+      placement,
+      selectedBefore,
+    };
+    this.world.redraw();
+    this.publish();
+  }
+
+  private housePickBounds(point: Point): Bounds {
+    return clipBounds([point[0] - 1, point[1] - 1, point[0] + 1, point[1] + 1]);
+  }
+
+  private pickedHouse(point: Point): HouseHeader | undefined {
+    const bounds = this.housePickBounds(point);
+    if (!this.doc?.isHouseRegionReady(bounds)) return undefined;
+    return this.doc
+      .housesInBounds(bounds)
+      .slice()
+      .reverse()
+      .find((house) => houseContainsPoint(house, point));
+  }
+
+  /** Property edits share the same single read slot and stale-response boundary. */
+  private async ensureHouseRegion(
+    document: EditorDocument,
+    bounds: Bounds,
+  ): Promise<boolean> {
+    while (this.readState.kind === "loading") await this.readState.promise;
+    if (document !== this.doc || this.disposed) return false;
+    if (document.isHouseRegionReady(bounds)) return true;
+    let loaded = false;
+    await this.startRead(`house-settings:${document.sessionId}`, async () => {
+      loaded = await this.readCurrent(
+        document,
+        () =>
+          this.bridge.readHouseRegion({
+            sessionId: document.sessionId,
+            bounds,
+          }),
+        (reply) => {
+          document.acceptHouseCoverage(
+            bounds,
+            reply.headers,
+            reply.sequence,
+            reply.sessionId,
+          );
+          this.world.redraw();
+        },
+      );
+    });
+    return loaded;
+  }
+
+  private moveHouse(point: Point): boolean {
+    const drag = this.houseDrag;
+    if (!drag) return false;
+    const readiness = this.houseReadiness(point);
+    if (!readiness.ready) {
+      this.scheduleLoad();
+      this.publish({}, readiness);
+      return false;
+    }
+    this.doc.updateHouseGesture(this.draggedHouse(point, drag));
+    this.world.redraw();
+    this.publish();
+    return true;
   }
 
   setGrid(grid: boolean): void {
@@ -605,7 +830,7 @@ export class EditorController {
   }
 
   goTo(event: Event, x: number, y: number, scale: number): void {
-    if (this.stroke || this.landscapeStroke) return;
+    if (this.stroke || this.landscapeStroke || this.houseDrag) return;
     this.navigate({ x, y, scale }, this.input(event, "navigation"));
   }
 
@@ -621,6 +846,7 @@ export class EditorController {
       this.doc.sessionId,
       this.landscapeDemandVersion,
       this.landscapeMode,
+      this.houseMode,
       viewGeneration,
       power,
       ...bounds,
@@ -638,7 +864,15 @@ export class EditorController {
       toolBounds: local.bounds,
       toolLevel: local.brush.level,
       toolKind:
-        this.landscapeStroke || this.landscapeMode ? "landscape" : "height",
+        this.houseDrag || this.houseMode
+          ? "house"
+          : this.landscapeStroke || this.landscapeMode
+            ? "landscape"
+            : "height",
+      houseBounds:
+        this.houseMode || this.houseDrag
+          ? unionBounds(bounds, local.bounds)
+          : bounds,
       key,
     };
     this.retainViewSources();
@@ -862,15 +1096,18 @@ export class EditorController {
     const tool =
       need.toolKind === "landscape"
         ? !document.isLandscapeReady(need.toolBounds, need.toolLevel)
-        : !document.isReady(
-            need.toolBounds,
-            HEIGHT_LEVELS.slice(need.toolLevel),
-          );
-    if (!presentation && !landscapePresentation && !tool) {
+        : need.toolKind === "house"
+          ? false
+          : !document.isReady(
+              need.toolBounds,
+              HEIGHT_LEVELS.slice(need.toolLevel),
+            );
+    const houses = !document.isHouseRegionReady(need.houseBounds);
+    if (!presentation && !landscapePresentation && !tool && !houses) {
       this.readState = { kind: "ready", key: need.key };
       return null;
     }
-    const key = `${need.key}:${presentation ? "presentation" : landscapePresentation ? "landscape-presentation" : "tool"}`;
+    const key = `${need.key}:${presentation ? "presentation" : landscapePresentation ? "landscape-presentation" : tool ? "tool" : "houses"}`;
     if (this.readState.kind === "failed" && this.readState.key === key)
       return null;
     this.checkLocalReady();
@@ -942,7 +1179,7 @@ export class EditorController {
           },
           viewGeneration,
         );
-      } else if (need.toolKind === "landscape") {
+      } else if (tool && need.toolKind === "landscape") {
         await this.readCurrent(
           document,
           () =>
@@ -961,17 +1198,44 @@ export class EditorController {
             ),
           viewGeneration,
         );
-      } else {
+      } else if (tool) {
         await this.readRegion(
           document,
           need.toolBounds,
           need.toolLevel,
           viewGeneration,
         );
+      } else if (houses) {
+        await this.readCurrent(
+          document,
+          () =>
+            this.bridge.readHouseRegion({
+              sessionId: document.sessionId,
+              bounds: need.houseBounds,
+            }),
+          (reply) => {
+            document.acceptHouseCoverage(
+              need.houseBounds,
+              reply.headers,
+              reply.sequence,
+              reply.sessionId,
+            );
+            this.world.redraw();
+            this.observation.event("house-sources", {
+              sessionId: reply.sessionId,
+              bounds: need.houseBounds,
+              headers: reply.headers.length,
+            });
+          },
+          viewGeneration,
+        );
       }
       if (document === this.doc && !this.disposed) {
         this.retainViewSources();
         this.checkLocalReady();
+        // A newly loaded partial house can reveal a larger selected owner.
+        // Refresh that demand even while the pointer remains stationary.
+        this.scheduleLoad();
       }
     });
   }
@@ -1014,6 +1278,7 @@ export class EditorController {
           ]
         : []),
     ]);
+    this.doc.retainHouseSources([need.houseBounds]);
   }
 
   /** The optional diagnostic sampler shares the same bounded read slot. */
@@ -1049,6 +1314,7 @@ export class EditorController {
     point = this.toolPoint(),
     brush = this.stroke?.brush ?? this.currentBrush(),
   ): LocalReadiness {
+    if (this.houseDrag || this.houseMode) return this.houseReadiness(point);
     if (this.landscapeStroke || (!this.stroke && this.landscapeMode))
       return this.landscapeReadiness(point);
     const points = this.stroke
@@ -1107,6 +1373,58 @@ export class EditorController {
       bounds,
       point,
       brush,
+      frame: display.frame,
+      viewGeneration: display.viewGeneration,
+    };
+  }
+
+  private houseReadiness(point = this.toolPoint()): LocalReadiness {
+    const view = this.world.bounds();
+    let bounds = this.housePickBounds(point);
+    let valid =
+      point.every((value) => Number.isFinite(value)) &&
+      point[0] >= view[0] &&
+      point[0] <= view[2] &&
+      point[1] >= view[1] &&
+      point[1] <= view[3];
+    if (this.mode === "house" || this.houseDrag) {
+      const header = this.draggedHouse(point);
+      try {
+        validateHouseHeader(header);
+      } catch {
+        valid = false;
+      }
+      bounds = clipBounds(houseBounds(header));
+    } else if (this.mode === "select" && valid) {
+      const picked = this.pickedHouse(point);
+      if (picked) bounds = houseBounds(picked);
+    }
+    const sourcesReady = Boolean(valid && this.doc?.isHouseRegionReady(bounds));
+    // A visible part can select a larger owner. Its complete header region is
+    // read through the same slot; offscreen terrain is not needed to move it.
+    const visibleBounds: Bounds = [
+      Math.max(bounds[0], view[0]),
+      Math.max(bounds[1], view[1]),
+      Math.min(bounds[2], view[2]),
+      Math.min(bounds[3], view[3]),
+    ];
+    const display = this.world.inspectRegion(valid ? visibleBounds : bounds);
+    const reason = !valid
+      ? "outside"
+      : !this.session.editable
+        ? "busy"
+        : !sourcesReady
+          ? "sources"
+          : display.status !== "current"
+            ? "terrain"
+            : null;
+    return {
+      ready: reason === null,
+      sourcesReady,
+      reason,
+      bounds,
+      point,
+      brush: this.currentBrush(),
       frame: display.frame,
       viewGeneration: display.viewGeneration,
     };
@@ -1271,6 +1589,15 @@ export class EditorController {
       this.checkLocalReady();
       return;
     }
+    if (this.houseMode) {
+      try {
+        this.beginHouseDrag(point, event.pointerId);
+      } catch (error) {
+        this.gestureFailure(error);
+      }
+      this.checkLocalReady();
+      return;
+    }
     try {
       const at = this.inputTime(event);
       const foundation = this.world.captureFoundation();
@@ -1341,7 +1668,9 @@ export class EditorController {
         ? this.stroke.brush.radius * this.world.camera.scale
         : this.landscapeStroke
           ? this.landscapeStroke.brush.radius * this.world.camera.scale
-          : this.diameter / 2,
+          : this.houseMode
+            ? 4
+            : this.diameter / 2,
     };
     this.world.redrawCursor();
   }
@@ -1360,6 +1689,13 @@ export class EditorController {
           (event.clientY - this.pan.y) / this.pan.camera.scale,
       };
       this.navigate(camera, this.input(event, "navigation"));
+    } else if (this.houseDrag) {
+      if (event.pointerId !== this.houseDrag.pointerId) return;
+      try {
+        this.moveHouse(this.pointer);
+      } catch (error) {
+        this.gestureFailure(error);
+      }
     } else if (this.landscapeStroke) {
       const stroke = this.landscapeStroke;
       if (stroke.sealed || event.pointerId !== stroke.pointerId) return;
@@ -1425,7 +1761,11 @@ export class EditorController {
     )
       return;
     const input = this.input(event, "pointerup");
-    if (state.kind === "active" || state.kind === "landscape") {
+    if (
+      state.kind === "active" ||
+      state.kind === "landscape" ||
+      state.kind === "house"
+    ) {
       this.updatePointer(event);
       this.finishGesture(input, "pointerup", event, true);
     } else {
@@ -1437,7 +1777,7 @@ export class EditorController {
 
   private wheel = (event: WheelEvent): void => {
     event.preventDefault();
-    if (this.stroke || this.landscapeStroke) return;
+    if (this.stroke || this.landscapeStroke || this.houseDrag) return;
     const input = this.input(event, "navigation");
     if (this.world.fault === "ignore-zoom") {
       this.observation.event("fault", { fault: "ignore-zoom", input });
@@ -1776,6 +2116,46 @@ export class EditorController {
     event?: Event,
     released = false,
   ): void {
+    const house = this.houseDrag;
+    if (house) {
+      let cancelled = [
+        "escape",
+        "blur",
+        "cancel",
+        "visibility",
+        "navigation",
+        "resize",
+        "destroy",
+        "error",
+        "tool-change",
+        "render-context",
+      ].includes(reason);
+      if (!cancelled && reason === "pointerup" && event) {
+        try {
+          if (!this.moveHouse(this.worldPoint(event as PointerEvent))) {
+            cancelled = true;
+            this.fail(
+              new Error(
+                "Hausbewegung abgebrochen: Der Zielbereich ist noch nicht bereit oder liegt außerhalb der sichtbaren Karte.",
+              ),
+            );
+          }
+        } catch (error) {
+          cancelled = true;
+          this.fail(error);
+        }
+      }
+      if (cancelled) this.doc.cancelHouseGesture();
+      else this.doc.finishHouseGesture();
+      this.brushState = released
+        ? { kind: "idle" }
+        : { kind: "blocked", pointerId: house.pointerId };
+      if (cancelled && house.placement) this.selectHouse(house.selectedBefore);
+      this.world.redraw();
+      if (!cancelled) this.persist();
+      this.updateToolNeed();
+      return;
+    }
     const landscape = this.landscapeStroke;
     if (landscape) {
       const cancelled = [
@@ -1899,6 +2279,10 @@ export class EditorController {
       const landscape = change.patches.some(
         (patch) => patch.kind === "landscape",
       );
+      if (change.patches.some((patch) => patch.kind === "house")) {
+        this.world.redraw();
+        this.scheduleLoad();
+      }
       if (height.length) this.world.updateSourcePatches(height);
       for (const bounds of change.dirtyBounds) {
         if (landscape) this.landscapeChanged(bounds, change.sequence);
@@ -2147,6 +2531,15 @@ export class EditorController {
           }
         : null,
       renderer: this.world.state(),
+      houses: {
+        ready: this.doc?.isHouseRegionReady(this.world.bounds()) ?? false,
+        selectedId: this.selectedHouseId,
+        headers: this.doc?.isHouseRegionReady(this.world.bounds())
+          ? this.doc
+              .housesInBounds(this.world.bounds())
+              .map((header) => ({ ...header }))
+          : [],
+      },
       background: { ...this.backgroundStats },
       compute: this.compute.metrics(),
       document: this.doc

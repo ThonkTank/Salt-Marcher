@@ -495,7 +495,9 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   expect(document.sampleHeight(320, 0)).toBeCloseTo(lifted, 10);
   expect(
     redone.patches.every(
-      (patch) => patch.after?.values.byteLength === HEIGHT_TILE_BYTES,
+      (patch) =>
+        patch.kind === "height" &&
+        patch.after?.values.byteLength === HEIGHT_TILE_BYTES,
     ),
   ).toBe(true);
   expect(document.sourceState(distant.key)).toBe("unknown");
@@ -1460,7 +1462,7 @@ async function readyController(
   const info: ProjectInfo = {
     sessionId: "shared-frame",
     projectId: "frame-test",
-    format: 25,
+    format: 26,
     title: "Frame test",
     sequence: 0,
     savedSequence: 0,
@@ -1468,6 +1470,7 @@ async function readyController(
     activeLevels: [],
     sourceTiles,
     landscapeTiles: 0,
+    houses: 0,
     activeLandscapeLevels: [],
   };
   const bridge = {
@@ -1497,6 +1500,13 @@ async function readyController(
         tiles: [],
         overviews: [],
         overviewKeys: landscapeOverviewKeys(request.bounds, request.power),
+      }),
+    ),
+    readHouseRegion: vi.fn(
+      async (request: { sessionId: string; bounds: Bounds }) => ({
+        ...request,
+        sequence: info.sequence,
+        headers: [],
       }),
     ),
     readRegion: vi.fn(

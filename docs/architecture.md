@@ -560,10 +560,10 @@ keine zweite Autorenautorität.
 
 ### Gemeinsame Quellen und Landschaft
 
-`ChangeSet.patches` ist eine geschlossene Union mit `kind: "height" | "landscape"`.
+`ChangeSet.patches` ist eine geschlossene Union mit `kind: "height" | "landscape" | "house"`.
 Transaktionskennung, Sequenz, Vorher-/Nachherbilder, Pendingjournal und Undo/Redo
 gehören weiterhin zu `EditorDocument`. `ProjectSession`, Preload und Store
-transportieren den Diskriminator unverändert. Beide Quellarten teilen die
+transportieren den Diskriminator unverändert. Alle Autorenarten teilen die
 bestehenden Quellen-, Pending- und Historybudgets und dieselbe Schreibgrenze.
 
 Landschaftsautoren sind 64×64-Zellen auf Stufen 0–24 mit `2^level` Fuß Abstand.
@@ -615,6 +615,44 @@ der tatsächlich zusammengesetzten Wasseroberfläche. Der CPU-Ausnahmeweg liefer
 Farbe und Landmaske aus derselben kanonischen Höhenrechnung. Upload, Komposition
 und GPU-Abschluss belegen die vorhandenen Grafikplätze; Landschaft erhält keine
 eigene Renderqueue. Volle Symbol- und Kronendachdarstellung gehört zu P4.
+
+### Räumliche Hausheader
+
+`model/house.ts` enthält den geschlossenen Headervertrag und reine Geometrie:
+stabile ID, Mittelpunkt, Breite/Tiefe, Drehwinkel und zwei Fundamentparameter.
+Grundfläche und exakter lokaler Hit-Test verwenden dieselbe gedrehte Rechteckpose.
+Innenzellen und geländeabhängige Fundamentableitungen sind kein Teil dieses Headers.
+
+`EditorDocument` besitzt räumliche Hausabdeckung getrennt von Terrainabdeckung.
+`readHouseRegion` läuft durch denselben begrenzten Leseslot und dieselbe
+Session-/Sequenzprüfung. Aktive und unbestätigte Header bleiben gehalten;
+lokale Sequenzmarkierungen schützen bei verspäteten Reads sowohl die alte
+als auch die neue Position. Vollständige Antworten zertifizieren Abwesenheit;
+über 4.096 Treffern wird der Bereich ausdrücklich abgewiesen. Auch aus mehreren
+Reads zusammengesetzte Ansichten besitzen diese Grenze. Darstellung und Auswahl
+verwenden dieselbe stabile ID-Sortierung.
+
+Eine Hausgeste ersetzt den geladenen Header direkt, hält das Vorherbild und
+erzeugt bei Abschluss genau einen gemeinsamen History-/Pendingeintrag. Abbruch
+restauriert ihn einschließlich seiner Inhaltsrevision. Eine Rückkehr zur
+ursprünglichen Pose ist ein No-op. Die gemeinsame Aktionsbarriere umfasst
+Platzierung, Bewegung und Einstellungen; Save und Dateiwechsel erfassen die
+abgeschlossene Pose. Die monotone `houseGeneration` invalidiert ausschließlich
+Hausdarstellung; reine Höhen-/Landschaftsänderungen bauen keine Dachgeometrie neu.
+
+`house-store.ts` hält skalare Header und einen abgeleiteten SQLite-RTree. Der
+exakte REAL-Bounds-Filter entfernt Float32-Fehltreffer des RTree. Das Öffnen
+prüft Header in begrenzten Batches und rekonstruiert den Index; räumliche Reads
+laden nur den benötigten Ausschnitt. Hausautoren, Index und Sequenz ändern sich
+in der bestehenden Transaktion. Reine Terraincommits greifen auf keine Häuser zu.
+
+`HouseView` projiziert die begrenzten geladenen Header als Dächer im bestehenden
+Pixi-Szenenpass. Sie reserviert konservativ 4 KiB pro maximal bisher dargestelltem
+Header in beiden gemeinsamen Darstellungs-/GPU-Budgets; die Reservierung bleibt
+wegen möglicher Pixi-Pufferwiederverwendung bis zum Rendererende erhalten.
+Das ist eine konservative Budgetgebühr, keine gemessene native Speicherbelegung.
+Hausautoren zählen mit 512 Byte pro Header zum gemeinsamen Quellen-, History-
+und Pendingbudget. Die spätere Fundamentableitung gehört zu P3.3.
 
 ### Autoren, Übersicht und Quellenbedarf
 
