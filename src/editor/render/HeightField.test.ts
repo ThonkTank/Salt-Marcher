@@ -12,7 +12,10 @@ import {
   supportsHeightNumericTargets,
 } from "./HeightField";
 import type { HeightAtlasSource } from "./height-atlas-upload";
-import type { HeightProjectionService } from "./HeightProjectionService";
+import type {
+  HeightProjectionService,
+  HeightProjectionImage,
+} from "./HeightProjectionService";
 import { prepareHeightGrid } from "../model/height-grid";
 import { rasterize } from "./raster";
 
@@ -191,22 +194,24 @@ function setup(override?: HeightProjectionService) {
         cancel: () => {
           cancelled = true;
         },
-        promise: Promise.resolve().then(() =>
-          cancelled
-            ? null
-            : rasterize(
-                prepareHeightGrid(input.sources)(input.bounds, input.size, [
-                  0,
-                  0,
-                  input.size,
-                  input.size,
-                ]),
-                input.bounds,
-                input.size,
-                [0, 0, input.size, input.size],
-                input.overview,
-              ),
-        ),
+        promise: Promise.resolve().then(() => {
+          if (cancelled) return null;
+          const land = new Uint8Array(input.size * input.size);
+          const pixels = rasterize(
+            prepareHeightGrid(input.sources)(input.bounds, input.size, [
+              0,
+              0,
+              input.size,
+              input.size,
+            ]),
+            input.bounds,
+            input.size,
+            [0, 0, input.size, input.size],
+            input.overview,
+            land,
+          );
+          return { pixels, land };
+        }),
       };
     },
     metrics: () => ({
@@ -1214,13 +1219,13 @@ it("restarts a cancelled background exception when selected again without a new 
 
 it("reserves worker snapshots before launch and rejects a superseded exception result", async () => {
   const requests: {
-    resolve: (pixels: Uint8Array | null) => void;
+    resolve: (image: HeightProjectionImage | null) => void;
     cancel: ReturnType<typeof vi.fn>;
   }[] = [];
   const service: HeightProjectionService = {
     request: vi.fn(() => {
-      let resolve!: (pixels: Uint8Array | null) => void;
-      const promise = new Promise<Uint8Array | null>((done) => {
+      let resolve!: (image: HeightProjectionImage | null) => void;
+      const promise = new Promise<HeightProjectionImage | null>((done) => {
         resolve = done;
       });
       const cancel = vi.fn();
@@ -1257,11 +1262,17 @@ it("reserves worker snapshots before launch and rejects a superseded exception r
   expect(requests[0].cancel).toHaveBeenCalledOnce();
   for (let steps = 0; requests.length < 2 && steps < 20_000; steps++)
     tile.prepareStep();
-  requests[0].resolve(new Uint8Array(128 ** 2 * 4).fill(1));
+  requests[0].resolve({
+    pixels: new Uint8Array(128 ** 2 * 4).fill(1),
+    land: new Uint8Array(128 ** 2),
+  });
   await Promise.resolve();
   expect(tile.fallbackSamples).toBe(0);
   expect(tile.waitingProjection).toBe(true);
-  requests[1].resolve(new Uint8Array(128 ** 2 * 4).fill(2));
+  requests[1].resolve({
+    pixels: new Uint8Array(128 ** 2 * 4).fill(2),
+    land: new Uint8Array(128 ** 2),
+  });
   await Promise.resolve();
   expect(tile.fallbackSamples).toBe(128 ** 2);
   await drain(field, gpu);

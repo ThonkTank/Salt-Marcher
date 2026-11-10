@@ -23,9 +23,14 @@ function Atlas() {
   const [startupError, setStartupError] = useState<string | null>(null);
   const [diameterDraft, setDiameterDraft] = useState<string | null>(null);
   const [amountDraft, setAmountDraft] = useState<string | null>(null);
+  const [densityDraft, setDensityDraft] = useState<string | null>(null);
   const [x, setX] = useState("0");
   const [y, setY] = useState("0");
   const mode = state?.mode ?? "raise";
+  const landscape = mode === "forest" || mode === "clearing";
+  const landscapeNames = ["Wald", "Buschland", "Wiese", "Felsgebiet"];
+  const landscapeKind = state?.landscapeKind ?? 0;
+  const landscapeDensity = state?.landscapeDensity ?? 100;
   const diameter = state?.diameter ?? 80;
   const amount = state?.amount ?? 20;
   const diagnostics = window.atlasDesktop?.diagnostics ?? false;
@@ -66,7 +71,7 @@ function Atlas() {
     if (!editor) return;
     editor.run(() => operation(editor));
   };
-  const selectMode = (next: "raise" | "lower" | "pan") => {
+  const selectMode = (next: EditorState["mode"]) => {
     action((editor) => editor.setMode(next));
   };
   const navigate = (event: Event, scale: number) =>
@@ -145,6 +150,19 @@ function Atlas() {
             <span>↘</span>Absenken
           </button>
           <button
+            aria-pressed={mode === "forest"}
+            onClick={() => selectMode("forest")}
+          >
+            <span>♧</span>
+            {landscapeNames[landscapeKind]}
+          </button>
+          <button
+            aria-pressed={mode === "clearing"}
+            onClick={() => selectMode("clearing")}
+          >
+            <span>◯</span>Lichtung
+          </button>
+          <button
             aria-pressed={mode === "pan"}
             onClick={() => selectMode("pan")}
           >
@@ -160,7 +178,7 @@ function Atlas() {
             aria-label="Pinselgröße"
             type="number"
             min="8"
-            max="512"
+            max={landscape ? 128 : 512}
             value={diameterDraft ?? diameter}
             onChange={(e) => {
               setDiameterDraft(e.target.value);
@@ -177,36 +195,98 @@ function Atlas() {
             }}
           />
         </div>
-        <div className="field">
-          <label htmlFor="amount">
-            Pinselstärke <span>m/s</span>
-          </label>
-          <input
-            id="amount"
-            aria-label="Pinselstärke"
-            type="number"
-            min="0.03048"
-            max="3048"
-            step="1"
-            value={amountDraft ?? +(amount * 0.3048).toFixed(3)}
-            onChange={(e) => {
-              setAmountDraft(e.target.value);
-            }}
-            onBlur={() => {
-              if (amountDraft !== null && amountDraft.trim() !== "")
-                action((editor) =>
-                  editor.setBrush(
-                    editor.diameter,
-                    Number(amountDraft) / 0.3048,
-                  ),
-                );
-              setAmountDraft(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-          />
-        </div>
+        {landscape ? (
+          <>
+            <div className="field">
+              <label htmlFor="landscape-kind">Landschaft</label>
+              <select
+                id="landscape-kind"
+                aria-label="Landschaft"
+                value={landscapeKind}
+                disabled={mode === "clearing"}
+                onChange={(event) =>
+                  action((editor) =>
+                    editor.setLandscape(
+                      Number(event.target.value),
+                      editor.state.landscapeDensity,
+                    ),
+                  )
+                }
+              >
+                {landscapeNames.map((name, index) => (
+                  <option key={name} value={index}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {mode === "forest" ? (
+              <div className="field">
+                <label htmlFor="landscape-density">
+                  Dichte <span>%</span>
+                </label>
+                <input
+                  id="landscape-density"
+                  aria-label="Landschaftsdichte"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={densityDraft ?? landscapeDensity}
+                  onChange={(event) => setDensityDraft(event.target.value)}
+                  onBlur={() => {
+                    if (densityDraft !== null && densityDraft.trim() !== "")
+                      action((editor) =>
+                        editor.setLandscape(
+                          editor.state.landscapeKind,
+                          Number(densityDraft),
+                        ),
+                      );
+                    setDensityDraft(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") event.currentTarget.blur();
+                  }}
+                />
+              </div>
+            ) : (
+              <p className="hint">
+                Feine Lichtungen bleiben bei späteren groben Waldänderungen
+                frei.
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="field">
+            <label htmlFor="amount">
+              Pinselstärke <span>m/s</span>
+            </label>
+            <input
+              id="amount"
+              aria-label="Pinselstärke"
+              type="number"
+              min="0.03048"
+              max="3048"
+              step="1"
+              value={amountDraft ?? +(amount * 0.3048).toFixed(3)}
+              onChange={(e) => {
+                setAmountDraft(e.target.value);
+              }}
+              onBlur={() => {
+                if (amountDraft !== null && amountDraft.trim() !== "")
+                  action((editor) =>
+                    editor.setBrush(
+                      editor.diameter,
+                      Number(amountDraft) / 0.3048,
+                    ),
+                  );
+                setAmountDraft(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+            />
+          </div>
+        )}
         <div className="history">
           <button
             disabled={!state?.canUndo}
@@ -340,7 +420,7 @@ function Atlas() {
           </span>
           <span>
             {state
-              ? `${(5 * 2 ** state.level * 0.3048).toLocaleString("de-DE", { maximumFractionDigits: 2 })} m · Höhenraster`
+              ? `${((landscape ? 1 : 5) * 2 ** state.level * 0.3048).toLocaleString("de-DE", { maximumFractionDigits: 2 })} m · ${landscape ? "Landschaftsraster" : "Höhenraster"}`
               : ""}
           </span>
         </footer>

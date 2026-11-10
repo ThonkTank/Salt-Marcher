@@ -11,6 +11,7 @@ export interface HeightProjectionInput {
 
 export interface HeightProjectionResult {
   pixels: Uint8Array;
+  land: Uint8Array;
   samples: number;
   maxChunkMs: number;
 }
@@ -98,16 +99,24 @@ export async function projectHeightPixels(
   if (execution.cancelled()) return null;
   const grid = next.value;
   const pixels = new Uint8Array(size * size * 4);
+  const land = new Uint8Array(size * size);
   for (let row = 0; row < size; row++) {
     if (execution.cancelled()) return null;
     const rect: [number, number, number, number] = [0, row, size, row + 1];
     const heights = grid(bounds, size, rect);
     pixels.set(
-      rasterize(heights, bounds, size, rect, overview),
+      rasterize(
+        heights,
+        bounds,
+        size,
+        rect,
+        overview,
+        land.subarray(row * size, (row + 1) * size),
+      ),
       row * size * 4,
     );
     if (await yieldIfNeeded()) return null;
   }
   maxChunkMs = Math.max(maxChunkMs, execution.now() - chunkStarted);
-  return { pixels, samples: size * size, maxChunkMs };
+  return { pixels, land, samples: size * size, maxChunkMs };
 }

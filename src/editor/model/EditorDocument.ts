@@ -1,32 +1,53 @@
 import { prepareHeightSampler } from "./height";
+import { prepareLandscapeSampler } from "./landscape";
 import {
   HEIGHT_LEVELS,
   HEIGHT_MAX_ACTION_TILES,
   HEIGHT_TILE_BYTES,
   HEIGHT_TILE_CELLS,
   HEIGHT_TILE_SIZE,
+  LANDSCAPE_MAX_LEVEL,
+  LANDSCAPE_TILE_BYTES,
+  LANDSCAPE_TILE_SIZE,
   WORLD_LIMIT,
   assertBounds,
   assertLevel,
+  assertLandscapeLevel,
+  assertLandscapeWeights,
   assertPoint,
   clipBounds,
   cloneHeightTile,
+  cloneLandscapeTile,
+  createLandscapeTile,
   heightControlAddress,
   heightSpacing,
   heightTileKey,
   heightTileSupport,
   intersectsBounds,
+  landscapeCellAddress,
+  landscapeCellCoordinate,
+  landscapeSpacing,
+  landscapeTileBounds,
+  landscapeTileKey,
   parseHeightTileKey,
+  parseLandscapeTileKey,
   unionBounds,
   validateHeightTile,
+  validateLandscapeTile,
   type Bounds,
   type ChangeSet,
   type HeightBrush,
   type HeightPatch,
   type HeightSnapshot,
   type HeightTile,
+  type LandscapeBrush,
+  type LandscapePatch,
+  type LandscapeSnapshot,
+  type LandscapeTile,
+  type LandscapeWeights,
   type Point,
   type SourceState,
+  type SourcePatch,
 } from "./types";
 import { PrepaidBrush, type PrepaidBrushChange } from "./PrepaidBrush";
 import {
@@ -36,9 +57,11 @@ import {
 } from "./BrushReservations";
 import { preparePrepaidHeight, type HeightBrushBatch } from "./prepaid-height";
 
-export interface HeightDocumentOptions {
+export interface EditorDocumentOptions {
   /** Only valid when creation of an empty store has actually succeeded. */
   empty?: boolean;
+  /** Independent from height absence: opening terrain alone proves no landscape absence. */
+  landscapeEmpty?: boolean;
   sequence?: number;
   maxSourceBytes?: number;
   maxPendingBytes?: number;
@@ -51,6 +74,35 @@ interface Entry {
   state: Exclude<SourceState, "unknown">;
   tile?: HeightTile;
   localSequence: number;
+}
+
+interface LandscapeEntry {
+  state: Exclude<SourceState, "unknown">;
+  tile?: LandscapeTile;
+  localSequence: number;
+}
+
+export interface LandscapeUpdate {
+  bounds: Bounds;
+  /** Immutable changed sources shared with the live document. */
+  patches: LandscapePatch[];
+}
+
+interface LandscapeGesture {
+  brush: LandscapeBrush & { strength: number };
+  before: Map<string, LandscapeTile | null>;
+  previousSequences: Map<string, number>;
+  cells: Map<
+    string,
+    Map<number, { before: LandscapeWeights; coverage: number }>
+  >;
+  cellCount: number;
+  retainedBytes: number;
+  bounds: Bounds | null;
+  sealed: boolean;
+  finished: Promise<void>;
+  resolveFinished(): void;
+  rejectFinished(error: Error): void;
 }
 
 /** Exact source requirement; the support halo belongs in bounds. */
@@ -80,7 +132,7 @@ export interface HeightUpdate {
 
 interface HistoryAction {
   label: string;
-  patches: HeightPatch[];
+  patches: SourcePatch[];
   dirtyBounds: Bounds[];
   bytes: number;
 }
@@ -202,6 +254,86 @@ function sameValues(a: HeightTile | null, b: HeightTile | null): boolean {
   return a.values.every((value, index) => value === b.values[index]);
 }
 
+function sameLandscape(
+  a: LandscapeTile | null,
+  b: LandscapeTile | null,
+): boolean {
+  if (!a || !b) return a === b;
+  return (
+    a.mask.every((value, index) => value === b.mask[index]) &&
+    a.values.every((value, index) => value === b.values[index])
+  );
+}
+
+function assertLandscapeNeed(need: SourceNeed): void {
+  assertBounds(need.bounds);
+  if (
+    !Number.isInteger(need.minLevel) ||
+    need.minLevel < 0 ||
+    need.minLevel > LANDSCAPE_MAX_LEVEL + 1
+  )
+    throw new RangeError("Ungültige untere Landschaftsquellenstufe.");
+}
+
+/** Bounded editing stencil; broad display demand must use sparse region reads. */
+export function requiredLandscapeSources(
+  bounds: Bounds,
+  minLevel = 0,
+  maxKeys = 4096,
+): string[] {
+  assertLandscapeNeed({ bounds, minLevel });
+  const keys: string[] = [];
+  for (let level = minLevel; level <= LANDSCAPE_MAX_LEVEL; level++) {
+    const step = landscapeSpacing(level);
+    const minX = Math.floor(
+      landscapeCellCoordinate(bounds[0], step) / LANDSCAPE_TILE_SIZE,
+    );
+    const minY = Math.floor(
+      landscapeCellCoordinate(bounds[1], step) / LANDSCAPE_TILE_SIZE,
+    );
+    const maxX = Math.floor(
+      Math.max(
+        landscapeCellCoordinate(bounds[0], step),
+        Math.ceil(bounds[2] / step) - 1,
+      ) / LANDSCAPE_TILE_SIZE,
+    );
+    const maxY = Math.floor(
+      Math.max(
+        landscapeCellCoordinate(bounds[1], step),
+        Math.ceil(bounds[3] / step) - 1,
+      ) / LANDSCAPE_TILE_SIZE,
+    );
+    if (keys.length + (maxX - minX + 1) * (maxY - minY + 1) > maxKeys)
+      throw new RangeError(
+        "Dieser Ausschnitt benötigt eine räumliche Sparse-Abfrage.",
+      );
+    for (let y = minY; y <= maxY; y++)
+      for (let x = minX; x <= maxX; x++)
+        keys.push(landscapeTileKey(level, x, y));
+  }
+  return keys;
+}
+
+/** Convex coverage, rounded with a shared total so four channels never exceed 255. */
+function blendLandscape(
+  before: LandscapeWeights,
+  target: LandscapeWeights,
+  coverage: number,
+): LandscapeWeights {
+  const exact = before.map(
+    (value, channel) => value * (1 - coverage) + target[channel] * coverage,
+  );
+  const values = exact.map(Math.floor) as LandscapeWeights;
+  let remainder =
+    Math.round(exact.reduce((sum, value) => sum + value, 0)) -
+    values.reduce((sum, value) => sum + value, 0);
+  const order = [0, 1, 2, 3].sort(
+    (a, b) => exact[b] - values[b] - (exact[a] - values[a]) || a - b,
+  );
+  for (const channel of order) if (remainder-- > 0) values[channel]++;
+  return values;
+}
+
 function copyPatch(patch: HeightPatch): HeightPatch {
   return {
     key: patch.key,
@@ -210,11 +342,12 @@ function copyPatch(patch: HeightPatch): HeightPatch {
   };
 }
 
-function retainedPatchBytes(patches: readonly HeightPatch[]): number {
+function retainedPatchBytes(patches: readonly SourcePatch[]): number {
   return patches.reduce(
     (sum, patch) =>
       sum +
-      (Number(!!patch.before) + Number(!!patch.after)) * HEIGHT_TILE_BYTES,
+      (Number(!!patch.before) + Number(!!patch.after)) *
+        (patch.kind === "height" ? HEIGHT_TILE_BYTES : LANDSCAPE_TILE_BYTES),
     0,
   );
 }
@@ -245,10 +378,15 @@ export class EditorDocument {
   generation = 0;
   sequence: number;
   persistedSequence: number;
-  private readonly options: Required<Omit<HeightDocumentOptions, "empty">>;
+  private readonly options: Required<
+    Omit<EditorDocumentOptions, "empty" | "landscapeEmpty">
+  >;
   private readonly entries = new Map<string, Entry>();
+  private readonly landscapeEntries = new Map<string, LandscapeEntry>();
   private coverage: SourceNeed[] = [];
+  private landscapeCoverage: SourceNeed[] = [];
   private gesture: Gesture | null = null;
+  private landscapeGesture: LandscapeGesture | null = null;
   private prepaid: BrushContinuation | null = null;
   private invalidationError: Error | null = null;
   private history: HistoryAction[] = [];
@@ -258,10 +396,11 @@ export class EditorDocument {
     { bytes: number; change: ChangeSet }
   >();
   private sourceBytes = 0;
+  private landscapeSourceBytes = 0;
   private historyBytes = 0;
   private pendingBytes = 0;
 
-  constructor(sessionId: string, options: HeightDocumentOptions = {}) {
+  constructor(sessionId: string, options: EditorDocumentOptions = {}) {
     if (!sessionId) throw new Error("Dokumentsitzung fehlt.");
     this.sessionId = sessionId;
     this.options = {
@@ -287,14 +426,21 @@ export class EditorDocument {
         bounds: [-WORLD_LIMIT, -WORLD_LIMIT, WORLD_LIMIT, WORLD_LIMIT],
         minLevel: 0,
       });
+    if (options.landscapeEmpty)
+      this.landscapeCoverage.push({
+        bounds: [-WORLD_LIMIT, -WORLD_LIMIT, WORLD_LIMIT, WORLD_LIMIT],
+        minLevel: 0,
+      });
   }
 
   get active(): boolean {
-    return this.gesture !== null;
+    return this.gesture !== null || this.landscapeGesture !== null;
   }
 
   get finishing(): boolean {
-    return Boolean(this.gesture && this.prepaid?.sealed);
+    return Boolean(
+      (this.gesture && this.prepaid?.sealed) || this.landscapeGesture?.sealed,
+    );
   }
 
   get disposed(): boolean {
@@ -308,7 +454,11 @@ export class EditorDocument {
       void failed.catch(() => {});
       return failed;
     }
-    return this.gesture?.finished ?? Promise.resolve();
+    return (
+      this.gesture?.finished ??
+      this.landscapeGesture?.finished ??
+      Promise.resolve()
+    );
   }
 
   get brushWork() {
@@ -340,8 +490,10 @@ export class EditorDocument {
       "Die Dokumentsitzung wurde beendet; ihre unvollständige Aktion wurde verworfen.",
     );
     this.gesture?.rejectFinished(this.invalidationError);
+    this.landscapeGesture?.rejectFinished(this.invalidationError);
     if (this.prepaid) this.prepaid.invalidated = true;
     this.gesture = null;
+    this.landscapeGesture = null;
     this.prepaid = null;
   }
 
@@ -377,14 +529,20 @@ export class EditorDocument {
   get metrics() {
     return {
       sourceBytes: this.sourceBytes,
+      landscapeSourceBytes: this.landscapeSourceBytes,
       historyBytes: this.historyBytes,
       pendingBytes: this.pendingBytes,
-      gestureBeforeBytes: (this.gesture?.before.size ?? 0) * HEIGHT_TILE_BYTES,
-      gestureCells: this.gesture?.cellCount ?? 0,
+      gestureBeforeBytes:
+        (this.gesture?.before.size ?? 0) * HEIGHT_TILE_BYTES +
+        (this.landscapeGesture?.before.size ?? 0) * LANDSCAPE_TILE_BYTES,
+      gestureCells:
+        this.gesture?.cellCount ?? this.landscapeGesture?.cellCount ?? 0,
       historyActions: this.history.length,
-      readyTiles: this.sourceBytes / HEIGHT_TILE_BYTES,
-      sourceEntries: this.entries.size,
-      coverageRegions: this.coverage.length,
+      readyTiles:
+        (this.sourceBytes - this.landscapeSourceBytes) / HEIGHT_TILE_BYTES,
+      landscapeReadyTiles: this.landscapeSourceBytes / LANDSCAPE_TILE_BYTES,
+      sourceEntries: this.entries.size + this.landscapeEntries.size,
+      coverageRegions: this.coverage.length + this.landscapeCoverage.length,
     };
   }
 
@@ -399,6 +557,278 @@ export class EditorDocument {
     )
       ? "absent"
       : "unknown";
+  }
+
+  landscapeSourceState(key: string): SourceState {
+    const at = parseLandscapeTileKey(key);
+    const entry = this.landscapeEntries.get(key);
+    if (entry) return entry.state;
+    return this.landscapeCoverage.some(
+      (coverage) =>
+        coversLevel(coverage, at.level) &&
+        intersectsBounds(landscapeTileBounds(at), coverage.bounds),
+    )
+      ? "absent"
+      : "unknown";
+  }
+
+  /** One keyed cell lookup: undefined is unknown, null inherits, zero weights own. */
+  readLandscapeCell(
+    level: number,
+    x: number,
+    y: number,
+  ): LandscapeWeights | null | undefined {
+    const at = landscapeCellAddress(level, x, y);
+    const tile = this.landscapeEntries.get(at.key)?.tile;
+    if (!tile)
+      return this.landscapeSourceState(at.key) === "unknown" ? undefined : null;
+    if (!tile.mask[at.index]) return null;
+    const offset = at.index * 4;
+    return [
+      tile.values[offset],
+      tile.values[offset + 1],
+      tile.values[offset + 2],
+      tile.values[offset + 3],
+    ];
+  }
+
+  acceptLandscapeCoverage(
+    bounds: Bounds,
+    tiles: readonly LandscapeTile[],
+    storeSequence = this.persistedSequence,
+    sessionId = this.sessionId,
+    minLevel = 0,
+  ): void {
+    const coverage = { bounds, minLevel };
+    assertLandscapeNeed(coverage);
+    if (this.invalidationError) throw this.invalidationError;
+    if (sessionId !== this.sessionId)
+      throw new Error("Landschaftsdaten gehören zu einer anderen Sitzung.");
+    if (
+      !Number.isSafeInteger(storeSequence) ||
+      storeSequence < 0 ||
+      storeSequence > this.sequence
+    )
+      throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
+    if (storeSequence < this.persistedSequence) return;
+    const affects = (key: string) => {
+      const at = parseLandscapeTileKey(key);
+      return (
+        at.level >= minLevel &&
+        intersectsBounds(landscapeTileBounds(at), bounds)
+      );
+    };
+    const received = new Map<string, LandscapeTile>();
+    for (const tile of tiles) {
+      validateLandscapeTile(tile);
+      if (!affects(tile.key) || received.has(tile.key))
+        throw new Error(
+          "Unvollständige oder unpassende räumliche Landschaftsantwort.",
+        );
+      received.set(tile.key, tile);
+    }
+    const affected = new Set(received.keys());
+    for (const key of this.landscapeEntries.keys())
+      if (affects(key)) affected.add(key);
+    const changes: [string, LandscapeTile | null][] = [];
+    let nextBytes = this.sourceBytes;
+    for (const key of affected) {
+      const prior = this.landscapeEntries.get(key);
+      if (
+        this.pinnedLandscapeSource(key) ||
+        (prior?.localSequence ?? 0) > storeSequence
+      )
+        continue;
+      const next = received.get(key) ?? null;
+      nextBytes +=
+        (Number(!!next) - Number(prior?.state === "ready")) *
+        LANDSCAPE_TILE_BYTES;
+      changes.push([key, next]);
+    }
+    if (nextBytes + this.reservedSourceBytes() > this.options.maxSourceBytes)
+      throw new RangeError(
+        "Aktive Quellen überschreiten das Speicherbudget; bestätigte Quellen zuerst verdrängen.",
+      );
+    for (const [key, tile] of changes) {
+      const localSequence = this.landscapeEntries.get(key)?.localSequence ?? 0;
+      if (tile) {
+        this.landscapeEntries.set(key, {
+          state: "ready",
+          tile: cloneLandscapeTile(tile),
+          localSequence,
+        });
+        this.revision = Math.max(this.revision, tile.revision);
+      } else if (localSequence > this.persistedSequence)
+        this.landscapeEntries.set(key, { state: "absent", localSequence });
+      else this.landscapeEntries.delete(key);
+    }
+    this.landscapeSourceBytes += nextBytes - this.sourceBytes;
+    this.sourceBytes = nextBytes;
+    this.rememberLandscapeCoverage(coverage);
+    this.generation++;
+  }
+
+  private rememberLandscapeCoverage(coverage: SourceNeed): void {
+    this.landscapeCoverage = this.landscapeCoverage.filter(
+      (old) =>
+        !(
+          old.minLevel >= coverage.minLevel &&
+          contained(coverage.bounds, old.bounds)
+        ),
+    );
+    this.landscapeCoverage.push({
+      minLevel: coverage.minLevel,
+      bounds: [...coverage.bounds],
+    });
+    if (this.landscapeCoverage.length > 256) this.landscapeCoverage.shift();
+  }
+
+  isLandscapeReady(bounds: Bounds, minLevel = 0): boolean {
+    assertLandscapeNeed({ bounds, minLevel });
+    let ready = true;
+    for (let level = minLevel; level <= LANDSCAPE_MAX_LEVEL; level++) {
+      let remaining: Bounds[] = [bounds];
+      let covered = false;
+      for (const coverage of this.landscapeCoverage) {
+        if (coverage.minLevel > level) continue;
+        if (contained(coverage.bounds, bounds)) {
+          covered = true;
+          break;
+        }
+        remaining = remaining.flatMap((area) =>
+          subtract(area, coverage.bounds),
+        );
+        if (!remaining.length) {
+          covered = true;
+          break;
+        }
+      }
+      if (!covered) {
+        ready = false;
+        break;
+      }
+    }
+    if (ready) return true;
+    try {
+      return requiredLandscapeSources(bounds, minLevel).every(
+        (key) => this.landscapeSourceState(key) !== "unknown",
+      );
+    } catch (error) {
+      if (
+        error instanceof RangeError &&
+        error.message.includes("Sparse-Abfrage")
+      )
+        return false;
+      throw error;
+    }
+  }
+
+  /** Borrowed immutable sources: neither modify nor transfer these buffers. */
+  landscapeSources(bounds: Bounds, minLevel = 0): readonly LandscapeTile[] {
+    if (!this.isLandscapeReady(bounds, minLevel))
+      throw new SourcesNotReadyError(bounds);
+    const tiles: LandscapeTile[] = [];
+    for (const entry of this.landscapeEntries.values())
+      if (
+        entry.tile &&
+        entry.tile.level >= minLevel &&
+        intersectsBounds(landscapeTileBounds(entry.tile), bounds)
+      )
+        tiles.push(entry.tile);
+    return tiles;
+  }
+
+  landscapeSnapshot(bounds: Bounds, minLevel = 0): LandscapeSnapshot {
+    return {
+      sessionId: this.sessionId,
+      generation: this.generation,
+      revision: this.revision,
+      sequence: this.sequence,
+      bounds: [...bounds],
+      minLevel,
+      tiles: this.landscapeSources(bounds, minLevel).map(cloneLandscapeTile),
+    };
+  }
+
+  sampleLandscape(x: number, y: number): LandscapeWeights {
+    assertPoint([x, y]);
+    const epsilon = 1e-7;
+    const bounds = clipBounds([
+      x - epsilon,
+      y - epsilon,
+      x + epsilon,
+      y + epsilon,
+    ]);
+    return prepareLandscapeSampler(this.landscapeSources(bounds))(x, y);
+  }
+
+  private pinnedLandscapeSource(key: string): boolean {
+    const gesture = this.landscapeGesture;
+    if (!gesture) return false;
+    if (gesture.before.has(key)) return true;
+    const at = parseLandscapeTileKey(key);
+    return (
+      at.level >= gesture.brush.level &&
+      !!gesture.bounds &&
+      intersectsBounds(landscapeTileBounds(at), gesture.bounds)
+    );
+  }
+
+  /** Same residency budget as height, with independent absence certificates. */
+  retainLandscapeSources(needs: readonly SourceNeed[]): string[] {
+    if (needs.length > 2)
+      throw new RangeError(
+        "Höchstens Darstellungs- und Werkzeugbedarf halten.",
+      );
+    needs.forEach(assertLandscapeNeed);
+    const retained = [...needs];
+    if (this.landscapeGesture?.bounds)
+      retained.push({
+        bounds: this.landscapeGesture.bounds,
+        minLevel: this.landscapeGesture.brush.level,
+      });
+    const clipped: SourceNeed[] = [];
+    for (const coverage of this.landscapeCoverage)
+      for (const need of retained) {
+        const bounds: Bounds = [
+          Math.max(coverage.bounds[0], need.bounds[0]),
+          Math.max(coverage.bounds[1], need.bounds[1]),
+          Math.min(coverage.bounds[2], need.bounds[2]),
+          Math.min(coverage.bounds[3], need.bounds[3]),
+        ];
+        if (bounds[0] < bounds[2] && bounds[1] < bounds[3])
+          clipped.push({
+            bounds,
+            minLevel: Math.max(coverage.minLevel, need.minLevel),
+          });
+      }
+    this.landscapeCoverage = [];
+    for (const coverage of clipped) this.rememberLandscapeCoverage(coverage);
+    const removed: string[] = [];
+    for (const [key, entry] of this.landscapeEntries) {
+      if (
+        entry.localSequence > this.persistedSequence ||
+        this.pinnedLandscapeSource(key)
+      )
+        continue;
+      if (
+        entry.tile &&
+        needs.some(
+          (need) =>
+            entry.tile!.level >= need.minLevel &&
+            intersectsBounds(landscapeTileBounds(entry.tile!), need.bounds),
+        )
+      )
+        continue;
+      this.landscapeEntries.delete(key);
+      if (entry.tile) {
+        this.sourceBytes -= LANDSCAPE_TILE_BYTES;
+        this.landscapeSourceBytes -= LANDSCAPE_TILE_BYTES;
+        removed.push(key);
+      }
+    }
+    this.generation++;
+    return removed;
   }
 
   /** Each supplied region is certified by a complete support-overlap store read. */
@@ -701,9 +1131,303 @@ export class EditorDocument {
     return removed;
   }
 
+  beginLandscapeGesture(brush: LandscapeBrush): void {
+    if (this.invalidationError) throw this.invalidationError;
+    if (this.active) throw new Error("Eine Autorenaktion ist bereits aktiv.");
+    assertLandscapeLevel(brush.level);
+    assertLandscapeWeights(brush.weights);
+    const strength = brush.strength ?? 1;
+    if (
+      !Number.isFinite(brush.radius) ||
+      brush.radius <= 0 ||
+      !Number.isFinite(strength) ||
+      strength < 0 ||
+      strength > 1
+    )
+      throw new RangeError("Ungültiger Landschaftspinsel.");
+    if (((2 * brush.radius) / landscapeSpacing(brush.level) + 3) ** 2 > 400_000)
+      throw new RangeError(
+        "Landschaftspinsel zu groß; eine gröbere Autorenstufe wählen.",
+      );
+    let resolveFinished!: () => void;
+    let rejectFinished!: (error: Error) => void;
+    const finished = new Promise<void>((resolve, reject) => {
+      resolveFinished = resolve;
+      rejectFinished = reject;
+    });
+    void finished.catch(() => {});
+    this.prepaid = null;
+    this.landscapeGesture = {
+      brush: { ...brush, weights: [...brush.weights], strength },
+      before: new Map(),
+      previousSequences: new Map(),
+      cells: new Map(),
+      cellCount: 0,
+      retainedBytes: 0,
+      bounds: null,
+      sealed: false,
+      finished,
+      resolveFinished,
+      rejectFinished,
+    };
+  }
+
+  sealLandscapeGesture(): void {
+    if (this.landscapeGesture) this.landscapeGesture.sealed = true;
+  }
+
+  /**
+   * One bounded geometric segment. The controller owns the queued path; sealed
+   * input may still drain here. Every source is copied once per materialization.
+   */
+  applyLandscapeSegment(from: Point, to: Point): LandscapeUpdate | null {
+    const gesture = this.landscapeGesture;
+    if (!gesture) throw new Error("Keine aktive Landschaftsgeste.");
+    assertPoint(from);
+    assertPoint(to);
+    const brush = gesture.brush;
+    if (brush.strength === 0) return null;
+    const bounds = clipBounds([
+      Math.min(from[0], to[0]) - brush.radius,
+      Math.min(from[1], to[1]) - brush.radius,
+      Math.max(from[0], to[0]) + brush.radius,
+      Math.max(from[1], to[1]) + brush.radius,
+    ]);
+    if (!this.isLandscapeReady(bounds, brush.level))
+      throw new SourcesNotReadyError(bounds);
+    const step = landscapeSpacing(brush.level);
+    const minX = landscapeCellCoordinate(bounds[0], step),
+      minY = landscapeCellCoordinate(bounds[1], step);
+    const maxX = Math.max(minX, Math.ceil(bounds[2] / step) - 1),
+      maxY = Math.max(minY, Math.ceil(bounds[3] / step) - 1);
+    if ((maxX - minX + 1) * (maxY - minY + 1) > 400_000)
+      throw new RangeError(
+        "Landschaftssegment überschreitet den begrenzten Arbeitsbereich.",
+      );
+    const dx = to[0] - from[0],
+      dy = to[1] - from[1],
+      length2 = dx * dx + dy * dy;
+    const candidates: {
+      key: string;
+      index: number;
+      tileX: number;
+      tileY: number;
+      before: LandscapeWeights;
+      coverage: number;
+      values: LandscapeWeights;
+      changed: boolean;
+      bounds: Bounds;
+    }[] = [];
+    const newKeys = new Set<string>();
+    let newCells = 0;
+    for (let cy = minY; cy <= maxY; cy++) {
+      const bottom = Math.max(-WORLD_LIMIT, cy * step),
+        top = Math.min(WORLD_LIMIT, (cy + 1) * step);
+      if (bottom >= top) continue;
+      const y = (bottom + top) / 2;
+      for (let cx = minX; cx <= maxX; cx++) {
+        const left = Math.max(-WORLD_LIMIT, cx * step),
+          right = Math.min(WORLD_LIMIT, (cx + 1) * step);
+        if (left >= right) continue;
+        const x = (left + right) / 2;
+        const t = length2
+          ? Math.max(
+              0,
+              Math.min(1, ((x - from[0]) * dx + (y - from[1]) * dy) / length2),
+            )
+          : 0;
+        const distance2 =
+          (x - from[0] - t * dx) ** 2 + (y - from[1] - t * dy) ** 2;
+        if (distance2 >= brush.radius ** 2) continue;
+        // Full inner half-radius reaches every target exactly. The outer ring
+        // uses (1 - (2d/R - 1)^2)^2 and joins both ends with zero derivative.
+        const rim = Math.max(0, (2 * Math.sqrt(distance2)) / brush.radius - 1);
+        const coverage = (1 - rim * rim) ** 2 * brush.strength;
+        if (coverage === 0) continue;
+        const at = landscapeCellAddress(brush.level, x, y);
+        const previous = gesture.cells.get(at.key)?.get(at.index);
+        if (previous && previous.coverage >= coverage) continue;
+        let before = previous?.before;
+        if (!before) {
+          for (let level = brush.level; level <= LANDSCAPE_MAX_LEVEL; level++) {
+            const value = this.readLandscapeCell(level, x, y);
+            if (value === undefined) throw new SourcesNotReadyError(bounds);
+            if (value !== null) {
+              before = value;
+              break;
+            }
+          }
+          before ??= [0, 0, 0, 0];
+        }
+        const values = blendLandscape(before, brush.weights, coverage);
+        const live = this.landscapeEntries.get(at.key)?.tile;
+        const changed =
+          !live?.mask[at.index] ||
+          values.some(
+            (value, channel) => value !== live.values[at.index * 4 + channel],
+          );
+        if (!changed && !previous) continue;
+        if (!previous) newCells++;
+        if (gesture.cellCount + newCells > this.options.maxGestureCells)
+          throw new RangeError(
+            "Landschaftsaktion überschreitet das Zellbudget; einen kürzeren Strich malen.",
+          );
+        if (changed && !gesture.before.has(at.key)) newKeys.add(at.key);
+        candidates.push({
+          ...at,
+          before,
+          coverage,
+          values,
+          changed,
+          bounds: [left, bottom, right, top],
+        });
+      }
+    }
+    const tileCount = gesture.before.size + newKeys.size;
+    if (tileCount > HEIGHT_MAX_ACTION_TILES)
+      throw new RangeError(
+        "Eine Autorenaktion darf höchstens 512 Quellkacheln ändern.",
+      );
+    let retainedBytes = gesture.retainedBytes,
+      missing = 0;
+    for (const key of newKeys) {
+      const exists = !!this.landscapeEntries.get(key)?.tile;
+      retainedBytes += LANDSCAPE_TILE_BYTES * (exists ? 2 : 1);
+      if (!exists) missing++;
+    }
+    if (this.pendingBytes + retainedBytes > this.options.maxPendingBytes)
+      throw new RangeError(
+        "Die Arbeitskopie muss vorhandene Änderungen sichern, bevor dieser Pinselabschnitt angenommen werden kann.",
+      );
+    if (retainedBytes > this.options.maxHistoryBytes)
+      throw new RangeError(
+        "Diese Aktion überschreitet die lokale History; einen kürzeren Strich malen.",
+      );
+    if (
+      this.sourceBytes + missing * LANDSCAPE_TILE_BYTES >
+      this.options.maxSourceBytes
+    )
+      throw new RangeError("Aktive Quellen überschreiten das Speicherbudget.");
+    const revision = this.revision + 1;
+    const patches = new Map<string, LandscapePatch>();
+    let dirty: Bounds | null = null;
+    for (const candidate of candidates) {
+      let cells = gesture.cells.get(candidate.key);
+      if (!cells) gesture.cells.set(candidate.key, (cells = new Map()));
+      cells.set(candidate.index, {
+        before: candidate.before,
+        coverage: candidate.coverage,
+      });
+      if (!candidate.changed) continue;
+      const live = this.landscapeEntries.get(candidate.key);
+      if (!gesture.before.has(candidate.key)) {
+        gesture.before.set(candidate.key, live?.tile ?? null);
+        gesture.previousSequences.set(candidate.key, live?.localSequence ?? 0);
+      }
+      let patch = patches.get(candidate.key);
+      if (!patch) {
+        const after = live?.tile
+          ? cloneLandscapeTile(live.tile)
+          : createLandscapeTile(brush.level, candidate.tileX, candidate.tileY);
+        after.revision = revision;
+        patch = { key: candidate.key, before: live?.tile ?? null, after };
+        patches.set(candidate.key, patch);
+        this.landscapeEntries.set(candidate.key, {
+          state: "ready",
+          tile: after,
+          localSequence: this.sequence + 1,
+        });
+        if (!live?.tile) {
+          this.sourceBytes += LANDSCAPE_TILE_BYTES;
+          this.landscapeSourceBytes += LANDSCAPE_TILE_BYTES;
+        }
+      }
+      patch.after!.mask[candidate.index] = 1;
+      patch.after!.values.set(candidate.values, candidate.index * 4);
+      dirty = dirty ? unionBounds(dirty, candidate.bounds) : candidate.bounds;
+    }
+    gesture.cellCount += newCells;
+    gesture.retainedBytes = retainedBytes;
+    if (!patches.size) return null;
+    this.revision = revision;
+    this.generation++;
+    gesture.bounds = gesture.bounds
+      ? unionBounds(gesture.bounds, dirty!)
+      : dirty;
+    return { bounds: dirty!, patches: [...patches.values()] };
+  }
+
+  finishLandscapeGesture(): ChangeSet | null {
+    const gesture = this.landscapeGesture;
+    if (!gesture) return null;
+    const patches: SourcePatch[] = [];
+    for (const [key, before] of gesture.before) {
+      const live = this.landscapeEntries.get(key)?.tile;
+      const after = live?.mask.some((value) => value === 1) ? live : null;
+      if (live && !after) {
+        this.landscapeEntries.set(key, {
+          state: "absent",
+          localSequence: this.sequence + 1,
+        });
+        this.sourceBytes -= LANDSCAPE_TILE_BYTES;
+        this.landscapeSourceBytes -= LANDSCAPE_TILE_BYTES;
+      }
+      if (!sameLandscape(before, after))
+        patches.push({ kind: "landscape", key, before, after });
+      else {
+        const entry = this.landscapeEntries.get(key);
+        if (entry)
+          entry.localSequence = gesture.previousSequences.get(key) ?? 0;
+      }
+    }
+    this.landscapeGesture = null;
+    const change = patches.length
+      ? this.recordHistory(
+          gesture.brush.label ?? "Landschaft malen",
+          patches,
+          gesture.bounds ? [gesture.bounds] : [],
+        )
+      : null;
+    gesture.resolveFinished();
+    return change;
+  }
+
+  /** Restore the held source identity; cancellation is not a journal/history action. */
+  cancelLandscapeGesture(): LandscapeUpdate | null {
+    const gesture = this.landscapeGesture;
+    if (!gesture) return null;
+    const revision = this.revision + 1;
+    const patches: LandscapePatch[] = [];
+    for (const [key, original] of gesture.before) {
+      const before = this.landscapeEntries.get(key)?.tile ?? null;
+      const after = original ? { ...original, revision } : null;
+      const localSequence = gesture.previousSequences.get(key) ?? 0;
+      if (after)
+        this.landscapeEntries.set(key, {
+          state: "ready",
+          tile: after,
+          localSequence,
+        });
+      else if (localSequence > this.persistedSequence)
+        this.landscapeEntries.set(key, { state: "absent", localSequence });
+      else this.landscapeEntries.delete(key);
+      const delta = (Number(!!after) - Number(!!before)) * LANDSCAPE_TILE_BYTES;
+      this.sourceBytes += delta;
+      this.landscapeSourceBytes += delta;
+      patches.push({ key, before, after });
+    }
+    this.landscapeGesture = null;
+    if (patches.length) {
+      this.revision = revision;
+      this.generation++;
+    }
+    gesture.resolveFinished();
+    return patches.length ? { bounds: gesture.bounds!, patches } : null;
+  }
+
   private initializeGesture(brush: HeightBrush): void {
     if (this.invalidationError) throw this.invalidationError;
-    if (this.gesture) throw new Error("Eine Höhengeste ist bereits aktiv.");
+    if (this.active) throw new Error("Eine Autorenaktion ist bereits aktiv.");
     assertLevel(brush.level);
     if (
       !Number.isFinite(brush.radius) ||
@@ -745,7 +1469,7 @@ export class EditorDocument {
     brush: HeightBrush,
     context: BrushReservationContext,
   ): void {
-    if (this.gesture) throw new Error("Eine Höhengeste ist bereits aktiv.");
+    if (this.active) throw new Error("Eine Autorenaktion ist bereits aktiv.");
     if (context.sessionId !== this.sessionId)
       throw new Error("Die Pinselreserve gehört zu einer anderen Sitzung.");
     const account = new PrepaidBrush({
@@ -1100,7 +1824,7 @@ export class EditorDocument {
       throw new Error(
         "Angenommene Pinselarbeit muss vor dem Aktionsabschluss materialisiert werden.",
       );
-    const patches: HeightPatch[] = [];
+    const patches: SourcePatch[] = [];
     for (const [key, before] of gesture.before) {
       const live = this.entries.get(key)?.tile;
       const after = live?.values.some((v) => v !== 0) ? live : null;
@@ -1111,7 +1835,8 @@ export class EditorDocument {
         });
         this.sourceBytes -= HEIGHT_TILE_BYTES;
       }
-      if (!sameValues(before, after)) patches.push({ key, before, after });
+      if (!sameValues(before, after))
+        patches.push({ kind: "height", key, before, after });
       else {
         // Consumed rounded-equal work publishes a render revision but creates
         // no journal entry. Remove its provisional next-sequence marker while
@@ -1127,12 +1852,25 @@ export class EditorDocument {
       gesture.resolveFinished();
       return null;
     }
-    const action: HistoryAction = {
-      label:
-        gesture.brush.label ??
+    const change = this.recordHistory(
+      gesture.brush.label ??
         (gesture.brush.amount >= 0 ? "Gelände anheben" : "Gelände absenken"),
       patches,
-      dirtyBounds: gesture.bounds ? [gesture.bounds] : [],
+      gesture.bounds ? [gesture.bounds] : [],
+    );
+    gesture.resolveFinished();
+    return change;
+  }
+
+  private recordHistory(
+    label: string,
+    patches: SourcePatch[],
+    dirtyBounds: Bounds[],
+  ): ChangeSet {
+    const action: HistoryAction = {
+      label,
+      patches,
+      dirtyBounds,
       bytes: retainedPatchBytes(patches),
     };
     for (const discarded of this.history.splice(this.historyPosition))
@@ -1147,14 +1885,12 @@ export class EditorDocument {
       this.historyBytes -= this.history.shift()!.bytes;
       this.historyPosition--;
     }
-    const change = this.commit(action.label, patches, action.dirtyBounds);
-    gesture.resolveFinished();
-    return change;
+    return this.commit(action.label, patches, action.dirtyBounds);
   }
 
   private commit(
     label: string,
-    patches: HeightPatch[],
+    patches: SourcePatch[],
     dirtyBounds: Bounds[],
   ): ChangeSet {
     this.sequence++;
@@ -1207,20 +1943,34 @@ export class EditorDocument {
         "Die Arbeitskopie muss vorhandene Änderungen zuerst sichern.",
       );
     const revision = this.revision + 1;
-    const patches = action.patches.map((patch): HeightPatch => {
+    const patches = action.patches.map((patch): SourcePatch => {
+      if (patch.kind === "height") {
+        const expected = forward ? patch.before : patch.after;
+        const entry = this.entries.get(patch.key);
+        if (
+          (entry?.tile && !sameValues(entry.tile, expected)) ||
+          (entry?.state === "absent" && expected !== null)
+        )
+          throw new Error("History passt nicht zum aktuellen Quellenstand.");
+        const target = forward ? patch.after : patch.before;
+        return {
+          kind: "height",
+          key: patch.key,
+          before: expected,
+          after: target ? { ...target, revision } : null,
+        };
+      }
       const expected = forward ? patch.before : patch.after;
-      const entry = this.entries.get(patch.key);
-      const actual = entry?.tile;
+      const entry = this.landscapeEntries.get(patch.key);
       if (
-        (actual && !sameValues(actual, expected)) ||
+        (entry?.tile && !sameLandscape(entry.tile, expected)) ||
         (entry?.state === "absent" && expected !== null)
       )
         throw new Error("History passt nicht zum aktuellen Quellenstand.");
       const target = forward ? patch.after : patch.before;
       return {
+        kind: "landscape",
         key: patch.key,
-        // History snapshots are immutable. Only their descriptor needs the new
-        // revision; the separately cloned live source remains mutable below.
         before: expected,
         after: target ? { ...target, revision } : null,
       };
@@ -1231,25 +1981,47 @@ export class EditorDocument {
         (sum, p) =>
           sum +
           (Number(!!p.after) -
-            Number(this.entries.get(p.key)?.state === "ready")) *
-            HEIGHT_TILE_BYTES,
+            Number(
+              (p.kind === "height" ? this.entries : this.landscapeEntries).get(
+                p.key,
+              )?.state === "ready",
+            )) *
+            (p.kind === "height" ? HEIGHT_TILE_BYTES : LANDSCAPE_TILE_BYTES),
         0,
       );
     if (nextSourceBytes > this.options.maxSourceBytes)
       throw new RangeError(
         "History benötigt mehr aktive Quellen als das Speicherbudget erlaubt.",
       );
-    for (const patch of patches)
-      this.entries.set(
-        patch.key,
-        patch.after
-          ? {
-              state: "ready",
-              tile: cloneHeightTile(patch.after),
-              localSequence: this.sequence + 1,
-            }
-          : { state: "absent", localSequence: this.sequence + 1 },
-      );
+    for (const patch of patches) {
+      if (patch.kind === "height")
+        this.entries.set(
+          patch.key,
+          patch.after
+            ? {
+                state: "ready",
+                tile: cloneHeightTile(patch.after),
+                localSequence: this.sequence + 1,
+              }
+            : { state: "absent", localSequence: this.sequence + 1 },
+        );
+      else {
+        this.landscapeSourceBytes +=
+          (Number(!!patch.after) -
+            Number(this.landscapeEntries.get(patch.key)?.state === "ready")) *
+          LANDSCAPE_TILE_BYTES;
+        this.landscapeEntries.set(
+          patch.key,
+          patch.after
+            ? {
+                state: "ready",
+                tile: cloneLandscapeTile(patch.after),
+                localSequence: this.sequence + 1,
+              }
+            : { state: "absent", localSequence: this.sequence + 1 },
+        );
+      }
+    }
     this.sourceBytes = nextSourceBytes;
     this.revision = revision;
     this.generation++;
@@ -1280,6 +2052,13 @@ export class EditorDocument {
         !this.gesture?.before.has(key)
       )
         this.entries.delete(key);
+    for (const [key, entry] of this.landscapeEntries)
+      if (
+        entry.state === "absent" &&
+        entry.localSequence <= sequence &&
+        !this.landscapeGesture?.before.has(key)
+      )
+        this.landscapeEntries.delete(key);
   }
 
   /** Overlay only changes absent from this store read, then the current live action.
@@ -1296,7 +2075,11 @@ export class EditorDocument {
     const patches: HeightPatch[] = [];
     for (const [pendingSequence, { change }] of this.pending)
       if (pendingSequence > sequence)
-        patches.push(...change.patches.map(copyPatch));
+        patches.push(
+          ...change.patches
+            .filter((patch) => patch.kind === "height")
+            .map(copyPatch),
+        );
     for (const [key, before] of this.gesture?.before ?? []) {
       const live = this.entries.get(key)?.tile;
       patches.push({
@@ -1304,6 +2087,39 @@ export class EditorDocument {
         before: before ? cloneHeightTile(before) : null,
         after: live?.values.some((value) => value !== 0)
           ? cloneHeightTile(live)
+          : null,
+      });
+    }
+    return patches;
+  }
+
+  /** Owned pending/live overlays for rebasing one immutable store boundary exactly once. */
+  landscapePatchesAfter(sequence: number): LandscapePatch[] {
+    if (
+      !Number.isSafeInteger(sequence) ||
+      sequence < this.persistedSequence ||
+      sequence > this.sequence
+    )
+      throw new Error(
+        "Die gelesene Landschaftsübersicht ist nicht mehr aktuell.",
+      );
+    const patches: LandscapePatch[] = [];
+    for (const [pendingSequence, { change }] of this.pending)
+      if (pendingSequence > sequence)
+        for (const patch of change.patches)
+          if (patch.kind === "landscape")
+            patches.push({
+              key: patch.key,
+              before: patch.before && cloneLandscapeTile(patch.before),
+              after: patch.after && cloneLandscapeTile(patch.after),
+            });
+    for (const [key, before] of this.landscapeGesture?.before ?? []) {
+      const live = this.landscapeEntries.get(key)?.tile;
+      patches.push({
+        key,
+        before: before && cloneLandscapeTile(before),
+        after: live?.mask.some((value) => value === 1)
+          ? cloneLandscapeTile(live)
           : null,
       });
     }

@@ -217,7 +217,11 @@ async function createFixtures(directory) {
         sessionId: initial.sessionId,
         sequence: 1,
         transactionId: randomUUID(),
-        patches: tiles.map((after) => ({ key: after.key, after })),
+        patches: tiles.map((after) => ({
+          kind: "height",
+          key: after.key,
+          after,
+        })),
       });
       const status = store.status();
       const file = join(directory, `${fixture.id}.saltatlas`);

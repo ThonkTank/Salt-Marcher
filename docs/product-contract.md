@@ -1086,12 +1086,13 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 
 ## Optionaler Atlas-P0-Versuch
 
-P0 ist ein eigener, ausdrücklich gewählter Höheneditor. Er bietet Verschieben
-und Zoom vom Nahbereich bis zur Welt, Raster ein/aus, Anheben und Absenken,
-Undo/Redo sowie Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
+P0 ist ein eigener, ausdrücklich gewählter Höhen- und Landschaftseditor.
+Er bietet Verschieben und Zoom vom Nahbereich bis zur Welt, Raster ein/aus,
+Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel, Undo/Redo sowie
+Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
 in Bildschirmpixeln, die Höhenänderungsrate in Metern pro Sekunde eingestellt;
 die Berechnung verwendet Fuß und Sekunden. Straßen, Häuser, Innenräume,
-Landschaft, Regionen und lokale
+Regionen und lokale
 Gewässerwerkzeuge gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht
 verfügbar.
 
@@ -1148,6 +1149,7 @@ Laden gehalten wird, beginnt kein Strich automatisch. Der Nutzer muss loslassen
 und erneut drücken; bei gehaltener Taste erklärt ein Hinweis diesen Zustand.
 Wartezeit und Wege vor der Freigabe werden nicht nachgeholt.
 
+Die folgenden Zeit- und Wirkungsregeln gelten für den Höhenpinsel.
 Ein Strich hält Autorenstufe und Pinselparameter bis zum Abschluss fest.
 **Gedrücktes Halten vertieft die Stelle. Langsame Züge wirken stärker als
 schnelle, weil mehr Zeit auf die betroffenen Stellen entfällt.** C1 verwendet
@@ -1219,11 +1221,47 @@ unbekannt, bis die betreffende Detailansicht geladen ist. Für die lokale
 Bearbeitungsfreigabe werden die Quellen der gewählten Autorenstufe und gröbere
 Beiträge benötigt.
 
-P0-Projekte verwenden `.saltatlas` als SQLite-Format **24** mit Schemakennung
-`atlas-p0-height-2`. Gespeichert werden sparse relative Höhenkacheln,
-Projektmetadaten und abgeleitete numerische Übersichten desselben bestätigten
-Sequenzstands. Dieses Versuchsformat ist getrennt vom V7-Format 22; auch das
-frühere P0-Format 23 wird verständlich abgelehnt und nicht migriert.
+### Landschaft im begrenzten P3.1-Fall
+
+Die Landschaftsauswahl bietet Wald, Buschland, Wiese und Felsgebiet mit einer
+Zieldichte von 0–100 Prozent. Der Pinsel ist zunächst auf 8–128 Bildschirmpixel
+begrenzt; seine Autorenstufe und Parameter bleiben während eines Strichs fest.
+Er schreibt Deckung auf 64×64-Zellen mit `2^level` Fuß Abstand (Stufen 0–24).
+Landschaftsdeckung ist eine zielgerichtete Flächenbearbeitung; die zeitabhängige
+Höhenrate gilt hier nicht. Die innere Radiushälfte erreicht die gewählte Dichte
+in einem Strich vollständig, der äußere Ring läuft weich aus. Das gilt auch
+für die Lichtung mit Zieldichte null. Mehr Pointerereignisse oder längeres
+Halten verstärken denselben Landschaftsstrich nicht.
+
+Fehlende Landschaftszellen erben den gröberen Wert. Explizit leere Zellen sind
+eigene Autoren und unterdrücken groben Wald. Eine feine Lichtung bleibt bei
+späterer grober Waldänderung erhalten, ebenso beim Verlassen der Detailansicht,
+Undo/Redo und Speichern/Wiederöffnen. Der Pinsel beginnt nur auf sichtbarer,
+lokal bereiter Darstellung mit den nötigen Quellen. Geladene Übersicht und
+beliebige exakte Punktabfrage bleiben unterschiedliche Bereitschaftsbelege.
+
+Der angenommene Weg wird begrenzt fortgesetzt. Loslassen versiegelt den
+Endpunkt; der vollständige Strich erzeugt genau einen gemeinsamen Undo-Schritt.
+Escape, Fokusverlust, Pointercancel sowie Ansicht- oder Werkzeugwechsel vor dem
+Loslassen nehmen den laufenden Landschaftsstrich vollständig zurück. Nach dem
+Versiegeln läuft der angenommene Weg auch bei späterem Escape oder Fokusverlust
+vollständig zu Ende. Speichern und History warten auf den Abschluss. Eine
+übergroße Aktion wird verständlich abgewiesen, statt Teile unbemerkt zu verlieren.
+
+Die Darstellung zeigt die vier Deckungen als gemischte Flächen. Wasser blendet
+sie aus, ohne ihre Autoren zu löschen; erneutes Anheben kann sie wieder sichtbar
+machen. Landschaftsübersichten enthalten den feinsten Eigenbeitrag und seine
+Restvererbung an festen Weltpunkten. Die spätere vollständige Symbol-, Kronen-
+und Landschafts-LOD-Darstellung ist Teil von P4.
+
+### Gemeinsame P0-Projektdatei
+
+P0-Projekte verwenden `.saltatlas` als SQLite-Format **25** mit Schemakennung
+`atlas-p3-masked-landscape-1`. Gespeichert werden sparse relative Höhenkacheln,
+maskierte Landschaftskacheln, Projektmetadaten und abgeleitete numerische
+Übersichten desselben bestätigten Sequenzstands. Dieses Versuchsformat ist
+getrennt vom V7-Format 22; frühere P0-Formate 23 und 24 werden verständlich
+abgelehnt und nicht migriert.
 Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
 auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der
 Arbeitskopie und ihre Speicherung in der Projektdatei sind verschiedene Zustände.

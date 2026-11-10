@@ -30,6 +30,17 @@ function edit(document: EditorDocument, x = 100) {
   return finishTestBrush(document)!;
 }
 
+function editLandscape(document: EditorDocument, x = 100) {
+  document.beginLandscapeGesture({
+    level: 0,
+    radius: 10,
+    weights: [255, 0, 0, 0],
+  });
+  document.applyLandscapeSegment([x, 100], [x, 100]);
+  document.sealLandscapeGesture();
+  return document.finishLandscapeGesture()!;
+}
+
 /** Real admitted coefficients, deliberately not materialized by the caller yet. */
 function finishingEdit(document: EditorDocument) {
   document.beginPrepaidGesture(
@@ -62,13 +73,15 @@ function fixture() {
   const info: ProjectInfo = {
     sessionId: "session",
     projectId: "project",
-    format: 24,
+    format: 25,
     title: "Testwelt",
     sequence: 0,
     savedSequence: 0,
     path: "/world.saltatlas",
     activeLevels: [],
     sourceTiles: 0,
+    landscapeTiles: 0,
+    activeLandscapeLevels: [],
   };
   let sequence = 0;
   const committed = new Map<string, CommitRequest>();
@@ -94,6 +107,8 @@ function fixture() {
     status: vi.fn(async () => ({ ...info, sequence })),
     readRegion: vi.fn(),
     readPresentation: vi.fn(),
+    readLandscapeRegion: vi.fn(),
+    readLandscapePresentation: vi.fn(),
     commit,
     newProject: vi.fn(async () => null),
     openProject: vi.fn(async () => null),
@@ -106,7 +121,10 @@ function fixture() {
     metrics: vi.fn(),
   };
   const observer = { changed: vi.fn(), persisted: vi.fn(), failed: vi.fn() };
-  const document = new EditorDocument(info.sessionId, { empty: true });
+  const document = new EditorDocument(info.sessionId, {
+    empty: true,
+    landscapeEmpty: true,
+  });
   const session = new ProjectSession(bridge, observer);
   session.attach(document, info);
   return { info, document, session, bridge, observer, committed, commit };
@@ -140,7 +158,9 @@ describe("one document journal and ordered project session", () => {
     saved.acceptCoverage(
       [0, 0, 200, 200],
       [...committed.values()].flatMap((request) =>
-        request.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+        request.patches.flatMap((patch) =>
+          patch.kind === "height" && patch.after ? [patch.after] : [],
+        ),
       ),
       1,
       saved.sessionId,
@@ -296,73 +316,87 @@ describe("one document journal and ordered project session", () => {
     expect(session.error).toBeNull();
   });
 
-  it("drains changes accepted during an ACK in order and releases their projection data", async () => {
-    const { document, session, bridge, commit } = fixture();
-    const firstAck = deferred<Awaited<ReturnType<AtlasDesktop["commit"]>>>();
-    const send = commit.getMockImplementation()!;
-    bridge.commit = vi.fn(async (request) => {
-      const receipt = await send(request);
-      if (request.sequence === 1) return firstAck.promise;
-      return receipt;
-    });
-    const first = edit(document);
-    session.persist();
-    const second = edit(document, 120);
-    session.persist();
-    expect(bridge.commit).toHaveBeenCalledTimes(1);
-    expect(document.pendingChanges().map((change) => change.sequence)).toEqual([
-      1, 2,
-    ]);
-    expect(session.writing).toBe(true);
-    firstAck.resolve({
-      sessionId: document.sessionId,
-      sequence: first.sequence,
-      transactionId: first.transactionId,
-    });
-    await session.flush();
-    expect(
-      vi.mocked(bridge.commit).mock.calls.map(([request]) => request.sequence),
-    ).toEqual([1, 2]);
-    expect(document.persistedSequence).toBe(second.sequence);
-    expect(document.pendingChanges()).toEqual([]);
-    expect(document.metrics.pendingBytes).toBe(0);
-    expect(document.canUndo).toBe(true);
-    expect(session.writing).toBe(false);
-    expect(session.saved).toBe(false);
-  });
+  it.each(["height", "landscape"] as const)(
+    "%s: drains changes accepted during an ACK in order and releases their projection data",
+    async (kind) => {
+      const { document, session, bridge, commit } = fixture();
+      const firstAck = deferred<Awaited<ReturnType<AtlasDesktop["commit"]>>>();
+      const author = kind === "height" ? edit : editLandscape;
+      const send = commit.getMockImplementation()!;
+      bridge.commit = vi.fn(async (request) => {
+        const receipt = await send(request);
+        if (request.sequence === 1) return firstAck.promise;
+        return receipt;
+      });
+      const first = author(document);
+      session.persist();
+      const second = author(document, 120);
+      session.persist();
+      expect(bridge.commit).toHaveBeenCalledTimes(1);
+      expect(
+        document.pendingChanges().map((change) => change.sequence),
+      ).toEqual([1, 2]);
+      expect(session.writing).toBe(true);
+      firstAck.resolve({
+        sessionId: document.sessionId,
+        sequence: first.sequence,
+        transactionId: first.transactionId,
+      });
+      await session.flush();
+      expect(
+        vi
+          .mocked(bridge.commit)
+          .mock.calls.map(([request]) => request.sequence),
+      ).toEqual([1, 2]);
+      expect(document.persistedSequence).toBe(second.sequence);
+      expect(document.pendingChanges()).toEqual([]);
+      expect(document.metrics.pendingBytes).toBe(0);
+      expect(document.canUndo).toBe(true);
+      expect(session.writing).toBe(false);
+      expect(session.saved).toBe(false);
+    },
+  );
 
-  it("replays the original accepted record after an ACK is lost without applying it twice", async () => {
-    const { document, session, bridge, commit, committed } = fixture();
-    const send = commit.getMockImplementation()!;
-    let loseAck = true;
-    bridge.commit = vi.fn(async (request) => {
-      const receipt = await send(request);
-      if (loseAck) {
-        loseAck = false;
-        throw new Error("lost ACK");
-      }
-      return receipt;
-    });
-    const first = edit(document);
-    session.persist();
-    await expect(session.flush()).rejects.toThrow("lost ACK");
-    expect(session.editable).toBe(false);
-    expect(document.persistedSequence).toBe(0);
-    expect(document.pendingChanges()).toHaveLength(1);
-    const height = document.sampleHeight(100, 100);
-    await session.recover();
-    expect(committed.size).toBe(1);
-    expect(
-      vi
-        .mocked(bridge.commit)
-        .mock.calls.map(([request]) => request.transactionId),
-    ).toEqual([first.transactionId, first.transactionId]);
-    expect(document.sampleHeight(100, 100)).toBe(height);
-    expect(document.pendingChanges()).toEqual([]);
-    expect(document.persistedSequence).toBe(1);
-    expect(session.error).toBeNull();
-    expect(session.editable).toBe(true);
-  });
+  it.each(["height", "landscape"] as const)(
+    "%s: replays the original accepted record after an ACK is lost without applying it twice",
+    async (kind) => {
+      const { document, session, bridge, commit, committed } = fixture();
+      const author = kind === "height" ? edit : editLandscape;
+      const send = commit.getMockImplementation()!;
+      let loseAck = true;
+      bridge.commit = vi.fn(async (request) => {
+        const receipt = await send(request);
+        if (loseAck) {
+          loseAck = false;
+          throw new Error("lost ACK");
+        }
+        return receipt;
+      });
+      const first = author(document);
+      session.persist();
+      await expect(session.flush()).rejects.toThrow("lost ACK");
+      expect(session.editable).toBe(false);
+      expect(document.persistedSequence).toBe(0);
+      expect(document.pendingChanges()).toHaveLength(1);
+      const sample = () =>
+        kind === "height"
+          ? document.sampleHeight(100, 100)
+          : document.sampleLandscape(100, 100);
+      const before = sample();
+      await session.recover();
+      expect(committed.size).toBe(1);
+      expect(
+        vi
+          .mocked(bridge.commit)
+          .mock.calls.map(([request]) => request.transactionId),
+      ).toEqual([first.transactionId, first.transactionId]);
+      expect(sample()).toEqual(before);
+      expect(document.pendingChanges()).toEqual([]);
+      expect(document.persistedSequence).toBe(1);
+      expect(session.error).toBeNull();
+      expect(session.editable).toBe(true);
+    },
+  );
 
   it("a failed write retains every later accepted change for one ordered recovery", async () => {
     const { document, session, bridge, commit } = fixture();

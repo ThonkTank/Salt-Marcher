@@ -24,11 +24,12 @@ Undo und Dateiaktionen warten auf diesen gemeinsamen Abschluss. Die unabhängige
 Inhaltsreferenz und die festen Leistungsziele bleiben erhalten.
 R3 begrenzt Quellenübernahme, Vorbereitung und GPU-Pakete; numerische
 Ausnahmefälle laufen über die gemeinsame Jobzulassung im Worker. R4 ergänzt
-die feste gemeinsame Richtungsprüfung. **Der nächste freigegebene Schritt ist
-der begrenzte R5-Fachfall, beginnend mit Wald und Lichtung.** Die ausdrückliche
-[Arbeitsentscheidung](docs/implementation/status.md#arbeitsentscheidung) und die
-weiterhin offenen R4-/Hardwarebelege stehen im Status. P4–P9 setzen die
-vollständige P0-Abnahme und den bestandenen gemeinsamen P3-Fall voraus.
+die feste gemeinsame Richtungsprüfung. **R5 ergänzt den begrenzten P3.1-Fall
+Wald und Lichtung:** maskierte Landschaft, gemeinsame History und Dateirundlauf.
+Der [Status](docs/implementation/status.md) nennt die tatsächlichen Nachweise
+und die weiterhin offenen R4-/Hardwarebelege. Der nächste Fachbaustein nach
+P3.1 ist der einfache Hausheader aus P3.2; P4–P9 setzen die vollständige
+P0-Abnahme und den bestandenen gemeinsamen P3-Fall voraus.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
@@ -148,6 +149,13 @@ Projektdateien. Sie prüft auch 64 aufeinanderfolgende Änderungen einschließli
 Undo/Redo, feine Autoren unter groben Übersichten und Kontextwiederherstellung.
 Ihre Pixelbilder und gespeicherten Autorenwerte belegen Inhalt, keine
 Präsentationslatenz.
+
+Der normale Smoke enthält außerdem P3.1: grober Wald, feine Lichtung, erneute
+grobe Änderung, Undo/Redo und sichtbarer Escape-Abbruch, echte Dateisicherung,
+Neu/Open und ein frischer Prozess ohne Diagnosemodus. Landschaftspixel und
+unabhängig gelesene Autorenwerte werden gemeinsam geprüft; die Höhenquellen
+und feinen Ausnahmen müssen unverändert bleiben. `--only landscape` führt
+diesen bestehenden Fall gezielt aus.
 
 Ein Headless-Funktionslauf belegt keine native Leistung; Submission und RAF sind
 keine Präsentationszeitpunkte. Fehlende Messanbindung und Umgebungsqualifizierung

@@ -164,7 +164,7 @@ test("the independent coarse-dab oracle holds after a real save and fine digest 
       sessionId: info.sessionId,
       sequence: change.sequence + 1,
       transactionId: "deliberately-wrong-fine-source",
-      patches: [{ key: fine.key, after: fine }],
+      patches: [{ kind: "height", key: fine.key, after: fine }],
     });
     const wrong = join(directory, "wrong-fine.saltatlas");
     await store.saveProject(

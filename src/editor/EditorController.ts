@@ -29,12 +29,15 @@ import {
   type Bounds,
   type HeightBrush,
   type HeightSegment,
+  type LandscapeBrush,
+  type LandscapeWeights,
   type Point,
 } from "./model";
 import {
   minimumCoarseHeightLevel,
   projectHeightOverviewPatches,
 } from "./model/overview";
+import { minimumCoarseLandscapeLevel } from "./model/landscape";
 import { Observation, type ObservationOptions } from "./observation";
 import {
   WorldRenderer,
@@ -45,7 +48,9 @@ import {
 import type { BrushEffectReceipt } from "./model/BrushReservations";
 
 export interface EditorState {
-  mode: "raise" | "lower" | "pan";
+  mode: "raise" | "lower" | "pan" | "forest" | "clearing";
+  landscapeKind: 0 | 1 | 2 | 3;
+  landscapeDensity: number;
   diameter: number;
   amount: number;
   grid: boolean;
@@ -85,6 +90,7 @@ interface SourceDemand {
   minLevel: number;
   toolBounds: Bounds;
   toolLevel: number;
+  toolKind: "height" | "landscape";
   key: string;
 }
 
@@ -103,6 +109,18 @@ interface BrushAdmission {
   rawElapsedMs: number;
   offeredElapsedMs: number;
   cause: "press" | "move" | "hold" | "terminal";
+}
+
+interface LandscapeStroke {
+  kind: "landscape";
+  pointerId: number;
+  input: number;
+  brush: LandscapeBrush;
+  point: Point;
+  path: Point[];
+  retainedBounds: Bounds;
+  sealed: boolean;
+  released: boolean;
 }
 
 class BrushUnavailable extends Error {
@@ -130,7 +148,9 @@ export class EditorController {
   readonly world: WorldRenderer;
   private doc!: EditorDocument;
   private readonly session: ProjectSession;
-  private brushState: BrushState = { kind: "idle" };
+  private brushState: BrushState | LandscapeStroke = { kind: "idle" };
+  private landscapeDemandVersion = 0;
+  private landscapeEnabled = false;
   private pan: { x: number; y: number; camera: Camera } | null = null;
   private releaseFileAction: () => void;
   private desiredNeed: SourceDemand | null = null;
@@ -166,6 +186,8 @@ export class EditorController {
   private backgroundStarting = false;
   state: EditorState = {
     mode: "raise",
+    landscapeKind: 0,
+    landscapeDensity: 100,
     diameter: 80,
     amount: 20,
     grid: true,
@@ -203,8 +225,13 @@ export class EditorController {
     });
     this.session = new ProjectSession(bridge, {
       changed: () => this.publish(),
-      persisted: (receipt) =>
-        this.observation.event("persisted", { ...receipt }),
+      persisted: (receipt) => {
+        this.observation.event("persisted", { ...receipt });
+        if (this.landscapeEnabled) {
+          this.landscapeDemandVersion++;
+          this.scheduleLoad();
+        }
+      },
       failed: this.fail,
     });
     this.releaseFileAction = bridge.onFileAction(async (request) => {
@@ -310,6 +337,7 @@ export class EditorController {
     this.doc = new EditorDocument(info.sessionId, {
       sequence: info.sequence,
       empty: info.sourceTiles === 0,
+      landscapeEmpty: info.landscapeTiles === 0,
       maxSourceBytes: editorBudgets.sourceBytes,
       maxPendingBytes: editorBudgets.pendingWriteBytes,
       maxHistoryBytes: editorBudgets.historyBytes,
@@ -330,7 +358,9 @@ export class EditorController {
     this.backgroundJob = null;
     this.projections.setSession(info.sessionId);
     this.compute.cancelAll();
-    this.world.reset(this.doc);
+    this.landscapeDemandVersion = 0;
+    this.landscapeEnabled = info.landscapeTiles > 0;
+    this.world.reset(this.doc, info.landscapeTiles === 0);
     this.world.moveCamera({ x: 0, y: 0, scale: 0.25 });
     this.prepareToolLevel();
     this.world.refresh();
@@ -339,6 +369,14 @@ export class EditorController {
       error: null,
       background: false,
     });
+  }
+
+  private get landscapeStroke(): LandscapeStroke | null {
+    return this.brushState.kind === "landscape" ? this.brushState : null;
+  }
+
+  private get landscapeMode(): boolean {
+    return this.mode === "forest" || this.mode === "clearing";
   }
 
   private get stroke(): BrushStroke | null {
@@ -359,6 +397,8 @@ export class EditorController {
         | "mode"
         | "diameter"
         | "amount"
+        | "landscapeKind"
+        | "landscapeDensity"
         | "grid"
         | "title"
         | "error"
@@ -379,7 +419,9 @@ export class EditorController {
       finishing: this.doc?.finishing ?? false,
       scale: this.world.camera.scale,
       sequence: this.doc?.sequence ?? 0,
-      level: this.currentBrush().level,
+      level: this.landscapeMode
+        ? this.currentLandscapeBrush().level
+        : this.currentBrush().level,
       writing: this.session.writing,
       saved: this.session.saved,
       loading: readiness.reason === "sources" || readiness.reason === "terrain",
@@ -438,7 +480,14 @@ export class EditorController {
   }
 
   setMode(mode: EditorState["mode"]): void {
-    this.publish({ mode });
+    if (this.doc?.active) this.finishGesture(undefined, "tool-change");
+    this.publish({
+      mode,
+      diameter:
+        mode === "forest" || mode === "clearing"
+          ? Math.min(128, this.diameter)
+          : this.diameter,
+    });
     this.updateToolNeed();
   }
 
@@ -460,11 +509,41 @@ export class EditorController {
     };
   }
 
+  currentLandscapeBrush(): LandscapeBrush {
+    const radius = Math.min(128, this.diameter) / (2 * this.world.camera.scale);
+    const weights: LandscapeWeights = [0, 0, 0, 0];
+    if (this.mode !== "clearing")
+      weights[this.state.landscapeKind] = Math.round(
+        this.state.landscapeDensity * 2.55,
+      );
+    return {
+      radius,
+      level: Math.max(0, Math.min(24, Math.floor(Math.log2(radius / 8)))),
+      weights,
+      label: this.mode === "clearing" ? "Lichtung malen" : "Landschaft malen",
+    };
+  }
+
+  setLandscape(kind: number, density: number): void {
+    if (
+      !Number.isInteger(kind) ||
+      kind < 0 ||
+      kind > 3 ||
+      !Number.isFinite(density)
+    )
+      throw new Error("Ungültige Landschaftseinstellung.");
+    this.publish({
+      landscapeKind: kind as 0 | 1 | 2 | 3,
+      landscapeDensity: Math.max(0, Math.min(100, density)),
+    });
+    this.updateToolNeed();
+  }
+
   setBrush(diameter: number, amount: number): void {
     if (!Number.isFinite(diameter) || !Number.isFinite(amount))
       throw new Error("Pinselgröße und Stärke müssen endliche Zahlen sein.");
     this.publish({
-      diameter: Math.max(8, Math.min(512, diameter)),
+      diameter: Math.max(8, Math.min(this.landscapeMode ? 128 : 512, diameter)),
       amount: Math.max(0.1, Math.min(10000, amount)),
     });
     this.updateToolNeed();
@@ -526,7 +605,7 @@ export class EditorController {
   }
 
   goTo(event: Event, x: number, y: number, scale: number): void {
-    if (this.stroke) return;
+    if (this.stroke || this.landscapeStroke) return;
     this.navigate({ x, y, scale }, this.input(event, "navigation"));
   }
 
@@ -540,11 +619,14 @@ export class EditorController {
     const bounds = this.world.sourceBounds();
     const key = [
       this.doc.sessionId,
+      this.landscapeDemandVersion,
+      this.landscapeMode,
       viewGeneration,
       power,
       ...bounds,
       local.brush.level,
       ...local.bounds,
+      ...(this.landscapeStroke?.retainedBounds ?? []),
     ].join(":");
     if (this.desiredNeed?.key === key) return;
     this.desiredNeed = {
@@ -555,6 +637,8 @@ export class EditorController {
       minLevel: minimumCoarseHeightLevel(power),
       toolBounds: local.bounds,
       toolLevel: local.brush.level,
+      toolKind:
+        this.landscapeStroke || this.landscapeMode ? "landscape" : "height",
       key,
     };
     this.retainViewSources();
@@ -570,6 +654,7 @@ export class EditorController {
       const read = this.pumpRead();
       if (read) void read.catch(this.fail);
       this.advanceHeldBrush(performance.now());
+      this.advanceLandscape();
       this.advanceAction();
       if (this.world.prepareFrame()) this.checkLocalReady();
       this.freezeBrushRender();
@@ -767,16 +852,25 @@ export class EditorController {
     if (this.readState.kind === "ready" && this.readState.key === need.key)
       return null;
     const { document, bounds, power, minLevel, viewGeneration } = need;
-    const presentation = !this.world.isPresentationReady(bounds, power);
-    const tool = !document.isReady(
-      need.toolBounds,
-      HEIGHT_LEVELS.slice(need.toolLevel),
+    const landscapePresentation = !this.world.isLandscapePresentationReady(
+      bounds,
+      power,
     );
-    if (!presentation && !tool) {
+    const presentation =
+      !document.isReady(bounds, HEIGHT_LEVELS.slice(minLevel)) ||
+      !this.world.isHeightPresentationReady(bounds, power);
+    const tool =
+      need.toolKind === "landscape"
+        ? !document.isLandscapeReady(need.toolBounds, need.toolLevel)
+        : !document.isReady(
+            need.toolBounds,
+            HEIGHT_LEVELS.slice(need.toolLevel),
+          );
+    if (!presentation && !landscapePresentation && !tool) {
       this.readState = { kind: "ready", key: need.key };
       return null;
     }
-    const key = `${need.key}:${presentation ? "presentation" : "tool"}`;
+    const key = `${need.key}:${presentation ? "presentation" : landscapePresentation ? "landscape-presentation" : "tool"}`;
     if (this.readState.kind === "failed" && this.readState.key === key)
       return null;
     this.checkLocalReady();
@@ -827,6 +921,46 @@ export class EditorController {
           },
           viewGeneration,
         );
+      } else if (landscapePresentation) {
+        await this.readCurrent(
+          document,
+          () =>
+            this.bridge.readLandscapePresentation({
+              sessionId: document.sessionId,
+              bounds,
+              power,
+            }),
+          (reply) => {
+            document.acceptLandscapeCoverage(
+              bounds,
+              reply.tiles,
+              reply.sequence,
+              reply.sessionId,
+              minimumCoarseLandscapeLevel(power),
+            );
+            this.world.updateLandscapePresentation(reply);
+          },
+          viewGeneration,
+        );
+      } else if (need.toolKind === "landscape") {
+        await this.readCurrent(
+          document,
+          () =>
+            this.bridge.readLandscapeRegion({
+              sessionId: document.sessionId,
+              bounds: need.toolBounds,
+              minLevel: need.toolLevel,
+            }),
+          (reply) =>
+            document.acceptLandscapeCoverage(
+              need.toolBounds,
+              reply.tiles,
+              reply.sequence,
+              reply.sessionId,
+              need.toolLevel,
+            ),
+          viewGeneration,
+        );
       } else {
         await this.readRegion(
           document,
@@ -861,9 +995,25 @@ export class EditorController {
     this.world.forgetSources(
       this.doc.retainSources([
         { bounds: need.bounds, minLevel: need.minLevel },
-        { bounds: need.toolBounds, minLevel: need.toolLevel },
+        ...(need.toolKind === "height"
+          ? [{ bounds: need.toolBounds, minLevel: need.toolLevel }]
+          : []),
       ]),
     );
+    this.doc.retainLandscapeSources([
+      {
+        bounds: need.bounds,
+        minLevel: minimumCoarseLandscapeLevel(need.power),
+      },
+      ...(need.toolKind === "landscape"
+        ? [
+            {
+              bounds: this.landscapeStroke?.retainedBounds ?? need.toolBounds,
+              minLevel: need.toolLevel,
+            },
+          ]
+        : []),
+    ]);
   }
 
   /** The optional diagnostic sampler shares the same bounded read slot. */
@@ -899,6 +1049,8 @@ export class EditorController {
     point = this.toolPoint(),
     brush = this.stroke?.brush ?? this.currentBrush(),
   ): LocalReadiness {
+    if (this.landscapeStroke || (!this.stroke && this.landscapeMode))
+      return this.landscapeReadiness(point);
     const points = this.stroke
       ? [
           this.stroke.point,
@@ -960,6 +1112,57 @@ export class EditorController {
     };
   }
 
+  private landscapeReadiness(
+    point = this.toolPoint(),
+    from = this.landscapeStroke?.point ?? point,
+  ): LocalReadiness {
+    const brush = this.landscapeStroke?.brush ?? this.currentLandscapeBrush();
+    const bounds = clipBounds([
+      Math.min(from[0], point[0]) - brush.radius,
+      Math.min(from[1], point[1]) - brush.radius,
+      Math.max(from[0], point[0]) + brush.radius,
+      Math.max(from[1], point[1]) + brush.radius,
+    ]);
+    const view = this.world.bounds();
+    const visible = [from, point].every(
+      (candidate) =>
+        candidate.every(
+          (v) => Number.isFinite(v) && Math.abs(v) <= 100_000_000,
+        ) &&
+        Math.hypot(
+          Math.max(view[0] - candidate[0], 0, candidate[0] - view[2]),
+          Math.max(view[1] - candidate[1], 0, candidate[1] - view[3]),
+        ) < brush.radius,
+    );
+    const sourcesReady = Boolean(
+      this.doc?.isLandscapeReady(bounds, brush.level),
+    );
+    const display =
+      this.landscapeStroke && this.foundation
+        ? this.world.inspectFoundation(bounds, this.foundation)
+        : this.world.inspectRegion(bounds);
+    const reason = !visible
+      ? "outside"
+      : !sourcesReady
+        ? "sources"
+        : display.status !== "current" ||
+            !this.world.isLandscapePresentationReady(bounds)
+          ? "terrain"
+          : !this.session.editable || this.landscapeStroke?.sealed
+            ? "busy"
+            : null;
+    return {
+      ready: reason === null,
+      sourcesReady,
+      reason,
+      bounds,
+      point,
+      brush: { ...brush, amount: 0 },
+      frame: display.frame,
+      viewGeneration: display.viewGeneration,
+    };
+  }
+
   private checkLocalReady(): LocalReadiness {
     this.prepareToolLevel();
     const readiness = this.localReadiness();
@@ -984,8 +1187,8 @@ export class EditorController {
   }
 
   private updateToolNeed(): void {
-    const readiness = this.checkLocalReady();
-    if (readiness.reason === "sources") this.scheduleLoad();
+    this.checkLocalReady();
+    this.scheduleLoad();
     this.world.redrawCursor();
   }
 
@@ -1039,6 +1242,33 @@ export class EditorController {
       this.skipInput(input, readiness.reason!);
       this.checkLocalReady();
       if (readiness.reason === "sources") this.scheduleLoad();
+      return;
+    }
+    if (this.landscapeMode) {
+      try {
+        const landscapeBrush = this.currentLandscapeBrush();
+        this.foundation = this.world.captureFoundation();
+        if (!this.world.acceptFoundation(readiness.bounds, this.foundation))
+          throw new Error(
+            "Der Landschaftsbereich besitzt keine passende sichtbare Grundlage.",
+          );
+        this.doc.beginLandscapeGesture(landscapeBrush);
+        this.brushState = {
+          kind: "landscape",
+          pointerId: event.pointerId,
+          input,
+          brush: landscapeBrush,
+          point,
+          path: [point],
+          retainedBounds: [...readiness.bounds],
+          sealed: false,
+          released: false,
+        };
+        this.scheduleLoad();
+      } catch (error) {
+        this.gestureFailure(error);
+      }
+      this.checkLocalReady();
       return;
     }
     try {
@@ -1109,7 +1339,9 @@ export class EditorController {
       y: event.clientY - rect.top,
       radius: this.stroke
         ? this.stroke.brush.radius * this.world.camera.scale
-        : this.diameter / 2,
+        : this.landscapeStroke
+          ? this.landscapeStroke.brush.radius * this.world.camera.scale
+          : this.diameter / 2,
     };
     this.world.redrawCursor();
   }
@@ -1128,6 +1360,19 @@ export class EditorController {
           (event.clientY - this.pan.y) / this.pan.camera.scale,
       };
       this.navigate(camera, this.input(event, "navigation"));
+    } else if (this.landscapeStroke) {
+      const stroke = this.landscapeStroke;
+      if (stroke.sealed || event.pointerId !== stroke.pointerId) return;
+      try {
+        const coalesced = event.getCoalescedEvents?.() ?? [];
+        const samples = coalesced.length ? coalesced : [event];
+        const rect = this.canvas.getBoundingClientRect();
+        for (const sample of samples)
+          this.acceptLandscapePoint(this.worldPoint(sample, rect));
+        this.scheduleLoad();
+      } catch (error) {
+        this.gestureFailure(error);
+      }
     } else if (this.stroke) {
       if (event.pointerId !== this.stroke.pointerId) return;
       const events = event.getCoalescedEvents?.() ?? [];
@@ -1180,7 +1425,7 @@ export class EditorController {
     )
       return;
     const input = this.input(event, "pointerup");
-    if (state.kind === "active") {
+    if (state.kind === "active" || state.kind === "landscape") {
       this.updatePointer(event);
       this.finishGesture(input, "pointerup", event, true);
     } else {
@@ -1192,7 +1437,7 @@ export class EditorController {
 
   private wheel = (event: WheelEvent): void => {
     event.preventDefault();
-    if (this.stroke) return;
+    if (this.stroke || this.landscapeStroke) return;
     const input = this.input(event, "navigation");
     if (this.world.fault === "ignore-zoom") {
       this.observation.event("fault", { fault: "ignore-zoom", input });
@@ -1409,7 +1654,7 @@ export class EditorController {
       this.recordContentProbes(result.complete ? "complete" : "materialize");
     if (projectionError) {
       this.finishGesture(undefined, "projection-error");
-      this.world.reset(this.doc);
+      this.world.reset(this.doc, !this.landscapeEnabled);
       this.world.refresh();
       this.frozenEffect = null;
       this.lastFrozenRevision = -1;
@@ -1455,6 +1700,71 @@ export class EditorController {
     this.persist();
   }
 
+  private landscapeChanged(bounds: Bounds, sequence?: number): void {
+    this.landscapeEnabled = true;
+    this.world.updateLandscape(bounds, sequence);
+    this.landscapeDemandVersion++;
+    this.scheduleLoad();
+  }
+
+  /** Admit geometry while its displayed foundation and source proofs are current. */
+  private acceptLandscapePoint(point: Point, terminal = false): void {
+    const stroke = this.landscapeStroke;
+    if (!stroke || stroke.sealed) return;
+    const from = stroke.path.at(-1) ?? stroke.point;
+    if (point[0] === from[0] && point[1] === from[1]) return;
+    if (stroke.path.length >= MAX_BRUSH_POINTS - (terminal ? 0 : 1))
+      throw new Error(
+        "Zu viele offene Landschaftspunkte; der Strich wird zurückgenommen.",
+      );
+    const ready = this.landscapeReadiness(point, from);
+    if (
+      !ready.ready ||
+      !this.foundation ||
+      !this.world.acceptFoundation(ready.bounds, this.foundation)
+    )
+      throw new Error(
+        "Landschaftsbereich noch nicht bereit; Strich wurde zurückgenommen.",
+      );
+    stroke.path.push(point);
+    stroke.retainedBounds = [
+      Math.min(stroke.retainedBounds[0], ready.bounds[0]),
+      Math.min(stroke.retainedBounds[1], ready.bounds[1]),
+      Math.max(stroke.retainedBounds[2], ready.bounds[2]),
+      Math.max(stroke.retainedBounds[3], ready.bounds[3]),
+    ];
+  }
+
+  /** One bounded source segment per RAF. Up, History and Save share its barrier. */
+  private advanceLandscape(): void {
+    const stroke = this.landscapeStroke;
+    if (!stroke) return;
+    try {
+      const point = stroke.path[0];
+      if (point) {
+        // Admission checked presentation and pins world sources; sealed input is durable.
+        const update = this.doc.applyLandscapeSegment(stroke.point, point);
+        stroke.point = point;
+        stroke.path.shift();
+        if (update) this.landscapeChanged(update.bounds);
+      }
+      if (stroke.sealed && !stroke.path.length) {
+        const change = this.doc.finishLandscapeGesture();
+        this.brushState = stroke.released
+          ? { kind: "idle" }
+          : { kind: "blocked", pointerId: stroke.pointerId };
+        this.foundation = null;
+        if (change)
+          for (const bounds of change.dirtyBounds)
+            this.landscapeChanged(bounds, change.sequence);
+        this.persist();
+        this.updateToolNeed();
+      }
+    } catch (error) {
+      this.gestureFailure(error);
+    }
+  }
+
   private gestureFailure(error: unknown): void {
     this.finishGesture(undefined, "error");
     this.fail(error);
@@ -1466,6 +1776,50 @@ export class EditorController {
     event?: Event,
     released = false,
   ): void {
+    const landscape = this.landscapeStroke;
+    if (landscape) {
+      const cancelled = [
+        "escape",
+        "blur",
+        "cancel",
+        "visibility",
+        "navigation",
+        "resize",
+        "destroy",
+        "error",
+        "tool-change",
+        "render-context",
+      ].includes(reason);
+      if (
+        cancelled &&
+        (!landscape.sealed || reason === "error" || reason === "destroy")
+      ) {
+        const update = this.doc.cancelLandscapeGesture();
+        this.brushState = released
+          ? { kind: "idle" }
+          : { kind: "blocked", pointerId: landscape.pointerId };
+        this.foundation = null;
+        if (update) this.landscapeChanged(update.bounds);
+      } else if (!landscape.sealed) {
+        if (reason === "pointerup" && event) {
+          try {
+            this.acceptLandscapePoint(
+              this.worldPoint(event as PointerEvent),
+              true,
+            );
+          } catch (error) {
+            this.gestureFailure(error);
+            return;
+          }
+        }
+        landscape.sealed = true;
+        landscape.released = released;
+        this.doc.sealLandscapeGesture();
+        this.scheduleLoad();
+      } else if (released) landscape.released = true;
+      this.publish();
+      return;
+    }
     const gesture = this.stroke;
     if (!gesture) return;
     let inputAt: number | null = null;
@@ -1541,9 +1895,14 @@ export class EditorController {
       this.recordContentProbes(redo ? "redo" : "undo");
       // A broad history region can contain evicted, unchanged fine sources.
       // Transfer the authoritative changed tiles without reloading that region.
-      this.world.updateSourcePatches(change.patches);
+      const height = change.patches.filter((patch) => patch.kind === "height");
+      const landscape = change.patches.some(
+        (patch) => patch.kind === "landscape",
+      );
+      if (height.length) this.world.updateSourcePatches(height);
       for (const bounds of change.dirtyBounds) {
-        this.world.invalidate(bounds);
+        if (landscape) this.landscapeChanged(bounds, change.sequence);
+        if (height.length) this.world.invalidate(bounds);
       }
       this.persist();
       this.publish();
@@ -1805,6 +2164,16 @@ export class EditorController {
       pointer: [...this.pointer],
       height,
       samples,
+      landscape: points.map(([x, y]) => {
+        try {
+          return this.doc.sampleLandscape(x, y);
+        } catch {
+          return null;
+        }
+      }),
+      landscapeDisplay: points.map((point) =>
+        this.world.sampleLandscapeDisplay(point),
+      ),
       contentProbes: this.contentProbes
         ? this.doc.observeBrushCoefficients(
             this.contentProbes.level,
@@ -1820,7 +2189,11 @@ export class EditorController {
   }
 
   private key = (event: KeyboardEvent): void => {
-    if (event.target instanceof HTMLInputElement) return;
+    if (
+      event.target instanceof HTMLInputElement ||
+      event.target instanceof HTMLSelectElement
+    )
+      return;
     if (event.key === "Escape") {
       this.finishGesture(undefined, "escape", event);
     }
@@ -1838,6 +2211,7 @@ export class EditorController {
     this.finishGesture(undefined, reason, event, true);
     if (this.brushState.kind === "finishing")
       this.brushState.blockedPointerId = null;
+    else if (this.landscapeStroke) this.landscapeStroke.released = true;
     else this.brushState = { kind: "idle" };
     this.pan = null;
     this.checkLocalReady();

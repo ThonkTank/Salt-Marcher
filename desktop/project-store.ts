@@ -13,6 +13,10 @@ import { constants as fsConstants } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   CommitReceipt,
+  LandscapeRegionRead,
+  ReadLandscapeRegionRequest,
+  LandscapePresentationRequest,
+  LandscapePresentationRead,
   CommitRequest,
   ProjectInfo,
   ReadRegionRequest,
@@ -24,6 +28,13 @@ import type {
 } from "../src/editor/bridge";
 import {
   HEIGHT_MAX_ACTION_TILES,
+  HEIGHT_TILE_CELLS,
+  HEIGHT_TILE_BYTES,
+  WORLD_LIMIT,
+  LANDSCAPE_MAX_LEVEL,
+  LANDSCAPE_TILE_BYTES,
+  parseLandscapeTileKey,
+  landscapeTileBounds,
   HEIGHT_OVERVIEW_BYTES,
   MAX_HEIGHT_OVERVIEW_POWER,
   applyPreparedHeightOverviewDelta,
@@ -42,13 +53,31 @@ import {
   type HeightTile,
 } from "../src/editor/model";
 
-export const PROJECT_FORMAT = 24 as const;
+import {
+  LANDSCAPE_OVERVIEW_BYTES,
+  landscapeOverviewKeys,
+  minimumCoarseLandscapeLevel,
+  parseLandscapeOverviewKey,
+} from "../src/editor/model/landscape";
+import {
+  createLandscapeTables,
+  validateLandscapeMetadata,
+  encodeLandscapeTile,
+  decodeLandscapeTile,
+  decodeLandscapeOverview,
+  rebuildLandscapeSpatialIndex,
+  landscapeOverviewWriter,
+  type LandscapeStoreMetrics,
+  type StoredLandscapeTile,
+  type StoredLandscapeOverview,
+} from "./landscape-store";
+
+export const PROJECT_FORMAT = 25 as const;
 export const MAX_TRANSFER_TILES = 512;
 const APPLICATION_ID = 0x5341544c;
-const TILE_VALUES = 64 * 64;
-const TILE_BYTES = TILE_VALUES * Float64Array.BYTES_PER_ELEMENT;
-const WORLD_LIMIT = 100_000_000;
-const SCHEMA_KIND = "atlas-p0-height-2";
+const TILE_VALUES = HEIGHT_TILE_CELLS;
+const TILE_BYTES = HEIGHT_TILE_BYTES;
+const SCHEMA_KIND = "atlas-p3-masked-landscape-1";
 const OVERVIEW_ALGORITHM = "fine-cubic-centres-128-scale32-v1";
 const OVERVIEW_CACHE_TILES = 256;
 
@@ -75,6 +104,7 @@ interface WorkingProject extends Metadata {
   path: string | null;
   savedSequence: number | null;
   levelCounts: Map<number, number>;
+  landscapeLevelCounts: Map<number, number>;
 }
 
 interface StoredTile {
@@ -405,6 +435,7 @@ function createDatabase(path: string): Database.Database {
     database
       .prepare("INSERT INTO height_overview_state VALUES (1,?,0)")
       .run(OVERVIEW_ALGORITHM);
+    createLandscapeTables(database);
     return database;
   } catch (error) {
     database.close();
@@ -416,7 +447,7 @@ function metadata(database: Database.Database): Metadata {
   check(
     database.pragma("application_id", { simple: true }) === APPLICATION_ID &&
       database.pragma("user_version", { simple: true }) === PROJECT_FORMAT,
-    "Diese Datei ist kein unterstütztes Atlas-Höhenprojekt (Format 24).",
+    "Diese Datei ist kein unterstütztes Atlas-Projekt (Format 25).",
   );
   const row = database
     .prepare(
@@ -453,6 +484,7 @@ function metadata(database: Database.Database): Metadata {
       "SELECT power,tile_x,tile_y,values_blob FROM height_overviews LIMIT 0",
     )
     .all();
+  validateLandscapeMetadata(database, row.sequence);
   return {
     projectId: row.project_id,
     title: row.title,
@@ -524,7 +556,9 @@ function rebuildSpatialIndex(database: Database.Database) {
 export class ProjectStore {
   private current: WorkingProject | null = null;
   private readonly snapshots = new Map<string, Snapshot>();
-  private readonly counters: StoreMetrics & OverviewMetrics = {
+  private readonly counters: StoreMetrics &
+    OverviewMetrics &
+    LandscapeStoreMetrics = {
     reads: 0,
     returnedTiles: 0,
     returnedBytes: 0,
@@ -538,6 +572,15 @@ export class ProjectStore {
     overviewWriteBytes: 0,
     overviewCachePeakBytes: 0,
     maxCommitMs: 0,
+    returnedLandscapeTiles: 0,
+    returnedLandscapeOverviewTiles: 0,
+    landscapeOverviewUpdatedSamples: 0,
+    landscapeOverviewExaminedSamples: 0,
+    landscapeOverviewReadBytes: 0,
+    landscapeOverviewWriteBytes: 0,
+    landscapeOverviewCachePeakBytes: 0,
+    landscapeOverviewSourceLookups: 0,
+    landscapeOverviewFineSourceLookups: 0,
   };
 
   constructor(
@@ -601,6 +644,13 @@ export class ProjectStore {
       savedSequence: project.savedSequence,
       path: project.path,
       activeLevels: [...project.levelCounts.keys()].sort((a, b) => a - b),
+      activeLandscapeLevels: [...project.landscapeLevelCounts.keys()].sort(
+        (a, b) => a - b,
+      ),
+      landscapeTiles: [...project.landscapeLevelCounts.values()].reduce(
+        (sum, count) => sum + count,
+        0,
+      ),
       sourceTiles: [...project.levelCounts.values()].reduce(
         (sum, count) => sum + count,
         0,
@@ -608,7 +658,7 @@ export class ProjectStore {
     };
   }
 
-  metrics(): StoreMetrics & OverviewMetrics {
+  metrics(): StoreMetrics & OverviewMetrics & LandscapeStoreMetrics {
     return { ...this.counters };
   }
 
@@ -630,6 +680,7 @@ export class ProjectStore {
       path: null,
       savedSequence: null,
       levelCounts: new Map(),
+      landscapeLevelCounts: new Map(),
     };
     this.replace(candidate);
     return this.status();
@@ -663,6 +714,7 @@ export class ProjectStore {
       candidateDb = new Database(workingPath, { fileMustExist: true });
       const meta = metadata(candidateDb);
       const counts = rebuildSpatialIndex(candidateDb);
+      const landscapeCounts = rebuildLandscapeSpatialIndex(candidateDb);
       // Do not materialize all source payloads during open. Each selected read
       // validates its binary payload before returning it to the active document.
       candidateDb
@@ -680,6 +732,7 @@ export class ProjectStore {
         path: absolute,
         savedSequence: meta.sequence,
         levelCounts: counts,
+        landscapeLevelCounts: landscapeCounts,
       };
     } catch (error) {
       candidateDb?.close();
@@ -797,6 +850,86 @@ export class ProjectStore {
     };
   }
 
+  readLandscapeRegion(
+    request: ReadLandscapeRegionRequest,
+  ): LandscapeRegionRead {
+    const project = this.session(request.sessionId);
+    validateBounds(request.bounds);
+    check(
+      finiteInteger(request.minLevel, 0, LANDSCAPE_MAX_LEVEL + 1),
+      "Ungültige benötigte Landschaftsstufe.",
+    );
+    const [minX, minY, maxX, maxY] = request.bounds;
+    const rows = project.database
+      .prepare(
+        `
+      SELECT t.level,t.tile_x,t.tile_y,t.revision,t.mask_blob,t.values_blob
+      FROM landscape_spatial s JOIN landscape_tiles t ON t.id=s.id
+      WHERE s.min_x<@maxX AND s.max_x>@minX AND s.min_y<@maxY AND s.max_y>@minY
+        AND s.max_level>=@minLevel AND s.min_level<=${LANDSCAPE_MAX_LEVEL}
+        AND t.min_x<@maxX AND t.max_x>@minX AND t.min_y<@maxY AND t.max_y>@minY
+        AND t.level>=@minLevel
+      ORDER BY t.level,t.tile_x,t.tile_y LIMIT ${MAX_TRANSFER_TILES + 1}
+    `,
+      )
+      .all({
+        minX,
+        minY,
+        maxX,
+        maxY,
+        minLevel: request.minLevel,
+      }) as StoredLandscapeTile[];
+    check(
+      rows.length <= MAX_TRANSFER_TILES,
+      "Der Ausschnitt enthält zu viele Landschaftskacheln; bitte näher heranzoomen.",
+    );
+    const tiles = rows.map(decodeLandscapeTile);
+    this.counters.reads++;
+    this.counters.returnedLandscapeTiles += tiles.length;
+    this.counters.returnedBytes += tiles.length * LANDSCAPE_TILE_BYTES;
+    return {
+      sessionId: project.sessionId,
+      sequence: project.sequence,
+      bounds: [...request.bounds],
+      minLevel: request.minLevel,
+      tiles,
+    };
+  }
+
+  readLandscapePresentation(
+    request: LandscapePresentationRequest,
+  ): LandscapePresentationRead {
+    const project = this.session(request.sessionId);
+    validateBounds(request.bounds);
+    const overviewKeys = landscapeOverviewKeys(request.bounds, request.power);
+    const coarse = this.readLandscapeRegion({
+      sessionId: request.sessionId,
+      bounds: request.bounds,
+      minLevel: minimumCoarseLandscapeLevel(request.power),
+    });
+    const select = project.database.prepare(
+      "SELECT own_blob,rest_blob,source_levels_blob FROM landscape_overviews WHERE power=? AND tile_x=? AND tile_y=?",
+    );
+    const overviews = [];
+    for (const key of overviewKeys) {
+      const at = parseLandscapeOverviewKey(key);
+      const row = select.get(at.power, at.tileX, at.tileY) as
+        StoredLandscapeOverview | undefined;
+      if (row) overviews.push(decodeLandscapeOverview(key, row));
+    }
+    this.counters.returnedLandscapeOverviewTiles += overviews.length;
+    this.counters.returnedBytes += overviews.length * LANDSCAPE_OVERVIEW_BYTES;
+    return {
+      sessionId: project.sessionId,
+      sequence: project.sequence,
+      bounds: [...request.bounds],
+      power: request.power,
+      tiles: coarse.tiles,
+      overviewKeys,
+      overviews,
+    };
+  }
+
   commit(request: CommitRequest): CommitReceipt {
     const commitStartedAt = performance.now();
     validateBoundary(request);
@@ -813,15 +946,54 @@ export class ProjectStore {
     const patches = request.patches.map((patch) => {
       check(
         patch && !seen.has(patch.key),
-        "Doppelter Höhenschlüssel in einer Aktion.",
+        "Doppelter Quellenschlüssel in einer Aktion.",
+      );
+      check(
+        patch.kind === "height" || patch.kind === "landscape",
+        "Ungültige Quellenart.",
       );
       seen.add(patch.key);
+      hash.update(`${patch.kind}\0${patch.key}\0`);
+      if (patch.kind === "landscape") {
+        check(
+          typeof patch.key === "string" && patch.key.startsWith("landscape:"),
+          "Landschaftsquellen und Schlüssel stimmen nicht überein.",
+        );
+        const at = parseLandscapeTileKey(patch.key);
+        const area = landscapeTileBounds(at);
+        check(
+          area[0] < WORLD_LIMIT &&
+            area[1] < WORLD_LIMIT &&
+            area[2] > -WORLD_LIMIT &&
+            area[3] > -WORLD_LIMIT,
+          "Landschaftsquelle liegt außerhalb der Welt.",
+        );
+        const after =
+          patch.after === null
+            ? null
+            : encodeLandscapeTile(patch.after, patch.key);
+        hash.update(`${after?.revision ?? "absent"}\0`);
+        if (after) hash.update(after.mask).update(after.values);
+        return {
+          ...at,
+          kind: "landscape" as const,
+          key: patch.key,
+          source: patch.after,
+          after,
+        };
+      }
       const at = coordinates(patch.key);
       const after =
         patch.after === null ? null : encodeTile(patch.after, patch.key);
-      hash.update(`${patch.key}\0${after?.revision ?? "absent"}\0`);
+      hash.update(`${after?.revision ?? "absent"}\0`);
       if (after) hash.update(after.values);
-      return { ...at, key: patch.key, source: patch.after, after };
+      return {
+        ...at,
+        kind: "height" as const,
+        key: patch.key,
+        source: patch.after,
+        after,
+      };
     });
     const payloadHash = hash.digest("hex");
     const prior = project.database
@@ -863,6 +1035,27 @@ export class ProjectStore {
     const spatial = database.prepare(
       "INSERT OR REPLACE INTO height_spatial VALUES (?, ?, ?, ?, ?, ?, ?)",
     );
+    const landscapeExisting = database.prepare(
+      "SELECT id,level,tile_x,tile_y,revision,mask_blob,values_blob FROM landscape_tiles WHERE level=? AND tile_x=? AND tile_y=?",
+    );
+    const landscapeUpsert = database.prepare(`
+      INSERT INTO landscape_tiles(level,tile_x,tile_y,revision,mask_blob,values_blob,min_x,max_x,min_y,max_y)
+      VALUES(@level,@tileX,@tileY,@revision,@mask,@values,@minX,@maxX,@minY,@maxY)
+      ON CONFLICT(level,tile_x,tile_y) DO UPDATE SET revision=excluded.revision,mask_blob=excluded.mask_blob,values_blob=excluded.values_blob
+    `);
+    const landscapeSpatial = database.prepare(
+      "INSERT OR REPLACE INTO landscape_spatial VALUES(?,?,?,?,?,?,?)",
+    );
+    const landscapeCounts = new Map(project.landscapeLevelCounts);
+    let landscapeMetrics = {
+      updatedSamples: 0,
+      examinedSamples: 0,
+      readBytes: 0,
+      writeBytes: 0,
+      peakBytes: 0,
+      sourceLookups: 0,
+      fineSourceLookups: 0,
+    };
     const counts = new Map(project.levelCounts);
     let derivedMetrics = {
       updatedSamples: 0,
@@ -872,7 +1065,53 @@ export class ProjectStore {
     };
     database.transaction(() => {
       const overviews = overviewWriter(database);
+      const landscapeOverviews = landscapeOverviewWriter(database);
       for (const patch of patches) {
+        if (patch.kind === "landscape") {
+          const previous = landscapeExisting.get(
+            patch.level,
+            patch.tileX,
+            patch.tileY,
+          ) as (StoredLandscapeTile & { id: number }) | undefined;
+          landscapeOverviews.apply({
+            key: patch.key,
+            before: previous ? decodeLandscapeTile(previous) : null,
+            after: patch.source,
+          });
+          if (patch.after) {
+            landscapeUpsert.run(patch.after);
+            const row = landscapeExisting.get(
+              patch.level,
+              patch.tileX,
+              patch.tileY,
+            ) as { id: number };
+            landscapeSpatial.run(
+              row.id,
+              patch.after.minX,
+              patch.after.maxX,
+              patch.after.minY,
+              patch.after.maxY,
+              patch.level,
+              patch.level,
+            );
+            if (!previous)
+              landscapeCounts.set(
+                patch.level,
+                (landscapeCounts.get(patch.level) ?? 0) + 1,
+              );
+          } else if (previous) {
+            database
+              .prepare("DELETE FROM landscape_spatial WHERE id=?")
+              .run(previous.id);
+            database
+              .prepare("DELETE FROM landscape_tiles WHERE id=?")
+              .run(previous.id);
+            const count = (landscapeCounts.get(patch.level) ?? 1) - 1;
+            if (count) landscapeCounts.set(patch.level, count);
+            else landscapeCounts.delete(patch.level);
+          }
+          continue;
+        }
         const previous = existing.get(patch.level, patch.tileX, patch.tileY) as
           (StoredTile & { id: number }) | undefined;
         const delta = prepareHeightOverviewDelta({
@@ -910,6 +1149,12 @@ export class ProjectStore {
         }
       }
       derivedMetrics = overviews.finish();
+      landscapeMetrics = landscapeOverviews.finish();
+      database
+        .prepare(
+          "UPDATE landscape_overview_state SET sequence=? WHERE singleton=1",
+        )
+        .run(request.sequence);
       database
         .prepare(
           "UPDATE height_overview_state SET sequence=? WHERE singleton=1",
@@ -936,8 +1181,23 @@ export class ProjectStore {
       this.counters.maxCommitMs,
       performance.now() - commitStartedAt,
     );
+    this.counters.landscapeOverviewUpdatedSamples +=
+      landscapeMetrics.updatedSamples;
+    this.counters.landscapeOverviewExaminedSamples +=
+      landscapeMetrics.examinedSamples;
+    this.counters.landscapeOverviewReadBytes += landscapeMetrics.readBytes;
+    this.counters.landscapeOverviewWriteBytes += landscapeMetrics.writeBytes;
+    this.counters.landscapeOverviewCachePeakBytes = Math.max(
+      this.counters.landscapeOverviewCachePeakBytes,
+      landscapeMetrics.peakBytes,
+    );
+    this.counters.landscapeOverviewSourceLookups +=
+      landscapeMetrics.sourceLookups;
+    this.counters.landscapeOverviewFineSourceLookups +=
+      landscapeMetrics.fineSourceLookups;
     project.sequence = request.sequence;
     project.levelCounts = counts;
+    project.landscapeLevelCounts = landscapeCounts;
     this.counters.commits++;
     this.counters.committedTiles += patches.length;
     return {

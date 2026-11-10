@@ -1,6 +1,8 @@
 import { expect, it } from "vitest";
 import {
   HEIGHT_SUM_SCALE,
+  HEIGHT_BASE,
+  heightFromScaledSum,
   heightTilesFromControls,
   prepareScaledHeightSum,
   type Bounds,
@@ -40,8 +42,48 @@ it("projects all 22 levels and fine overview with canonical Float64 content", as
   expect(result?.pixels).toEqual(
     rasterize(expected, bounds, size, [0, 0, size, size], overview),
   );
+  expect(result?.land).toEqual(
+    Uint8Array.from(expected, (value, index) =>
+      heightFromScaledSum(value + overview[index]) >= -1e-6 ? 255 : 0,
+    ),
+  );
   expect(result?.samples).toBe(size * size);
   expect(yielded).toBeGreaterThan(10);
+});
+
+it("uses the same exact coastal snapping for land and colour", async () => {
+  const heights = [-2e-6, -0.5e-6, 0, 0.5e-6];
+  const overview = Float64Array.from(
+    heights,
+    (height) => (height - HEIGHT_BASE) / HEIGHT_SUM_SCALE,
+  );
+  const result = await projectHeightPixels(
+    { sources: [], bounds: [0, 0, 2, 2], size: 2, overview },
+    { cancelled: () => false, now: () => 0, yield: async () => {} },
+  );
+  expect(result?.land).toEqual(new Uint8Array([0, 255, 255, 255]));
+  expect(result?.pixels.slice(0, 4)).toEqual(
+    new Uint8Array([94, 147, 166, 255]),
+  );
+  for (let index = 1; index < 4; index++)
+    expect(result?.pixels.slice(index * 4, index * 4 + 4)).toEqual(
+      new Uint8Array([201, 192, 144, 255]),
+    );
+});
+
+it("keeps outside-world samples transparent and absent from the land mask", async () => {
+  const result = await projectHeightPixels(
+    {
+      sources: [],
+      bounds: [99_999_999, 0, 100_000_003, 4],
+      size: 2,
+      overview: new Float64Array(4).fill(120 / HEIGHT_SUM_SCALE),
+    },
+    { cancelled: () => false, now: () => 0, yield: async () => {} },
+  );
+  expect(result?.land).toEqual(new Uint8Array([255, 0, 255, 0]));
+  expect(result?.pixels.slice(4, 8)).toEqual(new Uint8Array(4));
+  expect(result?.pixels.slice(12, 16)).toEqual(new Uint8Array(4));
 });
 
 it("retains the canonical summation order for extreme cancelling sources", async () => {

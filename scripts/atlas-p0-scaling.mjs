@@ -415,7 +415,11 @@ export async function createScalingFixtures(
           sessionId: status.sessionId,
           sequence: status.sequence + 1,
           transactionId: `scaling-${definition.id}-${status.sequence + 1}`,
-          patches: batch.map((after) => ({ key: after.key, after })),
+          patches: batch.map((after) => ({
+            kind: "height",
+            key: after.key,
+            after,
+          })),
         });
         batch = [];
       };
@@ -504,7 +508,11 @@ export async function createBusyFixture(
       sessionId: project.sessionId,
       sequence: project.sequence + 1,
       transactionId: "busy-fixture-cold-target",
-      patches: targetTiles.map((after) => ({ key: after.key, after })),
+      patches: targetTiles.map((after) => ({
+        kind: "height",
+        key: after.key,
+        after,
+      })),
     });
     const status = store.status();
     assert.equal(status.sourceTiles, 9008);

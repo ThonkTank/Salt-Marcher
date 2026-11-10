@@ -398,7 +398,9 @@ describe("local source readiness and ownership", () => {
     expect(() => doc.sampleHeight(100, 100)).toThrow(SourcesNotReadyError);
     doc.acceptCoverage(
       LOCAL,
-      change.patches.flatMap((p) => (p.after ? [p.after] : [])),
+      change.patches.flatMap((p) =>
+        p.kind === "height" && p.after ? [p.after] : [],
+      ),
       change.sequence,
     );
     expect(doc.sampleHeight(100, 100)).toBe(sample);
@@ -530,7 +532,7 @@ describe("bounded resident sources and their readiness proofs", () => {
     const initial = stroke(doc, [[100, 100]]).change!;
     const original = doc.sampleHeight(100, 100);
     const authors = initial.patches.flatMap((patch) =>
-      patch.after ? [patch.after] : [],
+      patch.kind === "height" && patch.after ? [patch.after] : [],
     );
     const key = authors[0].key;
     doc.acceptPersistence(initial.sequence);
@@ -563,7 +565,9 @@ describe("bounded resident sources and their readiness proofs", () => {
     expect(() => doc.sampleHeight(100, 100)).toThrow(SourcesNotReadyError);
     doc.acceptCoverage(
       LOCAL,
-      restored.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+      restored.patches.flatMap((patch) =>
+        patch.kind === "height" && patch.after ? [patch.after] : [],
+      ),
       restored.sequence,
     );
     expect(doc.sampleHeight(100, 100)).toBe(original);
@@ -1224,7 +1228,9 @@ describe("local gestures, history and persistence patches", () => {
     expect(first.patches.length).toBeLessThan(fixture.length);
     expect(first.patches.every((p) => p.after?.level === 0)).toBe(true);
     const stored = new Map(fixture.map((t) => [t.key, cloneHeightTile(t)]));
-    for (const patch of first.patches)
+    for (const patch of first.patches.filter(
+      (patch) => patch.kind === "height",
+    ))
       if (patch.after) stored.set(patch.key, cloneHeightTile(patch.after));
       else stored.delete(patch.key);
     const restored = new EditorDocument("new-session", { sequence: 8 });

@@ -159,6 +159,9 @@ in vec2 vUV;
 out vec4 finalColor;
 uniform sampler2D uHeights;
 uniform sampler2D uFallbackPixels;
+uniform sampler2D uFallbackLand;
+uniform sampler2D uLandscape;
+uniform int uHasLandscape;
 uniform int uFallback;
 uniform vec4 uClip;
 ${heightFragment.slice(heightFragment.indexOf("vec2 addPair"), heightFragment.indexOf("void main()"))}
@@ -168,8 +171,17 @@ void main() {
     finalColor = vec4(0.0);
     return;
   }
+  vec4 landscape = uHasLandscape != 0 ? texelFetch(uLandscape, pixel, 0) : vec4(0.0);
+  float coverage = min(1.0, dot(landscape, vec4(1.0)));
+  vec3 vegetation = landscape.r * vec3(43.0,91.0,57.0)
+    + landscape.g * vec3(105.0,126.0,66.0)
+    + landscape.b * vec3(143.0,159.0,82.0)
+    + landscape.a * vec3(135.0,132.0,126.0);
   if (uFallback != 0) {
-    finalColor = texelFetch(uFallbackPixels, pixel, 0);
+    vec4 base = texelFetch(uFallbackPixels, pixel, 0);
+    if (texelFetch(uFallbackLand, pixel, 0).r > 0.5)
+      base.rgb = floor(base.rgb * 255.0 * (1.0 - coverage) + vegetation + 0.5) / 255.0;
+    finalColor = base;
     return;
   }
   vec2 height = scalePair(texelFetch(uHeights, pixel, 0).rg, 32.0);
@@ -191,5 +203,6 @@ void main() {
     float shade = min(1.0, h / 600.0);
     colour = floor(vec3(132.0,151.0,103.0) + vec3(60.0,34.0,64.0) * shade + 0.5);
   }
+  if (!negativePair(height)) colour = floor(colour * (1.0 - coverage) + vegetation + 0.5);
   finalColor = vec4(colour / 255.0, 1.0);
 }`;

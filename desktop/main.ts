@@ -429,6 +429,8 @@ function registerBridge() {
           return store.request("metrics");
         case "readRegion":
         case "readPresentation":
+        case "readLandscapeRegion":
+        case "readLandscapePresentation":
           if (
             !argument ||
             !Array.isArray(argument.bounds) ||

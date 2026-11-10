@@ -1,4 +1,12 @@
-import type { Bounds, HeightTile } from "./model";
+import type { Bounds, HeightTile, LandscapeTile, SourcePatch } from "./model";
+import type {
+  LandscapePresentationRead,
+  LandscapePresentationRequest,
+} from "./model/landscape";
+export type {
+  LandscapePresentationRead,
+  LandscapePresentationRequest,
+} from "./model/landscape";
 import type {
   HeightPresentationRead,
   HeightPresentationRequest,
@@ -8,13 +16,15 @@ import type {
 export interface ProjectInfo {
   sessionId: string;
   projectId: string;
-  format: 24;
+  format: 25;
   title: string;
   sequence: number;
   savedSequence: number | null;
   path: string | null;
   activeLevels: number[];
   sourceTiles: number;
+  landscapeTiles: number;
+  activeLandscapeLevels: number[];
 }
 
 export interface SourceBoundary {
@@ -53,9 +63,25 @@ export interface RegionRead extends SourceRead {
   level?: number;
 }
 
+export interface ReadLandscapeRegionRequest {
+  sessionId: string;
+  bounds: Bounds;
+  minLevel: number;
+}
+
+export interface LandscapeRegionRead extends SourceBoundary {
+  bounds: Bounds;
+  minLevel: number;
+  tiles: LandscapeTile[];
+}
+
+export type CommitPatch =
+  | Omit<Extract<SourcePatch, { kind: "height" }>, "before">
+  | Omit<Extract<SourcePatch, { kind: "landscape" }>, "before">;
+
 export interface CommitRequest extends SourceBoundary {
   transactionId: string;
-  patches: { key: string; after: HeightTile | null }[];
+  patches: CommitPatch[];
 }
 
 export interface CommitReceipt extends SourceBoundary {
@@ -88,6 +114,12 @@ export interface AtlasDesktop {
   status(): Promise<ProjectInfo>;
   readRegion(request: ReadRegionRequest): Promise<RegionRead>;
   readPresentation(request: ReadPresentationRequest): Promise<PresentationRead>;
+  readLandscapeRegion(
+    request: ReadLandscapeRegionRequest,
+  ): Promise<LandscapeRegionRead>;
+  readLandscapePresentation(
+    request: LandscapePresentationRequest,
+  ): Promise<LandscapePresentationRead>;
   commit(request: CommitRequest): Promise<CommitReceipt>;
   /** Null means the user cancelled the native file/unsaved-changes dialog. */
   newProject(prepared: PreparedDocument): Promise<ProjectInfo | null>;

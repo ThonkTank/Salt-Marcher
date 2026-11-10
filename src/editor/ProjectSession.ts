@@ -89,7 +89,15 @@ export class ProjectSession {
           sessionId: change.sessionId,
           sequence: change.sequence,
           transactionId: change.transactionId,
-          patches: change.patches.map(({ key, after }) => ({ key, after })),
+          patches: change.patches.map((patch) =>
+            patch.kind === "height"
+              ? { kind: "height" as const, key: patch.key, after: patch.after }
+              : {
+                  kind: "landscape" as const,
+                  key: patch.key,
+                  after: patch.after,
+                },
+          ),
         });
         if (document !== this.document || document.disposed) return;
         document.acknowledge(receipt);
@@ -244,7 +252,15 @@ export class ProjectSession {
           sessionId: change.sessionId,
           sequence: change.sequence,
           transactionId: change.transactionId,
-          patches: change.patches.map(({ key, after }) => ({ key, after })),
+          patches: change.patches.map((patch) =>
+            patch.kind === "height"
+              ? { kind: "height" as const, key: patch.key, after: patch.after }
+              : {
+                  kind: "landscape" as const,
+                  key: patch.key,
+                  after: patch.after,
+                },
+          ),
         });
         this.assertCurrentDocument(document);
         document.acknowledge(receipt);

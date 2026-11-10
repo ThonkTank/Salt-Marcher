@@ -27,7 +27,7 @@ const option = (name, fallback) => {
 };
 const executablePath = option("--executable", undefined);
 const selection = option("--only", "all");
-if (!["all", "normal", "stall", "lifecycle"].includes(selection))
+if (!["all", "normal", "stall", "lifecycle", "landscape"].includes(selection))
   throw new Error("Unknown smoke selection");
 const out = resolve(
   option(
@@ -456,6 +456,12 @@ async function scenario(name, action) {
 try {
   if (selection === "all" || selection === "normal")
     await scenario("normal", normalStart);
+  if (["all", "normal", "landscape"].includes(selection)) {
+    const { runLandscapeScenario } = await import("./atlas-p3-landscape.mjs");
+    await scenario("landscape", () =>
+      runLandscapeScenario({ launch, out, recordCheck }),
+    );
+  }
   if (selection === "all" || selection === "stall") {
     await scenario("stall-release", () => rendererStall(false));
     await scenario("stall-held", () => rendererStall(true));

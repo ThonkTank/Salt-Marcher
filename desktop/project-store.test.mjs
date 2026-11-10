@@ -1,4 +1,9 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import {
+  referenceLandscapeSample,
+  referenceLandscapeGrid,
+} from "../scripts/atlas-p3-landscape-reference.mjs";
 import { afterEach, test } from "node:test";
 import { createRequire } from "node:module";
 import { mkdtemp, readFile, rm, copyFile, writeFile } from "node:fs/promises";
@@ -12,6 +17,10 @@ const Database = require("better-sqlite3");
 const { ProjectStore } = require("../desktop-dist/project-store.cjs");
 const {
   createCoastFixture,
+  EditorDocument,
+  LANDSCAPE_TILE_BYTES,
+  createLandscapeTile,
+  prepareLandscapePresentation,
   heightTilesFromControls,
   heightTileKey,
   heightFromScaledSum,
@@ -41,7 +50,11 @@ function write(
     sessionId: status.sessionId,
     sequence: status.sequence + 1,
     transactionId,
-    patches: tiles.map((tile) => ({ key: tile.key, after: tile })),
+    patches: tiles.map((tile) => ({
+      kind: "height",
+      key: tile.key,
+      after: tile,
+    })),
   });
 }
 
@@ -53,6 +66,410 @@ function read(store, bounds, level) {
     ...(level === undefined ? {} : { level }),
   });
 }
+
+function writeSources(store, patches) {
+  const info = store.status();
+  return store.commit({
+    sessionId: info.sessionId,
+    sequence: info.sequence + 1,
+    transactionId: `action-${info.sequence + 1}`,
+    patches,
+  });
+}
+const landscapePatch = (after) => ({
+  kind: "landscape",
+  key: after.key,
+  after,
+});
+function landscapeRead(store, bounds, minLevel = 0) {
+  return store.readLandscapeRegion({
+    sessionId: store.status().sessionId,
+    bounds,
+    minLevel,
+  });
+}
+function landscapeCell(tile, x, y, weights) {
+  const spacing = 2 ** tile.level;
+  const index =
+    (Math.floor(y / spacing) - tile.tileY * 64) * 64 +
+    Math.floor(x / spacing) -
+    tile.tileX * 64;
+  assert.ok(index >= 0 && index < 4096);
+  tile.mask[index] = 1;
+  tile.values.set(weights, index * 4);
+}
+function landscapeFill(level, tileX, tileY, weights) {
+  const tile = createLandscapeTile(level, tileX, tileY);
+  tile.mask.fill(1);
+  for (let i = 0; i < 4096; i++) tile.values.set(weights, i * 4);
+  return tile;
+}
+function assertLandscapeReference(store, sources, power, tileX = 0, tileY = 0) {
+  const span = 128 * 2 ** power;
+  const bounds = [
+    tileX * span,
+    tileY * span,
+    (tileX + 1) * span,
+    (tileY + 1) * span,
+  ];
+  const read = store.readLandscapePresentation({
+    sessionId: store.status().sessionId,
+    bounds,
+    power,
+  });
+  const sample = prepareLandscapePresentation(read),
+    actual = new Uint8Array(128 * 128 * 4),
+    step = 2 ** power;
+  for (let y = 0; y < 128; y++)
+    for (let x = 0; x < 128; x++)
+      actual.set(
+        sample(bounds[0] + (x + 0.5) * step, bounds[1] + (y + 0.5) * step),
+        (y * 128 + x) * 4,
+      );
+  assert.deepEqual(
+    actual,
+    referenceLandscapeGrid(sources, power, tileX, tileY),
+  );
+  return read;
+}
+function fineLandscapeDigest(store) {
+  const hash = createHash("sha256");
+  for (const row of store.current.database
+    .prepare(
+      "SELECT level,tile_x,tile_y,revision,mask_blob,values_blob FROM landscape_tiles WHERE level=0 ORDER BY tile_x,tile_y",
+    )
+    .all()) {
+    hash.update(
+      JSON.stringify([row.level, row.tile_x, row.tile_y, row.revision]),
+    );
+    hash.update(row.mask_blob).update(row.values_blob);
+  }
+  return hash.digest("hex");
+}
+
+test("landscape starts sparse and shares atomic validation, receipt identity and session boundaries with height", async () => {
+  const { store } = await fresh();
+  const info = store.status();
+  assert.equal(info.format, 25);
+  assert.equal(info.landscapeTiles, 0);
+  assert.deepEqual(info.activeLandscapeLevels, []);
+  assert.deepEqual(landscapeRead(store, [-100, -100, 100, 100]).tiles, []);
+  assert.deepEqual(
+    store.readLandscapePresentation({
+      sessionId: info.sessionId,
+      bounds: [-100, -100, 100, 100],
+      power: 8,
+    }).overviews,
+    [],
+  );
+  for (const table of ["landscape_tiles", "landscape_overviews"])
+    assert.equal(
+      store.current.database.prepare(`SELECT count(*) AS n FROM ${table}`).get()
+        .n,
+      0,
+    );
+  const height = heightTilesFromControls(0, [[0, 0, 40]])[0];
+  const clearing = createLandscapeTile(0, 0, 0);
+  landscapeCell(clearing, 1, 1, [0, 0, 0, 0]);
+  const request = {
+    sessionId: info.sessionId,
+    sequence: 1,
+    transactionId: "shared-action",
+    patches: [
+      { kind: "height", key: height.key, after: height },
+      landscapePatch(clearing),
+    ],
+  };
+  const invalid = { ...clearing, mask: clearing.mask.slice() };
+  invalid.mask[0] = 2;
+  assert.throws(
+    () =>
+      store.commit({
+        ...request,
+        patches: [request.patches[0], landscapePatch(invalid)],
+      }),
+    /maske/i,
+  );
+  assert.equal(store.status().sequence, 0);
+  assert.equal(store.status().sourceTiles, 0);
+  assert.equal(store.status().landscapeTiles, 0);
+  assert.throws(
+    () =>
+      store.commit({
+        ...request,
+        patches: [{ ...request.patches[0], kind: "unknown" }],
+      }),
+    /Quellenart/,
+  );
+  assert.throws(
+    () =>
+      store.commit({
+        ...request,
+        patches: [{ ...landscapePatch(clearing), key: height.key }],
+      }),
+    /Landschaftsquellen/,
+  );
+  const receipt = store.commit(request);
+  assert.deepEqual(store.commit(request), receipt);
+  assert.equal(store.status().sourceTiles, 1);
+  assert.equal(store.status().landscapeTiles, 1);
+  assert.deepEqual(store.status().activeLandscapeLevels, [0]);
+  const changed = { ...clearing, mask: clearing.mask.slice() };
+  changed.mask[0] = 1;
+  assert.throws(
+    () =>
+      store.commit({
+        ...request,
+        patches: [request.patches[0], landscapePatch(changed)],
+      }),
+    /Widersprüchliche/,
+  );
+  store.newProject(store.status());
+  assert.throws(() => store.commit(request), /Veraltete/);
+  assert.throws(
+    () =>
+      store.readLandscapeRegion({
+        sessionId: info.sessionId,
+        bounds: [0, 0, 10, 10],
+        minLevel: 0,
+      }),
+    /Veraltete/,
+  );
+});
+
+test("fine clearings and four-channel authors survive coarse edits, snapshot S and a real reopen", async () => {
+  const { store, directory } = await fresh();
+  const coarse = [
+    landscapeFill(3, -1, -1, [130, 50, 40, 20]),
+    landscapeFill(3, 0, 0, [130, 50, 40, 20]),
+  ];
+  const fine = [createLandscapeTile(0, -1, -1), createLandscapeTile(0, 0, 0)];
+  for (let y = -4; y < 0; y++)
+    for (let x = -4; x < 0; x++) landscapeCell(fine[0], x, y, [0, 0, 0, 0]);
+  for (let y = 0; y < 4; y++)
+    for (let x = 0; x < 4; x++) landscapeCell(fine[1], x, y, [0, 0, 0, 0]);
+  landscapeCell(fine[0], -6, -6, [0, 255, 0, 0]);
+  writeSources(store, [...coarse, ...fine].map(landscapePatch));
+  const initialDigest = fineLandscapeDigest(store);
+  for (const x of [-1, 0])
+    assertLandscapeReference(store, [...coarse, ...fine], 2, x, x);
+  const changed = coarse.map((tile) =>
+    landscapeFill(3, tile.tileX, tile.tileY, [255, 0, 0, 0]),
+  );
+  writeSources(store, changed.map(landscapePatch));
+  assert.equal(fineLandscapeDigest(store), initialDigest);
+  const sources = [...changed, ...fine];
+  for (const point of [
+    [-0.5, -0.5],
+    [1.5, 1.5],
+  ])
+    assert.deepEqual(referenceLandscapeSample(sources, ...point), [0, 0, 0, 0]);
+  assert.deepEqual(
+    referenceLandscapeSample(sources, -5.5, -5.5),
+    [0, 255, 0, 0],
+  );
+  assert.deepEqual(referenceLandscapeSample(sources, 6, 6), [255, 0, 0, 0]);
+  for (const x of [-1, 0]) assertLandscapeReference(store, sources, 2, x, x);
+  const preparing = store.prepareSave(store.status());
+  const later = changed.map((tile) =>
+    landscapeFill(3, tile.tileX, tile.tileY, [0, 0, 0, 255]),
+  );
+  writeSources(store, later.map(landscapePatch));
+  const prepared = await preparing;
+  const file = join(directory, "landscape.saltatlas");
+  const saved = await store.publishSave(prepared.token, file);
+  assert.equal(saved.savedSequence, 2);
+  assert.equal(saved.sequence, 3);
+  assert.equal(store.status().savedSequence, 2);
+  const reopened = new ProjectStore(join(directory, "landscape-reopened"));
+  stores.push(reopened);
+  await reopened.openProject(file);
+  assert.equal(reopened.status().sequence, 2);
+  assert.equal(reopened.status().landscapeTiles, 4);
+  assert.equal(fineLandscapeDigest(reopened), initialDigest);
+  for (const x of [-1, 0]) assertLandscapeReference(reopened, sources, 2, x, x);
+  const restored = landscapeRead(reopened, [-64, -64, 64, 64]);
+  assert.deepEqual(
+    restored.tiles.find((tile) => tile.key === fine[0].key).mask,
+    fine[0].mask,
+  );
+  assert.deepEqual(
+    restored.tiles.find((tile) => tile.key === fine[0].key).values,
+    fine[0].values,
+  );
+});
+
+test("removing fine ownership restores coarser inheritance in persistent numerical overviews", async () => {
+  const { store } = await fresh();
+  const coarse = landscapeFill(3, 0, 0, [255, 0, 0, 0]),
+    middle = landscapeFill(1, 0, 0, [0, 0, 255, 0]),
+    fine = landscapeFill(0, 0, 0, [0, 0, 0, 0]);
+  writeSources(store, [coarse, middle, fine].map(landscapePatch));
+  assertLandscapeReference(store, [coarse, middle, fine], 4);
+  const before = store.metrics();
+  writeSources(store, [{ kind: "landscape", key: fine.key, after: null }]);
+  assertLandscapeReference(store, [coarse, middle], 4);
+  assert.ok(
+    store.metrics().landscapeOverviewSourceLookups >
+      before.landscapeOverviewSourceLookups,
+  );
+  assert.equal(store.metrics().landscapeOverviewFineSourceLookups, 0);
+  writeSources(store, [{ kind: "landscape", key: middle.key, after: null }]);
+  assertLandscapeReference(store, [coarse], 4);
+  writeSources(store, [{ kind: "landscape", key: coarse.key, after: null }]);
+  assertLandscapeReference(store, [], 4);
+  assert.equal(store.status().landscapeTiles, 0);
+  assert.equal(
+    store.current.database
+      .prepare("SELECT count(*) AS n FROM landscape_overviews")
+      .get().n,
+    0,
+  );
+});
+
+test("coarse landscape editing and presentation stay bounded when persisted fine sources exceed the active source budget", async () => {
+  const { store } = await fresh();
+  const fine = Array.from({ length: 520 }, (_, index) => {
+    const tile = createLandscapeTile(0, index, 16);
+    landscapeCell(tile, index * 64, 1024, [0, 0, 0, 0]);
+    return tile;
+  });
+  for (let offset = 0; offset < fine.length; offset += 128)
+    writeSources(store, fine.slice(offset, offset + 128).map(landscapePatch));
+  assert.equal(store.status().landscapeTiles, 520);
+  const bounds = [0, 1024, 520 * 64, 4096];
+  assert.throws(
+    () => landscapeRead(store, bounds),
+    /zu viele Landschaftskacheln/,
+  );
+  const activeSourceBudget = 4 * LANDSCAPE_TILE_BYTES;
+  const persistedFineBytes = store.current.database
+    .prepare(
+      "SELECT sum(length(mask_blob)+length(values_blob)) AS bytes FROM landscape_tiles WHERE level=0",
+    )
+    .get().bytes;
+  assert.equal(persistedFineBytes, 520 * LANDSCAPE_TILE_BYTES);
+  assert.ok(persistedFineBytes > activeSourceBudget);
+  const info = store.status();
+  const document = new EditorDocument(info.sessionId, {
+    sequence: info.sequence,
+    empty: true,
+    landscapeEmpty: false,
+    maxSourceBytes: activeSourceBudget,
+  });
+  // Five ordinary sources fit the read limit but exceed actual document residency.
+  assert.throws(
+    () =>
+      document.acceptLandscapeCoverage(
+        [0, 1024, 320, 1088],
+        fine.slice(0, 5),
+        info.sequence,
+        info.sessionId,
+        0,
+      ),
+    /Speicherbudget/,
+  );
+  assert.equal(document.metrics.sourceBytes, 0);
+  assert.equal(document.metrics.landscapeReadyTiles, 0);
+  const digest = fineLandscapeDigest(store),
+    before = store.metrics();
+  const editBounds = [-2048, -2048, 6144, 6144],
+    needed = landscapeRead(store, editBounds, 9);
+  assert.equal(needed.tiles.length, 0);
+  document.acceptLandscapeCoverage(
+    editBounds,
+    needed.tiles,
+    needed.sequence,
+    needed.sessionId,
+    9,
+  );
+  document.beginLandscapeGesture({
+    level: 9,
+    radius: 4096,
+    weights: [255, 0, 0, 0],
+  });
+  document.applyLandscapeSegment([2048, 2048], [2048, 2048]);
+  document.sealLandscapeGesture();
+  const change = document.finishLandscapeGesture();
+  assert.ok(change);
+  assert.ok(document.metrics.sourceBytes <= activeSourceBudget);
+  assert.equal(document.metrics.landscapeReadyTiles, 4);
+  assert.ok(
+    change.patches.every(
+      (patch) => patch.kind === "landscape" && patch.after.level === 9,
+    ),
+  );
+  document.acknowledge(store.commit(change));
+  const coarse = change.patches.map((patch) => patch.after);
+  assert.equal(fineLandscapeDigest(store), digest);
+  const after = store.metrics();
+  assert.equal(after.returnedLandscapeTiles - before.returnedLandscapeTiles, 0);
+  assert.equal(
+    after.landscapeOverviewSourceLookups -
+      before.landscapeOverviewSourceLookups,
+    0,
+  );
+  assert.equal(
+    after.landscapeOverviewFineSourceLookups -
+      before.landscapeOverviewFineSourceLookups,
+    0,
+  );
+  assert.ok(
+    after.landscapeOverviewExaminedSamples -
+      before.landscapeOverviewExaminedSamples <=
+      change.patches.length * 1400,
+  );
+  assert.ok(after.landscapeOverviewCachePeakBytes <= 32 * 128 * 128 * 6);
+  const beforeRead = store.metrics();
+  const read = store.readLandscapePresentation({
+    sessionId: store.status().sessionId,
+    bounds,
+    power: 11,
+  });
+  assert.ok(read.tiles.every((tile) => tile.level >= 11));
+  assert.equal(
+    store.metrics().returnedLandscapeTiles - beforeRead.returnedLandscapeTiles,
+    0,
+  );
+  const sample = prepareLandscapePresentation(read);
+  assert.deepEqual(sample(1024, 1024), [0, 0, 0, 0]);
+  assert.deepEqual(
+    sample(3072, 1024),
+    referenceLandscapeSample([...fine, ...coarse], 3072, 1024),
+  );
+  assert.deepEqual(sample(1024, 3072), [255, 0, 0, 0]);
+  assert.ok(document.metrics.sourceBytes <= activeSourceBudget);
+  assert.equal(document.metrics.landscapeReadyTiles, 4);
+});
+
+test("reopen rebuilds landscape headers locally and rejects an uncertified overview before replacing the session", async () => {
+  const { store, directory } = await fresh();
+  const source = landscapeFill(0, -1, -1, [0, 255, 0, 0]);
+  writeSources(store, [landscapePatch(source)]);
+  const file = join(directory, "landscape-index.saltatlas");
+  await store.saveProject(store.status(), file);
+  const database = new Database(file);
+  database.exec(
+    "DELETE FROM landscape_spatial; UPDATE landscape_tiles SET min_x=0,max_x=0,min_y=0,max_y=0",
+  );
+  database.close();
+  const original = await readFile(file);
+  await store.openProject(file);
+  assert.equal(store.status().landscapeTiles, 1);
+  assert.equal(store.metrics().returnedLandscapeTiles, 0);
+  const selected = landscapeRead(store, [-64, -64, -1, -1]);
+  assert.equal(selected.tiles.length, 1);
+  assert.deepEqual(selected.tiles[0].values, source.values);
+  assert.deepEqual(await readFile(file), original);
+  const stale = join(directory, "stale-landscape.saltatlas");
+  await copyFile(file, stale);
+  const broken = new Database(stale);
+  broken.exec("UPDATE landscape_overview_state SET sequence=sequence-1");
+  broken.close();
+  const prior = store.status();
+  await assert.rejects(store.openProject(stale), /Landschaftsübersicht/);
+  assert.deepEqual(store.status(), prior);
+});
 
 afterEach(async () => {
   for (const store of stores.splice(0)) store.close();
@@ -107,7 +524,11 @@ test("a malformed patch never partially writes; replay cannot alter an accepted 
     sessionId: status.sessionId,
     sequence: 1,
     transactionId: "first",
-    patches: tiles.map((tile) => ({ key: tile.key, after: tile })),
+    patches: tiles.map((tile) => ({
+      kind: "height",
+      key: tile.key,
+      after: tile,
+    })),
   };
   const invalid = { ...tiles[0], values: tiles[0].values.slice() };
   invalid.values[0] = NaN;
@@ -117,7 +538,7 @@ test("a malformed patch never partially writes; replay cannot alter an accepted 
         ...request,
         patches: [
           ...request.patches.slice(1),
-          { key: invalid.key, after: invalid },
+          { kind: "height", key: invalid.key, after: invalid },
         ],
       }),
     /Nichtendlicher/,
@@ -141,7 +562,7 @@ test("a malformed patch never partially writes; replay cannot alter an accepted 
     () =>
       store.commit({
         ...request,
-        patches: [{ key: changed.key, after: changed }],
+        patches: [{ kind: "height", key: changed.key, after: changed }],
       }),
     /Widersprüchliche/,
   );
@@ -189,7 +610,12 @@ test("a real SQLite save pins S while later commits change the live WAL", async 
 
 test("the utility dispatcher answers local reads during a real snapshot and orders later writes", async () => {
   const { store, directory } = await fresh();
-  write(store, heightTilesFromControls(0, [[0, 0, 40]]));
+  const height = heightTilesFromControls(0, [[0, 0, 40]])[0];
+  const landscape = landscapeFill(0, 0, 0, [80, 20, 0, 0]);
+  writeSources(store, [
+    { kind: "height", key: height.key, after: height },
+    landscapePatch(landscape),
+  ]);
   const fixture = join(directory, "fixture.saltatlas");
   await store.saveProject(store.status(), fixture);
   const main = join(directory, "main.cjs");
@@ -313,11 +739,19 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
             sessionId: initial.sessionId,
             sequence: initial.sequence + 1,
             transactionId: "after-snapshot",
-            patches: [{ key: changed.key, after: changed }],
+            patches: [{ kind: "height", key: changed.key, after: changed }],
           });
-          const [region, presentation, stale] = await Promise.all([
+          const [
+            region,
+            presentation,
+            landscapeRegion,
+            landscapePresentation,
+            stale,
+          ] = await Promise.all([
             request("readRegion", query),
             request("readPresentation", { ...query, power: 0 }),
+            request("readLandscapeRegion", { ...query, minLevel: 0 }),
+            request("readLandscapePresentation", { ...query, power: 1 }),
             request("readRegion", {
               ...query,
               sessionId: "stale-session",
@@ -361,6 +795,15 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
               sequence: presentation.sequence,
               height: presentation.tiles[0].values[0],
             },
+            landscapeRegion: {
+              sequence: landscapeRegion.sequence,
+              weight: landscapeRegion.tiles[0].values[0],
+            },
+            landscapePresentation: {
+              sequence: landscapePresentation.sequence,
+              weight: landscapePresentation.overviews[0].own[0],
+              fineTiles: landscapePresentation.tiles.length,
+            },
             stale,
             saved,
             live: { sequence: live.sequence, height: live.tiles[0].values[0] },
@@ -385,6 +828,12 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
     assert.equal(result.sameSession, true);
     assert.deepEqual(result.region, { sequence: 1, height: 40 });
     assert.deepEqual(result.presentation, { sequence: 1, height: 40 });
+    assert.deepEqual(result.landscapeRegion, { sequence: 1, weight: 80 });
+    assert.deepEqual(result.landscapePresentation, {
+      sequence: 1,
+      weight: 80,
+      fineTiles: 0,
+    });
     assert.match(result.stale, /Veraltete/);
     const snapshotEnd = result.events.indexOf("snapshot:end");
     assert.ok(
@@ -441,7 +890,7 @@ test("cancel and invalid opens keep the current document and source file intact"
   const database = new Database(legacy);
   database.pragma("user_version = 22");
   database.close();
-  await assert.rejects(store.openProject(legacy), /Format 24/);
+  await assert.rejects(store.openProject(legacy), /Format 25/);
   await assert.rejects(store.openProject(join(directory, "missing.saltatlas")));
   assert.deepEqual(store.status(), prior);
   assert.deepEqual(await readFile(valid), before);
@@ -456,7 +905,7 @@ test("source deletion becomes absence and old sessions cannot write or read a ne
     sessionId: old.sessionId,
     sequence: 2,
     transactionId: "delete",
-    patches: [{ key: tile.key, after: null }],
+    patches: [{ kind: "height", key: tile.key, after: null }],
   });
   assert.deepEqual(read(store, [-10, -10, 10, 10]).tiles, []);
   assert.deepEqual(store.status().activeLevels, []);
@@ -485,7 +934,7 @@ test("source deletion becomes absence and old sessions cannot write or read a ne
         sessionId: old.sessionId,
         sequence: 3,
         transactionId: "stale",
-        patches: [{ key: tile.key, after: tile }],
+        patches: [{ kind: "height", key: tile.key, after: tile }],
       }),
     /Veraltete/,
   );
@@ -596,7 +1045,7 @@ test("a dense overview reads exact fine sums without loading its 1024 fine autho
     sessionId: current.sessionId,
     sequence: current.sequence + 1,
     transactionId: "undo-coarse",
-    patches: [{ key: coarse.key, after: null }],
+    patches: [{ kind: "height", key: coarse.key, after: null }],
   });
   assert.ok(Math.abs(height(presentation()) - 80) < 1e-9);
   assert.equal(store.status().sourceTiles, 1024);

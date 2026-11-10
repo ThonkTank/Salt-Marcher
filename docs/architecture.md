@@ -8,7 +8,7 @@ den zuletzt belegten Stand und offene Abnahmen.
 
 Die folgenden V7-Besitzer und Zugriffspfade bleiben der Standard. Der gesonderte
 [optionale P0-Versuch](#optionaler-atlas-p0-versuch) ergänzt einen begrenzten
-Höheneditor, ohne den V7-Startpfad zu ersetzen.
+Höhen- und Landschaftseditor, ohne den V7-Startpfad zu ersetzen.
 
 ## Besitzer und Datenfluss
 
@@ -558,6 +558,64 @@ Modell- und Integrationsfixtures verwenden dieselbe Annahme und Fortsetzung oder
 ausdrücklich vorbereitete unveränderliche Quellen. Der aktive Editor besitzt
 keine zweite Autorenautorität.
 
+### Gemeinsame Quellen und Landschaft
+
+`ChangeSet.patches` ist eine geschlossene Union mit `kind: "height" | "landscape"`.
+Transaktionskennung, Sequenz, Vorher-/Nachherbilder, Pendingjournal und Undo/Redo
+gehören weiterhin zu `EditorDocument`. `ProjectSession`, Preload und Store
+transportieren den Diskriminator unverändert. Beide Quellarten teilen die
+bestehenden Quellen-, Pending- und Historybudgets und dieselbe Schreibgrenze.
+
+Landschaftsautoren sind 64×64-Zellen auf Stufen 0–24 mit `2^level` Fuß Abstand.
+Die binäre Autorenmaske ist unabhängig von den vier Bytegewichten für Wald,
+Buschland, Wiese und Felsgebiet; ihre Summe beträgt höchstens 255. Die feinste
+explizite Halbintervallzelle gewinnt, auch wenn alle vier Werte null sind.
+Die äußere Weltgrenze gehört zur letzten inneren Zelle. Beim ersten feinen
+Eingriff wird der geerbte Wert ermittelt. Grobe Änderungen schreiben keine
+feineren Autoren um. Höhen- und Landschaftsleere besitzen getrennte
+Abdeckungsbelege; unbekannte Daten gelten niemals als leer.
+
+Der Controller führt den Landschaftsstrich als Variante desselben Eingabezustands.
+Der geometrische Pinsel erreicht seine Zielwerte in der inneren Radiushälfte;
+im äußeren Ring fällt die Wirkung mit `[1 − (2d/R − 1)²]²` auf null ab.
+Je Zelle zählt die höchste Wirkung desselben Strichs, nicht die Ereigniszahl.
+Jeder neue Wegabschnitt wird vor dem Einreihen auf sichtbare Grundlage und
+bekannte Quellen geprüft. Die aufgenommene Grundlage wird erweitert, die
+Quellen des Wegs bleiben gehalten; seine umschließende Retentionsfläche löst
+keine zusätzlichen Bereichsreads aus. Höchstens 127 offene Punkte lassen Platz
+für Up. Je RAF übernimmt das Dokument einen begrenzten geometrischen Abschnitt.
+Up versiegelt, der letzte Abschnitt schließt dieselbe Dokumentaktion ab.
+History und Dateiaktionen warten auf deren Barriere. Vor Up restaurieren
+Escape, Fokus-/Pointerverlust und Ansichtwechsel die gehaltenen Vorherwerte
+über lokale Invalidierung, ohne History- oder Storeeintrag. Nach Up kann ein
+solcher Eingabewechsel den versiegelten Abschluss nicht widerrufen.
+
+`readLandscapeRegion` lädt selektiv die gewählte Autorenstufe und gröbere Stufen.
+`readLandscapePresentation` liefert gröbere Autoren und numerische Übersichten
+an festen 128×128-Texelzentren. Die Übersicht hält feinen Eigenbeitrag,
+verbleibende Vererbung und die feinste Eigentümerstufe. Grobe Patches übergehen
+feinere Gewinner; nur beim Entfernen eines Gewinners werden konkrete gröbere
+Punktquellen abgefragt. Es gibt keinen Nachfahrenscan. `landscape.ts` enthält
+die reine Zusammensetzung; `landscape-store.ts` Codec, begrenzten Übersichtscache
+und räumliche Indizes. Autoren und Übersichten werden in derselben
+SQLite-Transaktion auf denselben Sequenzstand gebracht.
+
+`LandscapeView` ist ein begrenzter Darstellungscache unveränderlicher Basisreads
+und eingefrorener Eingaben. Lokale Patches werden auf die gelesene Basis
+projiziert. Fehlt beim Undo eine benötigte Vererbung, wird eine aktuelle
+Storeübersicht angefordert; fremde Feinautoren werden dafür nicht nachgeladen.
+Überholte Reads und fehlende Ergebnisse bleiben unbekannt. Ein Frame hält seine
+Quellen bis zur Zeichnung; neu gestartete Vorbereitung verwendet dieselbe
+Arbeitsübersicht und ihren Fortschritt erneut. Alle gehaltenen Puffer zählen
+zum Darstellungsbudget, auch Pendingpuffer noch ohne fertigen Frame.
+
+`HeightField` bereitet Landschaftsgewichte innerhalb desselben RAF-Budgets vor.
+Die gemeinsame Farbkomposition mischt die Flächendeckung und maskiert sie an
+der tatsächlich zusammengesetzten Wasseroberfläche. Der CPU-Ausnahmeweg liefert
+Farbe und Landmaske aus derselben kanonischen Höhenrechnung. Upload, Komposition
+und GPU-Abschluss belegen die vorhandenen Grafikplätze; Landschaft erhält keine
+eigene Renderqueue. Volle Symbol- und Kronendachdarstellung gehört zu P4.
+
 ### Autoren, Übersicht und Quellenbedarf
 
 Höhenautoren sind sparse 64×64-Float64-Kacheln auf Stufen 0–21. Positive kubische
@@ -622,7 +680,8 @@ Der Controller prüft die einzelnen Rechtecke des aufgenommenen Wegs.
 Nur exakt rechteckige Vereinigungen werden zusammengefasst; ein kaltes Inneres
 einer L-Kurve wird dadurch nicht zusätzlich verlangt oder als gesehen erklärt.
 
-`BrushState` unterscheidet idle, blocked, active und finishing. Down und Move
+Der Eingabezustand unterscheidet idle, blocked, active, finishing und den
+gegebenenfalls versiegelten Landschaftsstrich. Down und Move
 reservieren zulässige Arbeit; Up reserviert seinen tatsächlichen Endpunkt und
 versiegelt die Eingabe vor Handler-Rückkehr. Die Autorenfortsetzung gehört
 weiterhin derselben Dokumentaktion. Ihr Status ist sichtbar.

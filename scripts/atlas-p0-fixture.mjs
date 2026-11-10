@@ -95,7 +95,11 @@ if (command === "create" && argument) {
           sessionId: project.sessionId,
           sequence: 1,
           transactionId: randomUUID(),
-          patches: tiles.map((after) => ({ key: after.key, after })),
+          patches: tiles.map((after) => ({
+            kind: "height",
+            key: after.key,
+            after,
+          })),
         });
       }
       const status = store.status();
@@ -191,7 +195,11 @@ if (command === "create" && argument) {
       sessionId: initial.sessionId,
       sequence: initial.sequence + 1,
       transactionId: randomUUID(),
-      patches: read.tiles.map((after) => ({ key: after.key, after })),
+      patches: read.tiles.map((after) => ({
+        kind: "height",
+        key: after.key,
+        after,
+      })),
     });
     const status = store.status();
     const file = join(directory, "dense-busy.saltatlas");

@@ -29,13 +29,20 @@ const api: AtlasDesktop = {
   status: () => call("status"),
   readRegion: (request) => call("readRegion", request),
   readPresentation: (request) => call("readPresentation", request),
+  readLandscapeRegion: (request) => call("readLandscapeRegion", request),
+  readLandscapePresentation: (request) =>
+    call("readLandscapePresentation", request),
   commit: (request) =>
     call("commit", {
       sessionId: request.sessionId,
       sequence: request.sequence,
       transactionId: request.transactionId,
       // History's before-images stay in the renderer; never clone them over IPC.
-      patches: request.patches.map(({ key, after }) => ({ key, after })),
+      patches: request.patches.map(({ kind, key, after }) => ({
+        kind,
+        key,
+        after,
+      })),
     }),
   newProject: (prepared) => call("newProject", prepared),
   openProject: (prepared) => call("openProject", prepared),

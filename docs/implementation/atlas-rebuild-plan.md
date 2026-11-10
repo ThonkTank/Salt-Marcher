@@ -732,8 +732,8 @@ getrennte Fakten.
   Aktionen erhalten eine Sequenznummer und werden in Reihenfolge transaktional
   geschrieben. Die Bestätigung benennt die letzte gesicherte Arbeitssequenz.
 - Projektdatei bleibt `.saltatlas`; neue eindeutige Versionskennung. Der aktuelle
-  P0-Kern verwendet Format 24 für persistierte numerische Übersichten; der frühere
-  Versuch verwendete 23 statt V7s 22. Bei weiterer Schemaänderung die nächste
+  P0-Kern verwendet Format 25 für gemeinsame Höhen-/Landschaftsquellen samt
+  numerischen Übersichten; frühere Versuche verwendeten 23/24 statt V7s 22. Bei weiterer Schemaänderung die nächste
   freie Version wählen. Das vollständige Schema umfasst Metadaten/Versionen, Quellkacheln mit Masken,
   Objektheader, getrennte Innenpayloads, Regionen/Katalog und Hydrologiedaten.
   Räumliche Indizes und Vorschauen sind abgeleitet und rekonstruierbar.
@@ -2057,8 +2057,8 @@ Rohbelege werden nicht umgeschrieben.
 | K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                                              |
 | P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1 wählt C1; R2/R3 und R4-Prüfpfad integriert. Begrenzter R5-Fachfall zur Umsetzung freigegeben; formale R4-/P0-Abnahme offen. Entscheidung und Belege im Status. |
 | P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Für R5 nur benötigte P3-Erweiterungen freigegeben; weiterer Ausbau erst nach P0 und P3. Arbeitsentscheidung im Status.                                            |
-| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                                             |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Begrenzter R5-Fachfall freigegeben; Einstieg P3.1 Wald und Lichtung, gemeinsame Abnahme offen.                                                                    |
+| P2    | F19, A07 und vollständige Projektdateien.                               | P3.1-Landschaft im gemeinsamen Dateipfad; weiterer Ausbau folgt mit dem jeweiligen Fachfall. Nachweis im Status.                                                  |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | P3.1 Wald und Lichtung in Umsetzung; danach P3.2 Hausheader. Gemeinsame P3-/P0-Abnahme offen; Nachweis im Status.                                                 |
 | P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                            |
 | P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                            |
 | P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                            |

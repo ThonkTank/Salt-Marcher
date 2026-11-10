@@ -12,7 +12,8 @@ body {
   margin: 0;
 }
 button,
-input {
+input,
+select {
   font: inherit;
 }
 button {
@@ -32,6 +33,7 @@ button:disabled {
 }
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 canvas:focus-visible {
   outline: 2px solid #d6b66b;
   outline-offset: 2px;
@@ -160,7 +162,8 @@ h1 {
 .field label span {
   color: #91a49e;
 }
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   border: 1px solid #435954;
   background: #142a31;

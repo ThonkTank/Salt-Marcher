@@ -13,7 +13,6 @@ export function stabilizeDisplayHeight(height: number): number {
 
 /** Exact height is classified directly into the image, without a tuple per pixel. */
 function writeColour(height: number, pixels: Uint8Array, offset: number): void {
-  height = stabilizeDisplayHeight(height);
   if (height < 0) {
     const depth = Math.min(1, -height / 300);
     pixels[offset] = Math.round(94 - 53 * depth);
@@ -37,6 +36,7 @@ export function rasterize(
   size: number,
   rect: RasterRect,
   fineHeights?: Float64Array,
+  land?: Uint8Array,
 ): Uint8Array {
   const [x0, y0, x1, y1] = rect;
   const width = x1 - x0,
@@ -46,6 +46,8 @@ export function rasterize(
     throw new Error("Unvollständige Höhenwerte für das Darstellungsraster.");
   if (fineHeights && fineHeights.length !== size * size)
     throw new Error("Unvollständige numerische Höhenübersicht.");
+  if (land && land.length !== width * height)
+    throw new Error("Unvollständige Landmaske für das Darstellungsraster.");
   const stepX = (bounds[2] - bounds[0]) / size;
   const stepY = (bounds[3] - bounds[1]) / size;
   for (let row = 0; row < height; row++) {
@@ -53,15 +55,16 @@ export function rasterize(
     for (let column = 0; column < width; column++) {
       const x = bounds[0] + (x0 + column + 0.5) * stepX;
       const i = (row * width + column) * 4;
+      if (land) land[row * width + column] = 0;
       // Preserve the canonical mesh at the world edge; never stretch the last
       // tile's sample spacing to fit its clipped drawable/query bounds.
       if (Math.abs(x) > WORLD_LIMIT || Math.abs(y) > WORLD_LIMIT) continue;
       const fine = fineHeights?.[(y0 + row) * size + x0 + column] ?? 0;
-      writeColour(
+      const height = stabilizeDisplayHeight(
         heightFromScaledSum(scaledHeights[row * width + column] + fine),
-        pixels,
-        i,
       );
+      writeColour(height, pixels, i);
+      if (land) land[row * width + column] = height >= 0 ? 255 : 0;
       pixels[i + 3] = 255;
     }
   }

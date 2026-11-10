@@ -12,6 +12,8 @@ import {
   type EditorDocument,
   type HeightPatch,
   type HeightTile,
+  type Point,
+  type LandscapeWeights,
 } from "../model";
 import {
   HEIGHT_OVERVIEW_BYTES,
@@ -26,6 +28,8 @@ import {
   type HeightOverviewDelta,
   type HeightOverviewTile,
 } from "../model/overview";
+import { LandscapeView, type LandscapeFrame } from "./LandscapeView";
+import type { LandscapePresentationRead } from "../model/landscape";
 import { Observation } from "../observation";
 import type { HeightProjectionService } from "./HeightProjectionService";
 import { CursorOverlay } from "./CursorOverlay";
@@ -86,6 +90,7 @@ interface FrozenRender {
   receipt: FrozenRenderReceipt;
   targets: FrozenTarget[];
   overviews: Map<string, HeightOverviewTile>;
+  landscapes: Map<string, LandscapeFrame | null>;
 }
 
 interface GpuSubmission {
@@ -151,6 +156,7 @@ interface DisplayTile {
   dirty: Rect | null;
   preparedRevision: number;
   preparedIntent: number;
+  preparedContentVersion: number;
   paintedRevision: number;
   submittedRevision: number;
   submittedFrame: number;
@@ -252,6 +258,7 @@ export class WorldRenderer {
   private overviews = new Map<string, HeightOverviewTile>();
   private knownOverviews = new Set<string>();
   private document!: EditorDocument;
+  private landscape!: LandscapeView;
   private sessionId = "";
   private frame = 0;
   private viewGeneration = 0;
@@ -284,6 +291,7 @@ export class WorldRenderer {
     receipt: FrozenRenderReceipt;
     target: FrozenTarget;
     overview: HeightOverviewTile | null;
+    landscape: LandscapeFrame | null;
   } | null = null;
   private completedRender: FrozenRenderReceipt | null = null;
   private readonly queuedSources = new Map<string, QueuedSource>();
@@ -412,10 +420,11 @@ export class WorldRenderer {
     this.sceneRequested = true;
   }
 
-  reset(document: EditorDocument): void {
+  reset(document: EditorDocument, landscapeEmpty = true): void {
     this.invalidateProofs();
     this.resetSourceQueue();
     this.document = document;
+    this.landscape = new LandscapeView(document, landscapeEmpty);
     this.sessionId = document.sessionId;
     for (const tile of this.tiles.values())
       this.terrain.removeChild(tile.field.mesh);
@@ -476,6 +485,16 @@ export class WorldRenderer {
     this.requestFrame = true;
     this.sceneRequested = true;
     this.positionTiles();
+  }
+
+  updateLandscapePresentation(read: LandscapePresentationRead): void {
+    this.landscape.accept(read);
+    this.invalidateTiles(read.bounds, !this.document.active);
+  }
+
+  updateLandscape(bounds: Bounds, sequence?: number): void {
+    this.landscape.changed(sequence);
+    this.invalidateTiles(bounds);
   }
 
   /**
@@ -1001,7 +1020,11 @@ export class WorldRenderer {
   }
 
   private retainedBufferBytes(): number {
-    const buffers = new Set<ArrayBufferLike>();
+    const buffers = new Set<ArrayBufferLike>(this.landscape?.retainedBuffers());
+    for (const frame of this.frozen?.landscapes.values() ?? [])
+      for (const buffer of frame?.buffers ?? []) buffers.add(buffer);
+    for (const buffer of this.exceptionTarget?.landscape?.buffers ?? [])
+      buffers.add(buffer);
     const sourceBuffers = new Set<ArrayBufferLike>();
     for (const field of [this.field, ...this.retiredFields])
       for (const source of field.atlas.sources.values())
@@ -1098,7 +1121,21 @@ export class WorldRenderer {
     this.requestFrame = true;
   }
 
+  isLandscapePresentationReady(
+    bounds: Bounds,
+    power = this.tilePower(),
+  ): boolean {
+    return this.landscape?.ready(bounds, power) ?? true;
+  }
+
   isPresentationReady(bounds: Bounds, power = this.tilePower()): boolean {
+    return (
+      this.isHeightPresentationReady(bounds, power) &&
+      this.isLandscapePresentationReady(bounds, power)
+    );
+  }
+
+  isHeightPresentationReady(bounds: Bounds, power = this.tilePower()): boolean {
     const clipped = clipBounds(bounds);
     return (
       this.document.isReady(
@@ -1186,6 +1223,7 @@ export class WorldRenderer {
           dirty: [...WHOLE],
           preparedRevision: -1,
           preparedIntent: -1,
+          preparedContentVersion: -1,
           paintedRevision: -1,
           submittedRevision: -1,
           submittedFrame: 0,
@@ -1529,6 +1567,12 @@ export class WorldRenderer {
       receipt,
       targets,
       overviews: new Map(this.overviews),
+      landscapes: new Map(
+        targets.map(({ tile }) => [
+          tile.key,
+          this.landscape.freeze(tile.bounds, tile.power),
+        ]),
+      ),
     };
     this.checkBudgets();
     this.requestFrame = true;
@@ -1609,6 +1653,30 @@ export class WorldRenderer {
     });
   }
 
+  sampleLandscapeDisplay(point: Point): LandscapeWeights | null {
+    const epsilon = 1e-7;
+    const area = clipBounds([
+      point[0] - epsilon,
+      point[1] - epsilon,
+      point[0] + epsilon,
+      point[1] + epsilon,
+    ]);
+    if (
+      this.inspectRegion(area).status !== "current" ||
+      !this.isLandscapePresentationReady(area)
+    )
+      return null;
+    const tile = [...this.tiles.values()].find(
+      (tile) =>
+        tile.visible &&
+        point[0] >= tile.bounds[0] &&
+        point[1] >= tile.bounds[1] &&
+        point[0] <= tile.bounds[2] &&
+        point[1] <= tile.bounds[3],
+    );
+    return tile?.field.sampleLandscape(point) ?? null;
+  }
+
   state() {
     const metrics = this.resourceMetrics();
     const preparing = this.observation.enabled
@@ -1616,6 +1684,10 @@ export class WorldRenderer {
       : undefined;
     return {
       tiles: this.tiles.size,
+      landscape: {
+        enabled: this.landscape ? !this.landscape.empty : false,
+        ready: this.landscape?.ready(this.bounds(), this.tilePower()) ?? false,
+      },
       presentationPower: this.tilePower(),
       presentationBytes: metrics.cpuBytes + this.retainedBufferBytes(),
       gpuBytes: metrics.gpuBytes,
@@ -1737,7 +1809,7 @@ export class WorldRenderer {
       return;
     const exception = this.exceptionTarget;
     if (exception) {
-      const { target, receipt, overview } = exception;
+      const { target, receipt, overview, landscape } = exception;
       if (target.preparation !== target.tile.field.preparationVersion) {
         this.exceptionTarget = null;
       } else if (
@@ -1749,6 +1821,7 @@ export class WorldRenderer {
           receipt,
           targets: [target],
           overviews: new Map(overview ? [[overview.key, overview]] : []),
+          landscapes: new Map([[target.tile.key, landscape]]),
         };
         this.exceptionTarget = null;
         return;
@@ -1804,6 +1877,12 @@ export class WorldRenderer {
       }),
       targets,
       overviews: new Map(this.overviews),
+      landscapes: new Map(
+        targets.map(({ tile }) => [
+          tile.key,
+          this.landscape.freeze(tile.bounds, tile.power),
+        ]),
+      ),
     };
   }
 
@@ -1951,10 +2030,12 @@ export class WorldRenderer {
           break;
         if (
           tile.preparedRevision !== target.revision ||
-          tile.preparedIntent !== target.preparation
+          tile.preparedIntent !== target.preparation ||
+          tile.preparedContentVersion !== target.contentVersion
         ) {
           const overview =
             group.overviews.get(`height-overview:${tile.key}`) ?? null;
+          tile.field.setLandscape(group.landscapes.get(tile.key) ?? null);
           tile.field.update(
             overview === tile.overview ? undefined : overview,
             target.dirty ?? WHOLE,
@@ -1963,6 +2044,7 @@ export class WorldRenderer {
           tile.overview = overview;
           tile.preparedRevision = target.revision;
           tile.preparedIntent = target.preparation;
+          tile.preparedContentVersion = target.contentVersion;
         }
         // Consecutive synchronous generator steps share the same peak reserve.
         // Recheck on every changed requirement (notably atlas growth / worker
@@ -2018,6 +2100,7 @@ export class WorldRenderer {
               target,
               overview:
                 group.overviews.get(`height-overview:${tile.key}`) ?? null,
+              landscape: group.landscapes.get(tile.key) ?? null,
               receipt: Object.freeze({
                 ...group.receipt,
                 bounds: Object.freeze([tile.bounds]),

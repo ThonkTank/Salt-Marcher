@@ -21,6 +21,8 @@ import {
   type Bounds,
   type HeightPatch,
   type HeightTile,
+  type Point,
+  type LandscapeWeights,
 } from "../model/types";
 import {
   HEIGHT_ATLAS_WIDTH,
@@ -42,6 +44,7 @@ import {
   heightHorizontalFragment,
   heightVertex,
 } from "./height-shader";
+import type { LandscapeFrame } from "./LandscapeView";
 import { HeightAtlasSource } from "./height-atlas-upload";
 import { DISPLAY_HEIGHT_BOUNDARY_EPSILON } from "./raster";
 import {
@@ -292,6 +295,30 @@ export class HeightFieldTile {
     alphaMode: "no-premultiply-alpha",
     autoGarbageCollect: false,
   });
+  private landscapeSource = new HeightAtlasSource({
+    resource: new Uint8Array(4),
+    width: 1,
+    height: 1,
+    format: "rgba8unorm",
+    scaleMode: "nearest",
+    alphaMode: "no-premultiply-alpha",
+    autoGarbageCollect: false,
+  });
+  private fallbackLandSource = new HeightAtlasSource({
+    resource: new Uint8Array(1),
+    width: 1,
+    height: 1,
+    format: "r8unorm",
+    scaleMode: "nearest",
+    alphaMode: "no-premultiply-alpha",
+    autoGarbageCollect: false,
+  });
+  private landscapeFrame: LandscapeFrame | null = null;
+  private landscapeEncoded: LandscapeFrame | null = null;
+  private landscapeDirty = true;
+  /** Texture encoding/upload does not prove that the colour target was drawn. */
+  private landscapeColourDirty = false;
+  private fallbackLandDirty = true;
   private shader: Shader;
   private horizontalShader: Shader;
   private colourShader: Shader;
@@ -439,7 +466,10 @@ export class HeightFieldTile {
       resources: {
         uHeights: this.basis.source,
         uFallbackPixels: this.fallbackSource,
+        uFallbackLand: this.fallbackLandSource,
+        uLandscape: this.landscapeSource,
         heightUniforms: {
+          uHasLandscape: { value: 0, type: "i32" },
           uFallback: { value: 0, type: "i32" },
           uClip: { value: new Float32Array(WHOLE), type: "vec4<f32>" },
         },
@@ -464,6 +494,31 @@ export class HeightFieldTile {
     this.colourMesh.state.blend = false;
     this.mesh = new Sprite(this.colour);
     this.update(overview ?? null);
+  }
+
+  setLandscape(frame: LandscapeFrame | null): void {
+    this.landscapeFrame = frame;
+  }
+
+  sampleLandscape(point: Point): LandscapeWeights {
+    if (!this.landscapeEncoded) return [0, 0, 0, 0];
+    const spacing = 2 ** this.power;
+    const x = Math.max(
+      0,
+      Math.min(SIZE - 1, Math.floor((point[0] - this.bounds[0]) / spacing)),
+    );
+    const y = Math.max(
+      0,
+      Math.min(SIZE - 1, Math.floor((point[1] - this.bounds[1]) / spacing)),
+    );
+    const offset = (y * SIZE + x) * 4;
+    const values = this.landscapeSource.resource as Uint8Array;
+    return [
+      values[offset],
+      values[offset + 1],
+      values[offset + 2],
+      values[offset + 3],
+    ];
   }
 
   /** A changed strategy needs its own completed frame, even at the same revision. */
@@ -583,7 +638,8 @@ export class HeightFieldTile {
       this.restartPreparation = false;
     }
     if (this.preparation) {
-      this.preparationReservedBytes = 512 * 1024;
+      this.preparationReservedBytes =
+        (512 + (this.landscapeFrame ? 256 : 0)) * 1024;
       if (!this.preparation.next().done) return true;
       this.preparation = null;
       this.preparationReservedBytes = 0;
@@ -638,6 +694,8 @@ export class HeightFieldTile {
   }
   retainedSourceBuffers(): readonly ArrayBufferLike[] {
     return [
+      ...(this.landscapeFrame?.buffers ?? []),
+      ...(this.landscapeEncoded?.buffers ?? []),
       ...(this.overview ? [this.overview.values.buffer] : []),
       ...(this.projectionInput?.sources.map((source) => source.values.buffer) ??
         []),
@@ -660,7 +718,9 @@ export class HeightFieldTile {
       this.projectionInput
         ? estimateHeightProjectionBytes(this.projectionInput)
         : 0;
-    const dataBytes = 512 * 1024 + this.field.atlas.nextPageAllocationBytes;
+    const dataBytes =
+      (512 + (this.landscapeFrame ? 256 : 0)) * 1024 +
+      this.field.atlas.nextPageAllocationBytes;
     const cpuBytes = dataBytes - this.preparationReservedBytes + workerBytes;
     const horizontalBytes = SIZE * (2 * 16 * 64 + 22 * 4) * 8;
     return { cpuBytes, gpuBytes: dataBytes + horizontalBytes };
@@ -678,6 +738,38 @@ export class HeightFieldTile {
     forceOverview: boolean,
     rect: RasterRect,
   ): Generator<void, void, void> {
+    if (this.landscapeFrame !== this.landscapeEncoded) {
+      this.preparationPhase = "landscape";
+      const frame = this.landscapeFrame;
+      const values = new Uint8Array(frame ? SIZE * SIZE * 4 : 4);
+      if (frame) {
+        const sample = yield* frame.prepare();
+        const spacing = 2 ** this.power;
+        for (let y = 0; y < SIZE; y++) {
+          const worldY = this.bounds[1] + (y + 0.5) * spacing;
+          for (let x = 0; x < SIZE; x++) {
+            const worldX = this.bounds[0] + (x + 0.5) * spacing;
+            if (
+              Math.abs(worldX) <= 100_000_000 &&
+              Math.abs(worldY) <= 100_000_000
+            )
+              values.set(sample(worldX, worldY), (y * SIZE + x) * 4);
+          }
+          if (y % 2 === 1) yield;
+        }
+      }
+      this.landscapeSource.resource = values;
+      this.stageSource(
+        this.landscapeSource,
+        frame ? SIZE : 1,
+        frame ? SIZE : 1,
+      );
+      this.colourShader.resources.heightUniforms.uniforms.uHasLandscape =
+        Number(frame !== null);
+      this.landscapeDirty = true;
+      this.landscapeColourDirty = true;
+      this.landscapeEncoded = frame;
+    }
     this.preparationPhase = "overview";
     if (forceOverview || this.overviewEncoded !== this.overview) {
       const values = this.overview?.values;
@@ -749,6 +841,7 @@ export class HeightFieldTile {
         !this.basisValid &&
         this.numericValid &&
         this.numericCurrent &&
+        !this.landscapeColourDirty &&
         this.numericDepth < MAX_HEIGHT_BASIS_TRANSFERS &&
         this.admitsBasis(
           this.numericMagnitude,
@@ -973,7 +1066,7 @@ export class HeightFieldTile {
     );
     this.projectionTask = task;
     task.promise.then(
-      (pixels) => {
+      (image) => {
         if (
           this.disposed ||
           generation !== this.generation ||
@@ -981,10 +1074,13 @@ export class HeightFieldTile {
         )
           return;
         this.projectionTask = null;
-        if (pixels) {
+        if (image) {
           this.projectionInput = null;
-          this.fallbackSource.resource = pixels;
+          this.fallbackSource.resource = image.pixels;
           this.stageSource(this.fallbackSource, SIZE, SIZE);
+          this.fallbackLandSource.resource = image.land;
+          this.stageSource(this.fallbackLandSource, SIZE, SIZE);
+          this.fallbackLandDirty = true;
           this.fallbackSamples += SIZE * SIZE;
           this.fallbackDirty = true;
           this.fallbackReady = true;
@@ -1046,6 +1142,12 @@ export class HeightFieldTile {
     upload(this.fallbackSource, this.fallbackDirty, () => {
       this.fallbackDirty = false;
     });
+    upload(this.fallbackLandSource, this.fallbackLandDirty, () => {
+      this.fallbackLandDirty = false;
+    });
+    upload(this.landscapeSource, this.landscapeDirty, () => {
+      this.landscapeDirty = false;
+    });
     return bytes;
   }
   invalidateGPU(): void {
@@ -1057,6 +1159,8 @@ export class HeightFieldTile {
       this.overviewDirty =
       this.weightsDirty =
       this.fallbackDirty =
+      this.fallbackLandDirty =
+      this.landscapeDirty =
         true;
     this.update(undefined, WHOLE);
   }
@@ -1185,6 +1289,7 @@ export class HeightFieldTile {
     this.preparationPhase = complete ? "complete" : "next-strip";
     this.compositionStats = stats;
     if (!complete) return samples;
+    if (this.mode !== "capture") this.landscapeColourDirty = false;
     this.numericValid = !this.fallback;
     this.numericCurrent = true;
     this.numericMagnitude = this.plannedMagnitude;
@@ -1213,7 +1318,11 @@ export class HeightFieldTile {
       (this.dirty ? this.descriptorSource.resource.byteLength : 0) +
       (this.overviewDirty ? this.overviewSource.resource.byteLength : 0) +
       (this.weightsDirty ? this.weightSource.resource.byteLength : 0) +
-      (this.fallbackDirty ? this.fallbackSource.resource.byteLength : 0)
+      (this.fallbackDirty ? this.fallbackSource.resource.byteLength : 0) +
+      (this.fallbackLandDirty
+        ? this.fallbackLandSource.resource.byteLength
+        : 0) +
+      (this.landscapeDirty ? this.landscapeSource.resource.byteLength : 0)
     );
   }
   get bytes(): number {
@@ -1223,7 +1332,9 @@ export class HeightFieldTile {
       this.descriptorSource.resource.byteLength +
       this.overviewSource.resource.byteLength +
       this.weightSource.resource.byteLength +
-      this.fallbackSource.resource.byteLength
+      this.fallbackSource.resource.byteLength +
+      this.fallbackLandSource.resource.byteLength +
+      this.landscapeSource.resource.byteLength
     );
   }
   private get geometryBytes(): number {
@@ -1244,6 +1355,8 @@ export class HeightFieldTile {
         this.overviewSource,
         this.weightSource,
         this.fallbackSource,
+        this.fallbackLandSource,
+        this.landscapeSource,
       ].reduce(
         (sum, source) =>
           sum +
@@ -1253,9 +1366,12 @@ export class HeightFieldTile {
               source.height *
               (source === this.descriptorSource
                 ? 16
-                : source === this.fallbackSource
-                  ? 4
-                  : 8),
+                : source === this.fallbackLandSource
+                  ? 1
+                  : source === this.fallbackSource ||
+                      source === this.landscapeSource
+                    ? 4
+                    : 8),
           ),
         0,
       )
@@ -1296,6 +1412,8 @@ export class HeightFieldTile {
       this.overviewSource,
       this.weightSource,
       this.fallbackSource,
+      this.fallbackLandSource,
+      this.landscapeSource,
     ]) {
       source.destroy();
       this.field.forgetSource(source);

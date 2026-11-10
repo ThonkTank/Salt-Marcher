@@ -16,6 +16,8 @@ import type {
   ProjectInfo,
   ReadPresentationRequest,
   ReadRegionRequest,
+  ReadLandscapeRegionRequest,
+  LandscapePresentationRequest,
   RegionRead,
 } from "../bridge";
 import {
@@ -27,6 +29,7 @@ import {
   prepareHeightSampler,
   projectHeightOverviewPatches,
   heightOverviewKeys,
+  landscapeOverviewKeys,
   heightOverviewKey,
   heightOverviewBounds,
   HEIGHT_SUM_SCALE,
@@ -218,6 +221,17 @@ vi.mock("./HeightField", () => ({
       };
       const field = this;
       const handle = {
+        landscape: null as unknown,
+        setLandscape(frame: unknown) {
+          this.landscape = frame;
+        },
+        sampleLandscape() {
+          if (this.landscape !== null)
+            throw new Error(
+              "Height-only numeric fake cannot sample a landscape frame.",
+            );
+          return [0, 0, 0, 0];
+        },
         mesh: { position: { set() {} }, visible: false, destroy() {} },
         update,
         prepareStep() {
@@ -464,14 +478,18 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   expect(() => document.snapshot(undone.dirtyBounds[0])).toThrow(
     SourcesNotReadyError,
   );
-  world.updateSourcePatches(undone.patches);
+  world.updateSourcePatches(
+    undone.patches.filter((patch) => patch.kind === "height"),
+  );
   prepareSources(world);
   expect(rendered()).toBeCloseTo(original, 10);
   expect(undone.patches.every((patch) => !field.sources.has(patch.key))).toBe(
     true,
   );
   const redone = document.redo()!;
-  world.updateSourcePatches(redone.patches);
+  world.updateSourcePatches(
+    redone.patches.filter((patch) => patch.kind === "height"),
+  );
   prepareSources(world);
   expect(rendered()).toBeCloseTo(lifted, 10);
   expect(document.sampleHeight(320, 0)).toBeCloseTo(lifted, 10);
@@ -1036,7 +1054,9 @@ it("publishes only the latest complete numeric revision through Undo and Redo", 
   const firstHeight = document.sampleHeight(160, 160);
   change([172, 160]);
   const undone = document.undo()!;
-  world.updateSourcePatches(undone.patches);
+  world.updateSourcePatches(
+    undone.patches.filter((patch) => patch.kind === "height"),
+  );
   for (const bounds of undone.dirtyBounds) world.invalidate(bounds);
   expect(world.inspectRegion(first.bounds).status).toBe("stale");
   prepareSources(world);
@@ -1046,7 +1066,9 @@ it("publishes only the latest complete numeric revision through Undo and Redo", 
     prepareHeightSampler([...field.sources.values()])(160, 160),
   ).toBeCloseTo(firstHeight, 10);
   const redone = document.redo()!;
-  world.updateSourcePatches(redone.patches);
+  world.updateSourcePatches(
+    redone.patches.filter((patch) => patch.kind === "height"),
+  );
   for (const bounds of redone.dirtyBounds) world.invalidate(bounds);
   expect(world.inspectRegion(first.bounds).status).toBe("stale");
   prepareSources(world);
@@ -1409,6 +1431,7 @@ async function readyController(
     Object.assign(new EventTarget(), { visibilityState: "visible" }),
   );
   vi.stubGlobal("HTMLInputElement", class {});
+  vi.stubGlobal("HTMLSelectElement", class {});
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -1437,13 +1460,15 @@ async function readyController(
   const info: ProjectInfo = {
     sessionId: "shared-frame",
     projectId: "frame-test",
-    format: 24,
+    format: 25,
     title: "Frame test",
     sequence: 0,
     savedSequence: 0,
     path: null,
     activeLevels: [],
     sourceTiles,
+    landscapeTiles: 0,
+    activeLandscapeLevels: [],
   };
   const bridge = {
     diagnostics: options.diagnostics ?? true,
@@ -1458,6 +1483,20 @@ async function readyController(
         tiles: [],
         overviews: [],
         overviewKeys: heightOverviewKeys(request.bounds, request.power),
+      }),
+    ),
+    readLandscapeRegion: vi.fn(async (request: ReadLandscapeRegionRequest) => ({
+      ...request,
+      sequence: info.sequence,
+      tiles: [],
+    })),
+    readLandscapePresentation: vi.fn(
+      async (request: LandscapePresentationRequest) => ({
+        ...request,
+        sequence: info.sequence,
+        tiles: [],
+        overviews: [],
+        overviewKeys: landscapeOverviewKeys(request.bounds, request.power),
       }),
     ),
     readRegion: vi.fn(
@@ -1749,7 +1788,9 @@ it("retains accepted author work and its dose fact when presentation projection 
     tiles:
       bridge.commit.mock.calls
         .at(-1)?.[0]
-        .patches.flatMap((patch) => (patch.after ? [patch.after] : [])) ?? [],
+        .patches.flatMap((patch) =>
+          patch.kind === "height" && patch.after ? [patch.after] : [],
+        ) ?? [],
     overviews: [],
     overviewKeys: heightOverviewKeys(request.bounds, request.power),
   }));
@@ -1781,7 +1822,7 @@ it("retains accepted author work and its dose fact when presentation projection 
   expect(bridge.commit).toHaveBeenCalledOnce();
   const stored = prepareHeightSampler(
     bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
-      patch.after ? [patch.after] : [],
+      patch.kind === "height" && patch.after ? [patch.after] : [],
     ),
   );
   expect(stored(-48, -48)).toBeCloseTo(
@@ -2509,7 +2550,9 @@ it.each(["presentation", "region"] as const)(
     expect(bridge.commit).toHaveBeenCalledOnce();
     expect(controller.state.writing).toBe(true);
     const expected = prepareHeightSampler(
-      written.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+      written.patches.flatMap((patch) =>
+        patch.kind === "height" && patch.after ? [patch.after] : [],
+      ),
     )(...point);
     const sinceEvent = controller.observation.read().length;
     // The store has reached S+1, but this response was captured at S. The ack
@@ -2581,7 +2624,9 @@ it.each(["presentation", "region"] as const)(
         bounds[1] + (Math.floor(index / 128) + 0.5) * 2 ** overview.power,
       ];
       const expectedSample = prepareHeightSampler(
-        written.patches.flatMap((patch) => (patch.after ? [patch.after] : [])),
+        written.patches.flatMap((patch) =>
+          patch.kind === "height" && patch.after ? [patch.after] : [],
+        ),
       )(...samplePoint);
       expect(
         heightFromScaledSum(overview.values[index] - 100 / HEIGHT_SUM_SCALE),
@@ -2734,13 +2779,17 @@ it("projects fine source changes into a certified empty overview exactly once, i
   ).toBe(true);
   finishTestBrush(document);
   const undone = document.undo()!;
-  world.updateSourcePatches(undone.patches);
+  world.updateSourcePatches(
+    undone.patches.filter((patch) => patch.kind === "height"),
+  );
   for (const bounds of undone.dirtyBounds) world.invalidate(bounds);
   prepareSources(world);
   frame();
   expect(rendered()).toBeCloseTo(-100, 10);
   const redone = document.redo()!;
-  world.updateSourcePatches(redone.patches);
+  world.updateSourcePatches(
+    redone.patches.filter((patch) => patch.kind === "height"),
+  );
   for (const bounds of redone.dirtyBounds) world.invalidate(bounds);
   prepareSources(world);
   frame();
@@ -2789,7 +2838,7 @@ it.each([16, 512])(
     expect(bridge.commit).toHaveBeenCalledOnce();
     const stored = prepareHeightSampler(
       bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
-        patch.after ? [patch.after] : [],
+        patch.kind === "height" && patch.after ? [patch.after] : [],
       ),
     );
     expect(stored(...endpoint)).toBeCloseTo(complete.samples[0]!, 10);
@@ -2956,7 +3005,9 @@ async function timedControllerStroke(
   const mass = bridge.commit.mock.calls[0][0].patches.reduce(
     (sum, patch) =>
       sum +
-      (patch.after?.values.reduce((total, value) => total + value, 0) ?? 0),
+      (patch.kind === "height"
+        ? (patch.after?.values.reduce((total, value) => total + value, 0) ?? 0)
+        : 0),
     0,
   );
   controller.destroy();
@@ -3139,7 +3190,7 @@ it.each([
     expect(bridge.commit).toHaveBeenCalledOnce();
     const actual = prepareHeightSampler(
       bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
-        patch.after ? [patch.after] : [],
+        patch.kind === "height" && patch.after ? [patch.after] : [],
       ),
     );
     for (const point of probes)
@@ -3422,7 +3473,7 @@ it("preserves an accepted corner when the GPU completes between input events", a
   );
   const actual = prepareHeightSampler(
     bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
-      patch.after ? [patch.after] : [],
+      patch.kind === "height" && patch.after ? [patch.after] : [],
     ),
   );
   for (const point of [
@@ -3658,7 +3709,7 @@ it("waits for accepted terminal work before Save and preserves its endpoint on r
   reopened.acceptCoverage(
     [-512, -512, 512, 512],
     bridge.commit.mock.calls[0][0].patches.flatMap((patch) =>
-      patch.after ? [patch.after] : [],
+      patch.kind === "height" && patch.after ? [patch.after] : [],
     ),
     1,
     reopened.sessionId,

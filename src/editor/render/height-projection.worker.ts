@@ -137,7 +137,7 @@ self.onmessage = async (event: MessageEvent<HeightProjectionRequest>) => {
           sessionId: run.sessionId,
           ...result,
         } satisfies HeightProjectionResponse,
-        { transfer: [result.pixels.buffer] },
+        { transfer: [result.pixels.buffer, result.land.buffer] },
       );
     else respond(run, "cancelled");
   } catch (error) {

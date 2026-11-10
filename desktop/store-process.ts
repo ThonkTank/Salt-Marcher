@@ -3,6 +3,8 @@ import type {
   CommitRequest,
   ReadRegionRequest,
   ReadPresentationRequest,
+  ReadLandscapeRegionRequest,
+  LandscapePresentationRequest,
   SourceBoundary,
 } from "../src/editor/bridge";
 
@@ -45,6 +47,12 @@ async function dispatch({ method, argument }: ParentMessage) {
       return store.readRegion(argument as ReadRegionRequest);
     case "readPresentation":
       return store.readPresentation(argument as ReadPresentationRequest);
+    case "readLandscapeRegion":
+      return store.readLandscapeRegion(argument as ReadLandscapeRegionRequest);
+    case "readLandscapePresentation":
+      return store.readLandscapePresentation(
+        argument as LandscapePresentationRequest,
+      );
     case "commit":
       return store.commit(argument as CommitRequest);
     case "newProject":
@@ -81,13 +89,20 @@ const reply = async (data: ParentMessage): Promise<void> => {
   }
 };
 
-// Mutations, save phases and project lifecycle stay ordered. Both local reads
+// Mutations, save phases and project lifecycle stay ordered. All local reads
 // are synchronous on this same SQLite owner: they cannot interrupt a transaction,
 // but may answer while a snapshot or file publication yields to the event loop.
 let queue = Promise.resolve();
 port.on("message", ({ data }: { data: ParentMessage }) => {
   if (!data || !Number.isSafeInteger(data.id) || data.id <= 0) return;
-  if (data.method === "readRegion" || data.method === "readPresentation") {
+  if (
+    [
+      "readRegion",
+      "readPresentation",
+      "readLandscapeRegion",
+      "readLandscapePresentation",
+    ].includes(data.method)
+  ) {
     void reply(data);
   } else {
     queue = queue.then(() => reply(data));

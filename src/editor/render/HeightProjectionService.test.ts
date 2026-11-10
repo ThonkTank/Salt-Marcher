@@ -3,6 +3,7 @@ import { ComputeJobs } from "../ComputeJobs";
 import { heightTilesFromControls, type HeightTile } from "../model";
 import {
   WorkerHeightProjectionService,
+  estimateHeightProjectionBytes,
   type ProjectionWorkerPort,
 } from "./HeightProjectionService";
 import type {
@@ -40,6 +41,7 @@ class WorkerPort implements ProjectionWorkerPort {
         id,
         sessionId,
         pixels: new Uint8Array(4 * 4 * 4).fill(value),
+        land: new Uint8Array(16).fill(255),
         samples: 16,
         maxChunkMs: 1.2,
       },
@@ -51,6 +53,53 @@ const input = (sources: HeightTile[] = []) => ({
   sources,
   bounds: [0, 0, 320, 320] as [number, number, number, number],
   size: 4,
+});
+
+it.each([
+  ["missing", undefined],
+  ["partial", new Uint8Array(15)],
+  ["nonbinary", new Uint8Array(16).fill(1)],
+])(
+  "rejects a %s land mask instead of certifying water visibility",
+  async (_name, land) => {
+    const port = new WorkerPort();
+    const service = new WorkerHeightProjectionService(
+      new ComputeJobs(),
+      () => port,
+    );
+    const task = service.request(input());
+    port.hydrate(1);
+    const rejected = expect(task.promise).rejects.toThrow("Unvollständiges");
+    port.onmessage?.({
+      data: {
+        kind: "finished",
+        id: 1,
+        sessionId: "",
+        pixels: new Uint8Array(64),
+        land,
+        samples: 16,
+        maxChunkMs: 1,
+      },
+    } as MessageEvent<HeightProjectionResponse>);
+    await rejected;
+    expect(service.metrics()).toMatchObject({
+      active: 0,
+      bytes: 0,
+      completed: 0,
+    });
+  },
+);
+
+it("reserves both colour and land buffers in the physical output budget", () => {
+  const sources = heightTilesFromControls(0, [[0, 0, 600]]);
+  const request = { ...input(sources), overview: new Float64Array(16) };
+  const bytes = sources.reduce(
+    (sum, source) => sum + source.values.byteLength,
+    0,
+  );
+  expect(estimateHeightProjectionBytes(request)).toBe(
+    bytes + request.overview.byteLength + 16 * 5 + 4 * 96 + 32 * 1024,
+  );
 });
 
 it("runs only one exception, accepts its older frozen content, and keeps only latest pending", async () => {
@@ -70,13 +119,19 @@ it("runs only one exception, accepts its older frozen content, and keeps only la
   const originalBytes = service.metrics().bytes;
   expect(originalBytes).toBeGreaterThan(source[0].values.byteLength);
   port.complete(1);
-  expect(await first.promise).toEqual(new Uint8Array(64).fill(12));
+  expect(await first.promise).toEqual({
+    pixels: new Uint8Array(64).fill(12),
+    land: new Uint8Array(16).fill(255),
+  });
   expect(port.sent.filter((request) => request.kind === "begin")).toHaveLength(
     2,
   );
   expect(service.metrics().bytes).toBeLessThan(originalBytes);
   port.complete(3, 24);
-  expect(await third.promise).toEqual(new Uint8Array(64).fill(24));
+  expect(await third.promise).toEqual({
+    pixels: new Uint8Array(64).fill(24),
+    land: new Uint8Array(16).fill(255),
+  });
   expect(service.metrics()).toMatchObject({
     active: 0,
     pending: 0,
@@ -127,6 +182,7 @@ it("does not let a stale acknowledgement or incomplete result certify another pr
       id: 1,
       sessionId: "",
       pixels: new Uint8Array(4),
+      land: new Uint8Array(1),
       samples: 1,
       maxChunkMs: 1,
     },

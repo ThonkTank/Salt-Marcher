@@ -8,12 +8,18 @@ import type {
   HeightProjectionInput,
   HeightProjectionRequest,
   HeightProjectionResponse,
+  HeightProjectionResult,
 } from "./height-projection";
 
 export type { HeightProjectionInput } from "./height-projection";
 
+export type HeightProjectionImage = Pick<
+  HeightProjectionResult,
+  "pixels" | "land"
+>;
+
 export interface HeightProjectionTask {
-  readonly promise: Promise<Uint8Array | null>;
+  readonly promise: Promise<HeightProjectionImage | null>;
   readonly bytes: number;
   cancel(): void;
 }
@@ -61,8 +67,8 @@ interface Task {
   overviewOffset: number;
   calculating: boolean;
   deliveryError?: unknown;
-  handle?: ComputeHandle<Uint8Array | null>;
-  resolve?: (pixels: Uint8Array | null) => void;
+  handle?: ComputeHandle<HeightProjectionImage | null>;
+  resolve?: (image: HeightProjectionImage | null) => void;
   reject?: (error: unknown) => void;
 }
 
@@ -81,7 +87,7 @@ export function estimateHeightProjectionBytes(
 ): number {
   return (
     inputBuffers(input).reduce((sum, buffer) => sum + buffer.byteLength, 0) +
-    input.size * input.size * 4 +
+    input.size * input.size * 5 +
     input.size * 96 +
     32 * 1024
   );
@@ -165,10 +171,12 @@ export class WorkerHeightProjectionService implements HeightProjectionService {
     const handle = this.jobs.request("projection", priority, bytes, () => {
       task.started = true;
       const worker = this.ensureWorker();
-      const ended = new Promise<Uint8Array | null>((resolve, reject) => {
-        task.resolve = resolve;
-        task.reject = reject;
-      });
+      const ended = new Promise<HeightProjectionImage | null>(
+        (resolve, reject) => {
+          task.resolve = resolve;
+          task.reject = reject;
+        },
+      );
       try {
         worker.postMessage({
           kind: "begin",
@@ -284,6 +292,9 @@ export class WorkerHeightProjectionService implements HeightProjectionService {
         !task.calculating ||
         !(response.pixels instanceof Uint8Array) ||
         response.pixels.length !== task.input.size * task.input.size * 4 ||
+        !(response.land instanceof Uint8Array) ||
+        response.land.length !== task.input.size * task.input.size ||
+        response.land.some((value) => value !== 0 && value !== 255) ||
         response.samples !== task.input.size * task.input.size ||
         !Number.isFinite(response.maxChunkMs) ||
         response.maxChunkMs < 0
@@ -292,7 +303,11 @@ export class WorkerHeightProjectionService implements HeightProjectionService {
       else {
         this.completed++;
         this.maxChunkMs = Math.max(this.maxChunkMs, response.maxChunkMs);
-        task.resolve?.(task.cancelled ? null : response.pixels);
+        task.resolve?.(
+          task.cancelled
+            ? null
+            : { pixels: response.pixels, land: response.land },
+        );
       }
       if (this.closed) {
         worker.terminate();
