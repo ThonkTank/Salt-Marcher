@@ -1255,7 +1255,8 @@ Der normale Start sammelt kein ausführliches Diagnosejournal und zeigt keine
 künstlichen Belastungswerkzeuge. Eine ausdrücklich gestartete Diagnose darf
 das Verhalten nur beobachten. Prüfverfahren stehen im
 [Neubauplan](implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag),
-der erreichte Stand und offene Abnahmen im [Status](implementation/status.md).
+der erreichte Stand, die aktuelle Arbeitsentscheidung und offene Abnahmen im
+[Status](implementation/status.md).
 Der R4-Prüflauf bewertet Wirkung, vollständige Eingabe, Ressourcen und Zeitziele
 gemeinsam. Softwaregrafik oder schnelle Submission allein erlauben keine positive
 Hardwareentscheidung. Fehlende sichtbare Zeitbelege bleiben offen, auch wenn

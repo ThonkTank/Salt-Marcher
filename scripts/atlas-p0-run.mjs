@@ -1899,7 +1899,7 @@ try {
             ...(scenarioId ? { scenarioId } : {}),
           });
           (report.collection ??= []).push({ independentRunId, ...result });
-          if (!result.passed)
+          if (direction ? result.errors.length > 0 : !result.passed)
             report.errors.push({
               code: "COLLECTION_FAILURE",
               independentRunId,
@@ -1908,7 +1908,7 @@ try {
         });
         // R4 is a bounded direction decision, not a release soak. Preserve all
         // remaining planned entries without repeating an already decisive red case.
-        if (direction && report.errors.length) break;
+        if (direction && report.evaluation.failures.length) break;
       }
     }
     if (selectedScope.controls) {

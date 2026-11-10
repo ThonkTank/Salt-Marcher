@@ -902,8 +902,11 @@ exakte Terrainrevision nicht nachweislich mit ihrer ersten tatsächlichen
 Präsentation. Vorprüfung und Auswertung bleiben deshalb fehlerschließend.
 R4s tatsächlich sichtbarer Ergebnistakt ist ein eigener offener Messnachweis;
 GPU-Paketzeit, RAF oder ein korrektes Endbild ersetzen ihn nicht. Das gemeinsame
-R4-Urteil gibt weder die native P0-Abnahme noch weitere Werkzeuge frei, solange
-ein erforderlicher Inhalt-, Zeit-, Ressourcen- oder Hardwarebeleg fehlt.
+R4-Urteil beschreibt die Erfüllung der Messanforderungen. Die begrenzte
+Fortsetzung mit R5 folgt der ausdrücklichen
+[Arbeitsentscheidung](implementation/status.md#arbeitsentscheidung).
+Die native P0-Abnahme benötigt weiterhin sämtliche erforderlichen Inhalts-,
+Zeit-, Ressourcen- und Hardwarebelege.
 Native Umgebung, Referenz und vollständige Stichprobe stehen im
 [Prüfvertrag](implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag),
 aktuelle Ergebnisse ausschließlich im Status.

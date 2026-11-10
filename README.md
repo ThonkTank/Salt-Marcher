@@ -22,12 +22,13 @@ räumliche Mindestwirkung mit Anrechnung auf kumulierte Zeitwirkung, Reservierun
 vor Annahme und begrenzte Fortsetzung bis zum vollständigen Aktionsabschluss.
 Undo und Dateiaktionen warten auf diesen gemeinsamen Abschluss. Die unabhängige
 Inhaltsreferenz und die festen Leistungsziele bleiben erhalten.
-**P0 ist weiterhin nicht freigegeben.** R3 begrenzt Quellenübernahme, Vorbereitung
-und GPU-Pakete; numerische Ausnahmefälle laufen über die gemeinsame Jobzulassung
-im Worker. R4 ergänzt die feste gemeinsame Richtungsprüfung. Ihr aktuelles
-negatives Urteil und die offenen Hardwarebelege stehen im Status. Erst nach positiver
-Hardware-Richtungsprobe ist der kleine gemeinsame Landschafts-/Hausfall zulässig;
-der weitere Ausbau bleibt an die vollständige P0- und P3-Abnahme gebunden.
+R3 begrenzt Quellenübernahme, Vorbereitung und GPU-Pakete; numerische
+Ausnahmefälle laufen über die gemeinsame Jobzulassung im Worker. R4 ergänzt
+die feste gemeinsame Richtungsprüfung. **Der nächste freigegebene Schritt ist
+der begrenzte R5-Fachfall, beginnend mit Wald und Lichtung.** Die ausdrückliche
+[Arbeitsentscheidung](docs/implementation/status.md#arbeitsentscheidung) und die
+weiterhin offenen R4-/Hardwarebelege stehen im Status. P4–P9 setzen die
+vollständige P0-Abnahme und den bestandenen gemeinsamen P3-Fall voraus.
 Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
 `src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
@@ -175,9 +176,10 @@ zur Diagnose. Es kann R4 nicht freigeben. R4 benötigt echte Hardware und
 qualifizierte Zeitintervalle tatsächlich geänderter Geländebilder; der aktuelle
 Beobachtungsweg kann diesen sichtbaren Takt noch nicht nachweisen. Diese Grenze
 ist von R5s zusätzlicher Zuordnung jeder Eingabe zur Präsentation getrennt.
-Der [Status](docs/implementation/status.md) nennt die tatsächlich ausgeführten
-Prüfungen und offenen Belege. Nur ein vollständig positives R4-Urteil erlaubt
-den nächsten begrenzten gemeinsamen Fachfall.
+Der Auswerter liefert den formalen Messbefund, einschließlich `allowNextPhase`.
+Die ausdrücklich freigegebene begrenzte Fortsetzung mit R5 steht getrennt davon
+in der [Arbeitsentscheidung](docs/implementation/status.md#arbeitsentscheidung).
+Der Status nennt außerdem die ausgeführten Prüfungen und offenen Belege.
 
 ### Begrenzte Grafikdiagnose
 

@@ -27,11 +27,12 @@ die vollständige Leistungsabnahme bleibt offen.**
 Der aktuelle Produktvertrag beschreibt C1 mit Reservierungen, begrenzter
 Fortsetzung und gemeinsamem Aktionsabschluss. Der [Status](status.md) nennt die
 neu geprüften Belege und die offenen Fehler. R4 besitzt eine integrierte feste
-Auswahl und gemeinsame Auswertung; das aktuelle Laborurteil ist negativ. Die
-Hardware-Richtungsprobe und der qualifizierte sichtbare Ergebnistakt bleiben offen.
-R4/R5 und die gemeinsame
-Leistungsqualifikation sind nicht abgeschlossen; der Gesamtzielzustand ist
-nicht positiv qualifiziert.
+Auswahl und gemeinsame Auswertung; der Laborbefund bleibt FAIL und die
+Hardwarequalifikation offen.
+Die [Arbeitsentscheidung](status.md#arbeitsentscheidung) gibt den begrenzten
+R5-Fachfall zur Umsetzung frei, beginnend mit P3.1 „Wald und Lichtung“ und den
+dafür benötigten P1/P2-Erweiterungen. Die gemeinsame Leistungsqualifikation
+und die vollständige P0-Abnahme bleiben ausstehend.
 Abschnitt 2 dokumentiert die gewählte D10-Änderung und D11-Umsetzung.
 Abschnitt 6 trennt Korrektheit, Hardware-Richtungsentscheidung und Freigabe.
 K1–K6 werden nicht erneut umgesetzt.
@@ -104,9 +105,10 @@ Zwei Hosts und Prüfpfade bleiben bis zur vollständigen Ablösung in P9 nötig.
    Ein Sprachwechsel oder die Erhaltung alten Codes ist kein eigenes Ziel.
 3. Den tatsächlich beauftragten Teil der Fortsetzung aus Abschnitt 5 ausführen.
    Eine Planung aktiviert keine Produktimplementierung. Bei einem späteren
-   Umsetzungsauftrag zunächst R1–R5 aus Abschnitt 5 ausführen. Nach positiver
-   Hardware-Richtungsentscheidung nur den begrenzten gemeinsamen P3-Fall mit
-   den dafür nötigen P1/P2-Erweiterungen bauen. P4–P9 setzen die vollständige
+   Umsetzungsauftrag den aktuellen Paketstand und die
+   [R5-Startfreigabe](status.md#arbeitsentscheidung) beachten. Als Nächstes nur
+   den begrenzten gemeinsamen P3-Fall mit den dafür nötigen P1/P2-Erweiterungen
+   bauen. P4–P9 setzen die vollständige
    P0-Abnahme und den bestandenen gemeinsamen P3-Fall voraus.
 4. Jedes Paket benennt Nutzerergebnis, betroffene Pfade, entfallende Altlogik und
    gezielten Nachweis. Unabhängige Fachpakete können parallel bearbeitet werden;
@@ -1271,13 +1273,13 @@ erweitert, soweit die Abschlussbarriere es benötigt; keine zweite Pipeline.
 
 #### Arbeitspakete mit Liefergegenstand und Stopkriterium
 
-| Paket                                                          | Konkrete Arbeit und Dateien                                                                                                                                                                                                                                                             | Abschlussbeleg                                                                                                                                                                                                                               | Stopkriterium                                                                                                                                    |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| R1 — Kandidatenwahl abgeschlossen; Nachweis im Status          | brush.ts/model-Tests und vorhandener Auswerter: C0 am fixierten Wiederbesuchsfall widerlegt; C1 mit kausaler Eingabeuhr, lokalen Reservierungen und unabhängiger Inhaltsreferenz ausgewählt. C0 bleibt allein als negativer räumlicher Gegenbeweis.                                     | Analytische Klick-/Halte-/Geradenfälle, gleicher Weg bei anderer Zustellung, wiederholte Besuche, Up-/Überlastfälle und absichtliche Fehlerkontrollen unterscheiden sich korrekt. Auswahl samt Kosten und offenen Hardwarebelegen begründet. | Kein weiterer Umbau bei widersprüchlicher Semantik oder selbst gesetztem schwächerem Soll; fehlende Widerlegung ist kein Erfolg.                 |
-| R2 — Höhenweg integriert; Abnahme im Status offen              | EditorController, brush.ts, EditorDocument, WorldRenderer/HeightField: ausgewählten Kandidaten, begrenzte Annahme/Fortsetzung, lokale Belege, eingefrorenen Renderstand und vollständigen Receipt zusammenführen.                                                                       | Weg/Endpunkt bei verzögerter GPU; keine neue Zeitwirkung nach Up; nach tatsächlichem Aktionsabschluss null späte Mutation. Reservierungen, ein Undo, Up→Save/Reopen, Abbruch und alte Receipts stimmen.                                      | Globales Dosisgate, verlorener normaler Endpunkt, unreservierte Restwirkung oder zweite Autorenautorität widerlegen den Kandidaten.              |
-| R3 — Renderpfad integriert; Nachweis im Status                 | height-field-data, HeightField, WorldRenderer, EditorController, budgets.ts: Kleinstwerte mit Fehlerbudget, Auswahl vor Vorbereitung, lokale Metadaten, 2 GL-Slots und kurze GPU-Pakete. Mit dem ersten produktiven Ausnahmejob die minimale gemeinsame Jobzulassung aus A06 einführen. | Normaler Zoom-/Level-9-Fall hat null CPU-Fallback; alle 22 Stufen stimmen; Ressourcen, Contextloss, Snapshotüberholung und budgetierte Autorenfortsetzung sind geprüft; Abbruch gibt den Rechenslot erst nach tatsächlichem Ende frei.       | Normale Großpinsel erreichen Framedauer nur durch Weg-/Zeitverlust oder unteilbare Aufgaben überschreiten das Budget.                            |
-| R4 — Prüfpfad integriert; keine positive Richtungsentscheidung | Bestehende Collection-/Graphics-/Scaling-/Interaktionsrunner prüfen denselben gewählten Produktpfad mit kombiniertem Urteil.                                                                                                                                                            | Feste kleine GPU-Matrix: vollständiger Weg, ≥90 % normale Referenzwirkung, sichtbarer Ergebnisabstand p95 ≤20 ms, CPU-/GPU-/Ressourcenbudgets; Input→Submit p95 ≤50 ms nur als notwendiger Proxy.                                            | Kein Werkzeugausbau bei rotem Normalfall. Kostenursache benennen; ein Verfahrenswechsel muss die bereits festgelegten Kriterien erneut bestehen. |
-| R5 — Gemeinsamer Fall und Freigabe                             | Nur benötigte P1/P2-Schritte mit P3-Rundlauf verbinden; nativen Deadline-Nachweis qualifizieren, danach vollständige Pflichtstichprobe.                                                                                                                                                 | Höhe + Landschaft/Lichtung + Haus/Fundament + vorbereitete Wasserfläche bleiben gemeinsam korrekt und flüssig; native P0-Abnahme und P3-Gate bestehen.                                                                                       | Keine P4–P9-Übertragung bei weltweiter Nachführung, neuem Commitsonderweg oder fehlender gemeinsamer Zeitreserve.                                |
+| Paket                                                    | Konkrete Arbeit und Dateien                                                                                                                                                                                                                                                             | Abschlussbeleg                                                                                                                                                                                                                               | Stopkriterium                                                                                                                                       |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1 — Kandidatenwahl abgeschlossen; Nachweis im Status    | brush.ts/model-Tests und vorhandener Auswerter: C0 am fixierten Wiederbesuchsfall widerlegt; C1 mit kausaler Eingabeuhr, lokalen Reservierungen und unabhängiger Inhaltsreferenz ausgewählt. C0 bleibt allein als negativer räumlicher Gegenbeweis.                                     | Analytische Klick-/Halte-/Geradenfälle, gleicher Weg bei anderer Zustellung, wiederholte Besuche, Up-/Überlastfälle und absichtliche Fehlerkontrollen unterscheiden sich korrekt. Auswahl samt Kosten und offenen Hardwarebelegen begründet. | Kein weiterer Umbau bei widersprüchlicher Semantik oder selbst gesetztem schwächerem Soll; fehlende Widerlegung ist kein Erfolg.                    |
+| R2 — Höhenweg integriert; Abnahme im Status offen        | EditorController, brush.ts, EditorDocument, WorldRenderer/HeightField: ausgewählten Kandidaten, begrenzte Annahme/Fortsetzung, lokale Belege, eingefrorenen Renderstand und vollständigen Receipt zusammenführen.                                                                       | Weg/Endpunkt bei verzögerter GPU; keine neue Zeitwirkung nach Up; nach tatsächlichem Aktionsabschluss null späte Mutation. Reservierungen, ein Undo, Up→Save/Reopen, Abbruch und alte Receipts stimmen.                                      | Globales Dosisgate, verlorener normaler Endpunkt, unreservierte Restwirkung oder zweite Autorenautorität widerlegen den Kandidaten.                 |
+| R3 — Renderpfad integriert; Nachweis im Status           | height-field-data, HeightField, WorldRenderer, EditorController, budgets.ts: Kleinstwerte mit Fehlerbudget, Auswahl vor Vorbereitung, lokale Metadaten, 2 GL-Slots und kurze GPU-Pakete. Mit dem ersten produktiven Ausnahmejob die minimale gemeinsame Jobzulassung aus A06 einführen. | Normaler Zoom-/Level-9-Fall hat null CPU-Fallback; alle 22 Stufen stimmen; Ressourcen, Contextloss, Snapshotüberholung und budgetierte Autorenfortsetzung sind geprüft; Abbruch gibt den Rechenslot erst nach tatsächlichem Ende frei.       | Normale Großpinsel erreichen Framedauer nur durch Weg-/Zeitverlust oder unteilbare Aufgaben überschreiten das Budget.                               |
+| R4 — Prüfpfad integriert; formale Messabnahme ausstehend | Bestehende Collection-/Graphics-/Scaling-/Interaktionsrunner prüfen denselben gewählten Produktpfad mit kombiniertem Urteil.                                                                                                                                                            | Feste kleine GPU-Matrix: vollständiger Weg, ≥90 % normale Referenzwirkung, sichtbarer Ergebnisabstand p95 ≤20 ms, CPU-/GPU-/Ressourcenbudgets; Input→Submit p95 ≤50 ms nur als notwendiger Proxy.                                            | Roter Normalfall beendet die R4-Sammlung; Kostenursache benennen. Die begrenzte R5-Fortsetzung richtet sich nach der Arbeitsentscheidung im Status. |
+| R5 — Fachfall zur Umsetzung freigegeben; Abnahme offen   | Nur benötigte P1/P2-Schritte mit P3-Rundlauf verbinden; nativen Deadline-Nachweis qualifizieren, danach vollständige Pflichtstichprobe.                                                                                                                                                 | Höhe + Landschaft/Lichtung + Haus/Fundament + vorbereitete Wasserfläche bleiben gemeinsam korrekt und flüssig; native P0-Abnahme und P3-Gate bestehen.                                                                                       | Keine P4–P9-Übertragung bei weltweiter Nachführung, neuem Commitsonderweg oder fehlender gemeinsamer Zeitreserve.                                   |
 
 R1 ist eine endliche Auswahl, kein neues Testframework und keine allgemeine
 Brush-Engine. R2 wird als ein vertikaler Kandidat integriert; Annahme ohne
@@ -1287,11 +1289,12 @@ haben einen Verantwortlichen. Es bleibt ein C1-Produktkandidat; C0 hat keinen
 Produktpfad und keinen allgemeinen Inhaltsauswerter mehr. Jeder Implementierungspaketabschluss aktualisiert die betroffenen
 aktuellen Produkt-/Architekturabschnitte und den Kurzstatus.
 
-R4 bleibt eine kurze Richtungsentscheidung. Fehlende Hardware ist ein benannter
-Blocker; ein erfolgreicher Softwarelauf ersetzt sie nicht. Nach bestandenem R4
-darf R5 den kleinen kombinierten Fall entwickeln, während die vollständige
-Präsentationsabnahme fertiggestellt wird. Dies erlaubt keinen allgemeinen
-P1–P9-Ausbau und keine Absenkung der Zeitziele.
+R4 bleibt eine kurze Richtungsentscheidung mit unverändertem Prüfvertrag.
+Fehlende Hardware bleibt ein benannter Messblocker. Die aktuelle
+[Arbeitsentscheidung](status.md#arbeitsentscheidung) erlaubt die begrenzte
+R5-Fortsetzung aufgrund des lokalen Nutzertests. Formale R4-Messergebnisse,
+Zeitziele und die vollständige P0-/P3-Abnahme bleiben erhalten. Der erlaubte
+Umfang umfasst nur den kleinen kombinierten Fall und dessen nötige P1/P2-Schritte.
 
 #### Integrierte Prüfzuordnung
 
@@ -1375,16 +1378,17 @@ oder schneller Submit allein schließen dieses Gate nicht. Fehlende Umgebung
 oder fehlender qualifizierter Präsentationsbeleg ist
 `blockiert`; ein bekannter Inhalts-/Budget-/Zeitfehler bleibt `FAIL`.
 
-Nach einem späteren Umsetzungsauftrag gilt zunächst **R1 → R2/R3 → R4 → R5**.
-Ein bestandenes R4 erlaubt ausschließlich die für den kleinen P3-Fall nötigen
-P1/P2-Erweiterungen. Die vollständige P0-Abnahme bleibt bis zu Referenz,
+Die P0-Folge lautet **R1 → R2/R3 → R4 → R5**; der aktuelle Stand und die
+[R5-Startfreigabe](status.md#arbeitsentscheidung) stehen im Status. Als Nächstes
+sind ausschließlich der kleine P3-Fall und die dafür nötigen P1/P2-Erweiterungen
+zur Umsetzung freigegeben. Die vollständige P0-Abnahme bleibt bis zu Referenz,
 Präsentationsdeadline und Pflichtstichprobe offen. Erst nach P0-Abnahme und
 bestandenem gemeinsamem P3-Fall gilt **P4 → P5/P6/P7/P8 → P9**.
 Gemeinsame Dokument-, Oberflächen- und Undo-Verträge werden nicht mehrfach gebaut.
 
 ### P1 — Zustände, Datenverträge und Fachkern konsolidieren
 
-**Abhängigkeit:** positive begrenzte Hardware-Richtungsentscheidung R4.
+**Abhängigkeit:** [R5-Startfreigabe](status.md#arbeitsentscheidung) für den begrenzten gemeinsamen P3-Fall.
 **Lieferung:** zunächst nur die für den P3-Produktfall benötigten Typen und
 Regeln. Keine vollständige abstrakte Weltmodellierung vor dem gemeinsamen
 P3-Nachweis und der vollständigen P0-Abnahme.
@@ -1445,7 +1449,7 @@ bei Fehler, spätere Änderungen bleiben dirty, falsche Formate ohne Teilüberna
 
 ### P3 — Gemeinsamen Kern mit Landschaft, Haus und Konkurrenz prüfen
 
-**Abhängigkeiten:** R4 und die dafür nötigen P1/P2-Erweiterungen; vollständige P0-Abnahme vor weiterem Ausbau nach P3. **Pflichtumfang:** F01–F04/F18-Basis.
+**Abhängigkeiten:** [R5-Startfreigabe](status.md#arbeitsentscheidung) und die dafür nötigen P1/P2-Erweiterungen; vollständige P0-Abnahme vor weiterem Ausbau nach P3. **Pflichtumfang:** F01–F04/F18-Basis.
 
 P1/P2 jeweils mit dem folgenden nutzbaren Schritt erweitern. Jeder neue Datentyp
 erhält sofort Darstellung, Bearbeitung beziehungsweise vorbereitete echte Quellen,
@@ -1902,6 +1906,8 @@ verschieden. Eine Auswahl verkleinert niemals die endgültige Abnahme.
 R4 verlangt reale Hardware und beobachtbaren Ergebnisfortschritt; ein noch
 fehlender inhalts- und eingabegebundener Präsentationsbeleg muss sichtbar offen
 bleiben und darf keine behauptete 50-ms-End-to-End-Erfüllung erzeugen.
+Die aktuelle [Arbeitsentscheidung](status.md#arbeitsentscheidung) bestimmt die
+begrenzte Fortsetzung; Messumfang, Kriterien und erlaubte Aussagen bleiben erhalten.
 
 | Zweck                             | Umfang                                                                                                             | Erlaubte Aussage                                                         |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
@@ -2046,19 +2052,19 @@ Nur Paketstatus und Verweise hier pflegen. Commit, Prüfzahlen, Messwerte und
 konkrete Fehler stehen ausschließlich im [Status](status.md). Historische
 Rohbelege werden nicht umgeschrieben.
 
-| Paket | Umfang                                                                  | Status / Nachweis                                                                                                                                       |
-| ----- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                                    |
-| P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1 wählt C1; R2/R3 funktional integriert. R4-Prüfpfad integriert, Richtungsentscheidung nicht bestanden. Belege im Status; R5 und native Abnahme offen. |
-| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Offen; nach positivem R4 nur benötigte P3-Erweiterungen, weiterer Ausbau erst nach P0 und P3.                                                           |
-| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                                   |
-| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Offen.                                                                                                                                                  |
-| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                  |
-| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                  |
-| P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                  |
-| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                              | Offen.                                                                                                                                                  |
-| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                       | Offen.                                                                                                                                                  |
-| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.                | Offen.                                                                                                                                                  |
+| Paket | Umfang                                                                  | Status / Nachweis                                                                                                                                                 |
+| ----- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1–K6 | Begrenzte Konsolidierung aus Abschnitt 5.                               | Implementiert; genaue Nachweis-/CI-Grenze im Status.                                                                                                              |
+| P0    | Höhenversuch P0a–P0f, Korrektur R1–R5, D10/D11 und native Höhenabnahme. | R1 wählt C1; R2/R3 und R4-Prüfpfad integriert. Begrenzter R5-Fachfall zur Umsetzung freigegeben; formale R4-/P0-Abnahme offen. Entscheidung und Belege im Status. |
+| P1    | Gemeinsamer Kern für F01–F19, A02–A06/D01/D02.                          | Für R5 nur benötigte P3-Erweiterungen freigegeben; weiterer Ausbau erst nach P0 und P3. Arbeitsentscheidung im Status.                                            |
+| P2    | F19, A07 und vollständige Projektdateien.                               | Offen; neue P3-Quellen sofort in den vorhandenen Dateipfad aufnehmen.                                                                                             |
+| P3    | F01–F04/F18-Basis, Mehrskaligkeit, Konkurrenz, D03 und M10-Teilfälle.   | Begrenzter R5-Fachfall freigegeben; Einstieg P3.1 Wald und Lichtung, gemeinsame Abnahme offen.                                                                    |
+| P4    | F04–F07, D01/D02 und komplette Flächenwerkzeuge.                        | Offen.                                                                                                                                                            |
+| P5    | F08–F12/D04: Straßen, Parzellen und Außenhäuser.                        | Offen.                                                                                                                                                            |
+| P6    | F02/F12–F14: hauslokale Innenräume.                                     | Offen.                                                                                                                                                            |
+| P7    | F09/F16/F17/D03: Gewässer und Nachführung.                              | Offen.                                                                                                                                                            |
+| P8    | F03/F15/F18: Regionen, Bedienung und Kartografie.                       | Offen.                                                                                                                                                            |
+| P9    | F01–F19 integriert, M01–M10, RPM, Altpfadabbau und Doku.                | Offen.                                                                                                                                                            |
 
 ## 8. Definition von „erledigt“
 
