@@ -1,7 +1,7 @@
 # Aktueller Stand
 
-Stand: 10. November 2026. Ausgangspunkt dieser Übergabebereinigung ist
-[R4-Commit `644e164`](https://github.com/ThonkTank/Salt-Marcher/commit/644e164977ffcd14507968665e4516f0da2a324b).
+Stand: 10. November 2026. Ausgangspunkt dieser Bereinigung ist
+[Übergabecommit `9d7635c`](https://github.com/ThonkTank/Salt-Marcher/commit/9d7635c693f1906c5df33fda8fc337c9d1db4d05).
 [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
 Atlas V7 ist der reguläre Einstieg mit Dateiformat 22; der optionale
 Electron-/Pixi-Editor verwendet Format 24. Der
@@ -21,46 +21,50 @@ keine zusätzliche Sperre gegen diese Nutzerentscheidung.
 Die offenen Messbefunde werden weitergeführt. Vollständige P0-Abnahme und
 bestandener gemeinsamer P3-Fall bleiben Voraussetzungen für P4–P9.
 
-## Bereinigte Übergabe
+## Bereinigung vor P3.1
 
-- README, Architektur und sämtliche R5-Einstiege des Plans verweisen auf diese
-  Arbeitsentscheidung. Der Status enthält den aktuellen Stand und die nächste
-  Übergabe; ausführliche R4-Messdetails bleiben im verlinkten R4-Commit erhalten.
-- Der R4-Runner meldet `COLLECTION_FAILURE` nur noch bei tatsächlich vorhandenen
-  Erhebungsfehlern. Ein vorgesehener Stop nach zentralem FAIL bewahrt die echten
-  Inhalts-/Budgetfehler und die nicht ausgeführten Fälle. Er startet keine weitere
-  Prozessgruppe und behauptet keinen zusätzlichen Laufzeitfehler mit leerer Liste.
-- Produktquellen, Quellenmathematik, Budgets und unabhängige Prüfkriterien sind
-  gegenüber R4 unverändert. Der Produktquellhash bleibt
-  `66d56d12581e542651205e735a46328dbb2ccdf3b06c2080a54d5766dbd491b0`.
+- `EditorDocument` besitzt für Höhenpinsel ausschließlich den C1-Weg. Der bisher
+  nur noch von Tests benutzte direkte Integrator ist entfernt; Initialisierung
+  und Historyabschluss sind interne Schritte der angenommenen Fortsetzung.
+- Modell-, Renderer-, Session- und Skalierungsfixtures verwenden echte
+  C1-Annahme und Materialisierung. Der gemeinsame Testhelfer berechnet keine
+  Autorenwerte, teilt keine langen Zeitfenster auf und bestätigt Wirkung nur
+  auf ausdrücklichen Aufruf. Er liefert keinen Präsentationsnachweis.
+- Die 52 Höhentests bleiben erhalten. Sie prüfen jetzt räumliche Mindestwirkung,
+  deren einmalige Anrechnung, zulässige Zeitfenster und ausdrückliche
+  Modellrückmeldung. Quellen-, History-, Speicher-, Weltgrenzen- und
+  512-Kachel-Prüfungen bleiben abgedeckt. Analytische Kerneltests und die
+  unabhängige C0/C1-Referenz bleiben erhalten.
+- Der gemeinsame Zeitsegmenttyp liegt bei den Datenverträgen. Der aktive
+  C1-Algorithmus, Laufzeitbudgets, unabhängige Referenz und Leistungsziele
+  bleiben unverändert; diese Bereinigung implementiert noch keine Landschaft.
 
 ## Geprüfter Stand
 
-Die vollständige GitHub-Prüfung von **`644e164`** ist erfolgreich:
-[Candidate · exact-SHA aggregate](https://github.com/ThonkTank/Salt-Marcher/actions/runs/42719555905/job/129509728019).
-Der Workflow prüft ausdrücklich den PR-Head und führt Paketprüfung,
-`check:all` und den konfigurierten nativen RPM-Build in diesem Checkout aus.
-Die [CI-Diagnosen](https://github.com/ThonkTank/Salt-Marcher/actions/runs/42719555905/artifacts/13722466496)
-sind diesem Lauf zugeordnet. Dieser Erfolg gehört zu `644e164`; die CI eines
-nachfolgenden Bereinigungscommits ist gesondert auf dessen SHA zu prüfen.
+Der Produktquellhash der lokalen Prüfung ist
+`a220f249ca7394b3d3daaf4c4b23c2490701231fd86730fdb3fc65ed437ba8d4`.
 
-Am bereinigten Runner erneut ausgeführt:
+| Prüfung                                                   | Ergebnis                                                                                                            |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Gesamte TypeScript-Typprüfung                             | bestanden                                                                                                           |
+| P0-Editor-Tests                                           | 728/728 in 22 Dateien bestanden; die 52 Höhentests nach der letzten Präzisierung erneut bestanden                   |
+| Tool-Typprüfung und frischer P0-Desktop-Build             | bestanden                                                                                                           |
+| Echte Electron-/SQLite-Store- und Skalierungstests        | 15/15 bestanden, einschließlich unabhängigem Höhenvergleich, Dateirundlauf und Fine-Digest-Fehlerkontrolle          |
+| Vollständiger Electron-Smoke                              | 120 Prüfungen bestanden: Normalbetrieb, Hänger und Datei-/Abschlusslebenszyklus                                     |
+| GPU-Pixelreferenz                                         | 6/6 Fälle bestanden, einschließlich aller 22 Ebenen, Weltgrenzen und extremer endlicher Auslöschung                 |
+| Isolierte negative Kontrolle der umgestellten Modelltests | Entfernte C1-Mindestwirkung macht den zeitlosen Geometrietest rot; Wiederherstellung macht ihn grün                 |
+| Unabhängige Diffprüfung                                   | kein weiterer Integrator, keine verlorene fachliche Abdeckung und keine Änderung der aktiven C1-Berechnung gefunden |
 
-| Prüfung                                               | Ergebnis                                                                                     |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Auswerter-, Timing-, Vorprüfungs- und Collectiontests | 323/323 in fünf Dateien bestanden                                                            |
-| Tool-Typprüfung und Runner-Syntax                     | bestanden                                                                                    |
-| Frischer P0-Desktop-Build                             | bestanden; Produktquellhash unverändert                                                      |
-| Echter fester R4-Laborlauf zur Stopprüfung            | ein ausgeführter Fall in einer Prozessgruppe; übrige 23 Fälle erhalten; null Erhebungsfehler |
-| Gemeinsames Urteil dieses Laufs                       | FAIL wegen gemessener GPU-/Submit-Grenzwertverstöße; kein zusätzlicher `COLLECTION_FAILURE`  |
-| Formatierung und Diffprüfung                          | bestanden                                                                                    |
+Die vollständige GitHub-Prüfung des Ausgangscommits **`9d7635c`** ist ebenfalls
+erfolgreich: [Candidate · exact-SHA aggregate](https://github.com/ThonkTank/Salt-Marcher/actions/runs/42803063239/job/129785215139).
+Sie umfasst Paketprüfung, `check:all` und den konfigurierten nativen RPM-Build.
+Dieser Erfolg gehört zum Ausgangscommit; die CI des veröffentlichten
+Bereinigungscommits wird gesondert auf dessen SHA bewertet. Lokale Funktions-
+und Pixelprüfungen sind keine native Leistungsabnahme.
 
-Die lokale Stopprüfung verwendet weiterhin die feste R4-Auswahl und belegt die
-bereinigte Berichterstattung. Ihre Softwarezeiten sind keine native Abnahme.
-Logs und Rohdaten liegen unter den ignorierten Laufverzeichnissen
-`src-tauri/target/diagnostics/r5-handoff-verified/` und
-`src-tauri/target/diagnostics/r5-handoff-direction/`; sie gehören nicht zum
-versionierten Quellbaum.
+Rohbelege liegen ignoriert unter `src-tauri/target/diagnostics/c1-cleanup/`,
+`src-tauri/target/diagnostics/atlas-gpu-reference/` und den
+`artifacts/atlas-rebuild/smoke-*`-Laufverzeichnissen.
 
 ## Offene Messbefunde
 
@@ -70,13 +74,13 @@ Referenzwirkung, ungefähr 0,5 Prozent. Während des Haltens wurde kein neues
 Terrainpaket eingereicht. Die Codeableitung benennt wiederholt verworfene
 Übersichtsvorbereitung: mindestens 133 Schritte für den betroffenen Auftrag,
 bei höchstens 128 Schritten je RAF und erneutem Versionswechsel vor Fortsetzung.
-Der Befund ist offen und wird durch die Nutzerentscheidung als bekannt in die
-begrenzte Fortsetzung übernommen.
+Die Bereinigung repariert diesen Befund nicht und ersetzt ihn nicht durch eine
+neue Performanceaussage. Er bleibt als bekannt in die begrenzte Fortsetzung
+übernommen.
 
 Der native Hardware-/20-ms-Ergebnistakt und die vollständige
-Eingabe→Präsentationsabnahme bleiben offen. Erfolgreiche CI, Paketbau und der
-lokale Nutzertest begründen die dokumentierte Arbeitsentscheidung; der formale
-Messvertrag und die endgültigen Abnahmekriterien behalten ihre Bedeutung.
+Eingabe→Präsentationsabnahme bleiben offen. Die Arbeitsentscheidung erlaubt den
+begrenzten Fachfall; der formale Messvertrag bleibt bestehen.
 
 ## Nächster Planschritt
 

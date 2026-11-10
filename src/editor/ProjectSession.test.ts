@@ -8,6 +8,11 @@ import type {
 } from "./bridge";
 import { EditorDocument } from "./model";
 import { ProjectSession } from "./ProjectSession";
+import {
+  applyTestBrush,
+  beginTestBrush,
+  finishTestBrush,
+} from "../../tests/support/prepaidBrush";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -20,9 +25,9 @@ function deferred<T>() {
 }
 
 function edit(document: EditorDocument, x = 100) {
-  document.beginGesture({ level: 0, radius: 10, amount: 20 });
-  document.applySegment([x, 100], [x, 100], 50);
-  return document.finishGesture()!;
+  beginTestBrush(document, { level: 0, radius: 10, amount: 20 });
+  applyTestBrush(document, [x, 100], [x, 100], 50);
+  return finishTestBrush(document)!;
 }
 
 /** Real admitted coefficients, deliberately not materialized by the caller yet. */

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  acknowledgeTestBrush,
+  applyTestBrush,
+  beginTestBrush,
+  finishTestBrush,
+} from "../../../tests/support/prepaidBrush";
+import { referenceC1Stroke } from "../../../scripts/atlas-p0-brush-reference.mjs";
+import {
   COAST_FIXTURE_BOUNDS,
   EditorDocument,
   HEIGHT_MAX_ACTION_TILES,
@@ -27,8 +34,8 @@ import {
 const ALL: Bounds = [-WORLD_LIMIT, -WORLD_LIMIT, WORLD_LIMIT, WORLD_LIMIT];
 const LOCAL: Bounds = [-1000, -1000, 1000, 1000];
 
-describe("atomic timed height paths", () => {
-  it("matches sequential geometry while publishing one revision and one history action", () => {
+describe("atomic C1 path admission", () => {
+  it("matches separately admitted geometry while materializing in bounded slices and committing one action", () => {
     const path = [
       { from: [0, 0] as Point, to: [0, 80] as Point, elapsedMs: 8 },
       { from: [0, 80] as Point, to: [80, 0] as Point, elapsedMs: 8 },
@@ -37,51 +44,92 @@ describe("atomic timed height paths", () => {
     const atomic = new EditorDocument("atomic", { empty: true });
     const sequential = new EditorDocument("sequential", { empty: true });
     for (const doc of [atomic, sequential])
-      doc.beginGesture({ level: 0, radius: 20, amount: 400 });
+      beginTestBrush(doc, { level: 0, radius: 20, amount: 400 });
     for (const segment of path)
-      sequential.applySegment(segment.from, segment.to, segment.elapsedMs);
-    const update = atomic.applySegments(path)!;
-    expect(atomic.revision).toBe(1);
-    expect(update.patches.length).toBeGreaterThan(0);
-    expect(values(atomic.snapshot(LOCAL).tiles)).toEqual(
-      values(sequential.snapshot(LOCAL).tiles),
+      applyTestBrush(sequential, segment.from, segment.to, segment.elapsedMs);
+    atomic.admitBrushBatch({
+      admissionId: 1,
+      path: {
+        from: path[0].from,
+        points: path.map((part) => part.to),
+        end: true,
+      },
+      time: path,
+      pointCount: path.length,
+    });
+    expect(atomic.revision).toBe(0);
+    expect(atomic.metrics.readyTiles).toBe(0);
+    expect(atomic.brushWork!.pendingCells).toBeGreaterThan(7);
+    const first = atomic.advanceBrushGesture({ maxCells: 7, maxMs: 1000 });
+    expect(first.appliedCells).toBe(7);
+    expect(first.complete).toBe(false);
+    expect(atomic.metrics.historyActions).toBe(0);
+    finishTestBrush(atomic);
+    finishTestBrush(sequential);
+    const whole = values(atomic.snapshot(LOCAL).tiles);
+    const split = values(sequential.snapshot(LOCAL).tiles);
+    expect(whole.map((tile) => tile.key)).toEqual(
+      split.map((tile) => tile.key),
     );
-    atomic.finishGesture();
+    for (let tile = 0; tile < whole.length; tile++)
+      for (let index = 0; index < whole[tile].values.length; index++)
+        expect(whole[tile].values[index]).toBeCloseTo(
+          split[tile].values[index],
+          12,
+        );
     expect(atomic.metrics.historyActions).toBe(1);
     atomic.undo();
     expect(atomic.sampleHeight(0, 80)).toBe(-100);
   });
 
-  it("rejects a missing later corner before any earlier segment can mutate", () => {
+  it("rejects a missing later corner before reserving or mutating the earlier segment", () => {
     const doc = new EditorDocument("partial-path");
     doc.acceptCoverage([-100, -100, 100, 100], []);
-    doc.beginGesture({ level: 0, radius: 20, amount: 400 });
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 400 });
+    const before = { metrics: doc.metrics, work: doc.brushWork };
     expect(() =>
-      doc.applySegments([
-        { from: [0, 0], to: [40, 0], elapsedMs: 8 },
-        { from: [40, 0], to: [40, 2000], elapsedMs: 8 },
-      ]),
+      doc.admitBrushBatch({
+        admissionId: 1,
+        path: {
+          from: [0, 0],
+          points: [
+            [40, 0],
+            [40, 2000],
+          ],
+          end: true,
+        },
+        time: [
+          { from: [0, 0], to: [40, 0], elapsedMs: 8 },
+          { from: [40, 0], to: [40, 2000], elapsedMs: 8 },
+        ],
+        pointCount: 2,
+      }),
     ).toThrow(SourcesNotReadyError);
+    expect({ metrics: doc.metrics, work: doc.brushWork }).toEqual(before);
     expect(doc.revision).toBe(0);
     expect(doc.sampleHeight(0, 0)).toBe(-100);
-    expect(doc.finishGesture()).toBeNull();
+    expect(finishTestBrush(doc)).toBeNull();
   });
 
-  it("rejects the combined cell budget before any segment can mutate", () => {
+  it("rejects the combined cell budget before reserving either endpoint", () => {
     const doc = new EditorDocument("path-budget", {
       empty: true,
       maxGestureCells: 1,
     });
-    doc.beginGesture({ level: 0, radius: 3, amount: 400 });
+    beginTestBrush(doc, { level: 0, radius: 3, amount: 400 });
+    const before = { metrics: doc.metrics, work: doc.brushWork };
     expect(() =>
-      doc.applySegments([
-        { from: [0, 0], to: [0, 0], elapsedMs: 8 },
-        { from: [100, 0], to: [100, 0], elapsedMs: 8 },
-      ]),
+      doc.admitBrushBatch({
+        admissionId: 1,
+        path: { from: [0, 0], points: [[100, 0]], end: true },
+        time: [{ from: [0, 0], to: [100, 0], elapsedMs: 16 }],
+        pointCount: 1,
+      }),
     ).toThrow(/Höhenpunkte/);
+    expect({ metrics: doc.metrics, work: doc.brushWork }).toEqual(before);
     expect(doc.revision).toBe(0);
     expect(doc.sampleHeight(0, 0)).toBe(-100);
-    expect(doc.finishGesture()).toBeNull();
+    expect(finishTestBrush(doc)).toBeNull();
   });
 });
 
@@ -99,12 +147,12 @@ function stroke(
   amount = 10,
   radius = 20,
 ) {
-  doc.beginGesture({ level, radius, amount });
+  beginTestBrush(doc, { level, radius, amount });
   const bounds = points.map(
     (to, index) =>
-      doc.applySegment(points[index - 1] ?? to, to, 1000)?.bounds ?? null,
+      applyTestBrush(doc, points[index - 1] ?? to, to, 50)?.bounds ?? null,
   );
-  const change = doc.finishGesture();
+  const change = finishTestBrush(doc);
   return { change, bounds };
 }
 
@@ -336,14 +384,14 @@ describe("local source readiness and ownership", () => {
 
   it("evicts only confirmed sources and never reinterprets an evicted tile as ocean", () => {
     const doc = new EditorDocument("eviction", { empty: true });
-    doc.beginGesture({ level: 0, amount: 10, radius: 20 });
-    doc.applySegment([100, 100], [100, 100], 1000);
+    beginTestBrush(doc, { level: 0, amount: 10, radius: 20 });
+    applyTestBrush(doc, [100, 100], [100, 100], 50);
     const sample = doc.sampleHeight(100, 100);
     expect(doc.retainSources([])).toEqual([]);
-    expect(control(doc, 20, 20)).toBe(10);
-    const change = doc.finishGesture()!;
+    expect(control(doc, 20, 20)).toBe(0.5);
+    const change = finishTestBrush(doc)!;
     expect(doc.retainSources([])).toEqual([]);
-    expect(control(doc, 20, 20)).toBe(10);
+    expect(control(doc, 20, 20)).toBe(0.5);
     doc.acceptPersistence(change.sequence);
     expect(doc.retainSources([])).toEqual(["height:0:0:0"]);
     expect(doc.sourceState("height:0:0:0")).toBe("unknown");
@@ -363,8 +411,8 @@ describe("local source readiness and ownership", () => {
     const distant = stroke(doc, [[10_000, 10_000]]).change!;
     doc.acceptPersistence(distant.sequence);
     const pending = stroke(doc, [[20_000, 20_000]]).change!;
-    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    doc.applySegment([30_000, 30_000], [30_000, 30_000], 1000);
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 10 });
+    applyTestBrush(doc, [30_000, 30_000], [30_000, 30_000], 50);
     const activeControl = control(doc, 6000, 6000);
     expect(doc.retainSources([{ bounds: LOCAL, minLevel: 0 }])).toHaveLength(1);
     expect(doc.sampleHeight(100, 100)).toBeGreaterThan(-100);
@@ -374,7 +422,7 @@ describe("local source readiness and ownership", () => {
     expect(() => doc.sampleHeight(10_000, 10_000)).toThrow(
       SourcesNotReadyError,
     );
-    doc.finishGesture();
+    finishTestBrush(doc);
     doc.acceptPersistence(pending.sequence);
     expect(doc.retainSources([{ bounds: LOCAL, minLevel: 0 }])).toHaveLength(1);
     expect(() => doc.sampleHeight(20_000, 20_000)).toThrow(
@@ -535,10 +583,10 @@ describe("local gestures, history and persistence patches", () => {
       const doc = new EditorDocument(`world-brush-${diameter}`, {
         empty: true,
       });
-      doc.beginGesture({ level, radius, amount: 100 });
-      expect(doc.applySegment([0, 0], [0, 0], 1000)).not.toBeNull();
+      beginTestBrush(doc, { level, radius, amount: 100 });
+      expect(applyTestBrush(doc, [0, 0], [0, 0], 50)).not.toBeNull();
       expect(doc.metrics.gestureCells).toBeLessThan(2000);
-      const change = doc.finishGesture()!;
+      const change = finishTestBrush(doc)!;
       expect(change.patches.every((p) => p.after?.level === level)).toBe(true);
       expect(doc.sampleHeight(0, 0)).toBeGreaterThan(-100);
       expect(doc.metrics.readyTiles).toBeLessThanOrEqual(4);
@@ -549,10 +597,10 @@ describe("local gestures, history and persistence patches", () => {
       empty: true,
     });
     expect(() =>
-      tooFine.beginGesture({ level: 0, radius: 20_000_000, amount: 100 }),
+      beginTestBrush(tooFine, { level: 0, radius: 20_000_000, amount: 100 }),
     ).toThrow(/Autorenstufe/);
     expect(() =>
-      tooFine.beginGesture({
+      beginTestBrush(tooFine, {
         level: 21,
         radius: Number.MAX_VALUE,
         amount: 100,
@@ -565,10 +613,11 @@ describe("local gestures, history and persistence patches", () => {
     const doc = new EditorDocument("rational-oracle");
     doc.acceptCoverage(ALL, createCoastFixture());
     // These fractions are the analytic sum of the positive cubic weights and
-    // quartic brush samples for a radius-1280, level-5, amount-100 dab at (0,0).
+    // quartic brush samples for a radius-1280, level-5 dab of 100 feet at (0,0).
+    // The C1 window supplies that dose with 2000 feet/s for 50 ms.
     // They are independent expected values, not outputs of the model sampler.
     expect(doc.sampleHeight(320, 0)).toBeCloseTo(6.31005859375, 10);
-    stroke(doc, [[0, 0]], 5, 100, 1280);
+    stroke(doc, [[0, 0]], 5, 2000, 1280);
     expect(doc.sampleHeight(-800, 0)).toBeCloseTo(-20 + 338225 / 9216, 9);
     expect(doc.sampleHeight(-400, 0)).toBeCloseTo(735125 / 9216, 9);
     expect(doc.sampleHeight(320, 0)).toBeCloseTo(
@@ -587,7 +636,7 @@ describe("local gestures, history and persistence patches", () => {
     const beforeCoarse = prepareHeightSampler(
       before.tiles.filter((t) => t.level > 0),
     );
-    const { change } = stroke(doc, [[0, 0]], 4, 80, 1200);
+    const { change } = stroke(doc, [[0, 0]], 4, 1600, 1200);
     expect(change!.patches.every((p) => p.after?.level === 4)).toBe(true);
     const after = doc.snapshot(LOCAL);
     expect(values(after.tiles.filter((t) => t.level === 0))).toEqual(fine);
@@ -613,15 +662,15 @@ describe("local gestures, history and persistence patches", () => {
     const a = new EditorDocument("a", { empty: true });
     const b = new EditorDocument("b", { empty: true });
     for (const doc of [a, b])
-      doc.beginGesture({ level: 0, amount: -2, radius: 30 });
-    a.applySegment([0, 0], [60, 0], 1000);
+      beginTestBrush(doc, { level: 0, amount: -2, radius: 30 });
+    applyTestBrush(a, [0, 0], [60, 0], 40);
     let previous = 0;
     for (const x of [10, 20, 35, 60]) {
-      b.applySegment([previous, 0], [x, 0], ((x - previous) / 60) * 1000);
+      applyTestBrush(b, [previous, 0], [x, 0], ((x - previous) / 60) * 40);
       previous = x;
     }
-    a.finishGesture();
-    b.finishGesture();
+    finishTestBrush(a);
+    finishTestBrush(b);
     const av = values(a.snapshot(LOCAL).tiles),
       bv = values(b.snapshot(LOCAL).tiles);
     expect(av.map((t) => t.key)).toEqual(bv.map((t) => t.key));
@@ -632,16 +681,19 @@ describe("local gestures, history and persistence patches", () => {
     expect(b.sequence).toBe(1);
   });
 
-  it("integrates the quartic kernel analytically without a hidden initial pulse", () => {
-    const doc = new EditorDocument("integral-oracle", { empty: true });
-    doc.beginGesture({ level: 0, radius: 30, amount: -2 });
-    expect(doc.metrics.readyTiles).toBe(0);
-    doc.applySegment([-30, 0], [30, 0], 1000);
-    // Integral from -r to r is 16r/15. Averaged over length 2r, a
-    // one-second rate -2 gives -16/15, with no separate click contribution.
-    expect(control(doc, 0, 0)).toBeCloseTo(-16 / 15, 12);
-    expect(control(doc, 0, 3)).toBeCloseTo((-16 / 15) * (3 / 4) ** 2.5, 12);
-    expect(control(doc, -6, 0)).toBeCloseTo(-8 / 15, 12);
+  it("integrates the pure quartic time kernel against analytic values", () => {
+    // This is only the time-kernel reference. C1's spatial minimum and feedback
+    // belong to the document tests, not to the mathematical integral.
+    // Integral over a diameter is 16r/15; its mean at rate -2 is -16/15.
+    expect(-2 * quarticBrushSegmentMean(30, 0, 60, 30)).toBeCloseTo(
+      -16 / 15,
+      12,
+    );
+    expect(-2 * quarticBrushSegmentMean(30, 15, 60, 30)).toBeCloseTo(
+      (-16 / 15) * (3 / 4) ** 2.5,
+      12,
+    );
+    expect(-2 * quarticBrushSegmentMean(0, 0, 60, 30)).toBeCloseTo(-8 / 15, 12);
     const tiny = quarticBrushSegmentIntegral(-15, 0, 1e-8, 30);
     // At u=1/2 the kernel is 9/16; over this tiny interval its change is <1e-9.
     expect(Math.abs(tiny / 1e-8 - 9 / 16)).toBeLessThan(1e-9);
@@ -736,24 +788,28 @@ describe("local gestures, history and persistence patches", () => {
     },
   );
 
-  it("deepens during stationary holding at the configured rate and undoes one whole stroke", () => {
+  it("deepens with explicit model feedback and retains the C1 initial minimum in one undo action", () => {
     const doc = new EditorDocument("stationary-rate", { empty: true });
-    doc.beginGesture({ level: 0, radius: 20, amount: 20 });
-    expect(doc.applySegment([100, 100], [100, 100], 0)).toBeNull();
-    expect(doc.revision).toBe(0);
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 20 });
+    expect(applyTestBrush(doc, [100, 100], [100, 100], 0)).not.toBeNull();
+    expect(control(doc, 20, 20)).toBeCloseTo(20 / 60, 12);
+    expect(acknowledgeTestBrush(doc)).toBe(true);
     for (let interval = 0; interval < 12; interval++) {
-      expect(doc.applySegment([100, 100], [100, 100], 250)).not.toBeNull();
-      expect(control(doc, 20, 20)).toBe((interval + 1) * 5);
+      expect(applyTestBrush(doc, [100, 100], [100, 100], 25)).not.toBeNull();
+      expect(control(doc, 20, 20)).toBeCloseTo((interval + 1) * 0.5, 12);
+      expect(acknowledgeTestBrush(doc)).toBe(true);
     }
-    expect(control(doc, 21, 20)).toBeCloseTo(60 * (15 / 16) ** 2, 12);
-    const revision = doc.revision;
-    expect(doc.applySegment([100, 100], [100, 100], 0)).toBeNull();
-    expect(doc.revision).toBe(revision);
-    // Long elapsed intervals have no artificial duration cap.
-    doc.applySegment([100, 100], [100, 100], 120_000);
-    expect(control(doc, 20, 20)).toBe(2460);
+    expect(control(doc, 21, 20)).toBeCloseTo(6 * (15 / 16) ** 2, 12);
+    const before = { revision: doc.revision, metrics: doc.metrics };
+    expect(applyTestBrush(doc, [100, 100], [100, 100], 0)).toBeNull();
+    // The document rejects an uncapped causal window; the test does not split
+    // this delay into fictitious displayed frames to manufacture a large dose.
+    expect(() => applyTestBrush(doc, [100, 100], [100, 100], 120_000)).toThrow(
+      /50 ms/,
+    );
+    expect({ revision: doc.revision, metrics: doc.metrics }).toEqual(before);
     const after = values(doc.snapshot(LOCAL).tiles);
-    const change = doc.finishGesture()!;
+    const change = finishTestBrush(doc)!;
     expect(change.sequence).toBe(1);
     expect(doc.metrics.historyActions).toBe(1);
     doc.undo();
@@ -762,68 +818,76 @@ describe("local gestures, history and persistence patches", () => {
     expect(values(doc.snapshot(LOCAL).tiles)).toEqual(after);
 
     const click = new EditorDocument("short-click", { empty: true });
-    click.beginGesture({ level: 0, radius: 20, amount: 20 });
-    click.applySegment([100, 100], [100, 100], 5);
-    expect(control(click, 20, 20)).toBeCloseTo(0.1, 14);
+    beginTestBrush(click, { level: 0, radius: 20, amount: 20 });
+    applyTestBrush(click, [100, 100], [100, 100], 5);
+    expect(control(click, 20, 20)).toBeCloseTo(20 / 60, 14);
   });
 
-  it("keeps explicit segments separate and zero-duration intervals neutral within one undo action", () => {
-    const doc = new EditorDocument("explicit-segments", { empty: true });
-    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    doc.applySegment([100, 100], [100, 100], 1000);
-    const before = { metrics: doc.metrics, revision: doc.revision };
-    expect(doc.applySegment([100, 100], [1000, 100], 0)).toBeNull();
-    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
-    doc.applySegment([200, 100], [200, 100], 1000);
-    expect(control(doc, 20, 20)).toBe(10);
-    expect(control(doc, 40, 20)).toBe(10);
-    expect(control(doc, 30, 20)).toBe(0);
-    expect(control(doc, 100, 20)).toBe(0);
-    doc.finishGesture();
+  it("retains zero-time geometry while a revisit does not repeat the spatial minimum", () => {
+    const doc = new EditorDocument("zero-time-geometry", { empty: true });
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 10 });
+    applyTestBrush(doc, [100, 100], [100, 100], 0);
+    const minimum = 10 / 60;
+    expect(control(doc, 20, 20)).toBeCloseTo(minimum, 12);
+    expect(applyTestBrush(doc, [100, 100], [200, 100], 0)).not.toBeNull();
+    expect(control(doc, 20, 20)).toBeCloseTo(minimum, 12);
+    expect(control(doc, 30, 20)).toBeCloseTo(minimum, 12);
+    expect(control(doc, 40, 20)).toBeCloseTo(minimum, 12);
+    const beforeRevisit = { metrics: doc.metrics, revision: doc.revision };
+    expect(applyTestBrush(doc, [200, 100], [100, 100], 0)).toBeNull();
+    expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(
+      beforeRevisit,
+    );
+    finishTestBrush(doc);
     expect(doc.metrics.historyActions).toBe(1);
     doc.undo();
-    expect(doc.sampleHeight(100, 100)).toBe(-100);
-    expect(doc.sampleHeight(200, 100)).toBe(-100);
+    for (const x of [100, 150, 200])
+      expect(doc.sampleHeight(x, 100)).toBe(-100);
   });
 
-  it("makes slower travel proportionally stronger and updates every short interval", () => {
-    const fast = new EditorDocument("fast", { empty: true });
-    const slow = new EditorDocument("slow", { empty: true });
-    const divided = new EditorDocument("short-intervals", { empty: true });
+  it("matches the independent C1 oracle for fast and slow travel with explicit feedback", () => {
     const brush = { level: 3, radius: 512, amount: 40 };
-    for (const doc of [fast, slow, divided]) doc.beginGesture(brush);
-    fast.applySegment([-1000, -300], [-160, -300], 960);
-    slow.applySegment([-1000, -300], [-160, -300], 1920);
-    for (let i = 1; i <= 40; i++)
-      expect(
-        divided.applySegment(
-          [-1000 + 21 * (i - 1), -300],
-          [-1000 + 21 * i, -300],
-          24,
-        ),
-      ).not.toBeNull();
-    expect(divided.revision).toBe(40);
-    const area: Bounds = [-2000, -1500, 1000, 1000];
-    const baseline = values(fast.snapshot(area).tiles);
-    const twice = values(slow.snapshot(area).tiles);
-    const split = values(divided.snapshot(area).tiles);
-    expect(twice.map((tile) => tile.key)).toEqual(
-      baseline.map((tile) => tile.key),
-    );
-    expect(split.map((tile) => tile.key)).toEqual(
-      baseline.map((tile) => tile.key),
-    );
-    for (let tile = 0; tile < baseline.length; tile++)
-      for (let index = 0; index < baseline[tile].values.length; index++) {
-        expect(twice[tile].values[index]).toBeCloseTo(
-          baseline[tile].values[index] * 2,
-          11,
-        );
-        expect(split[tile].values[index]).toBeCloseTo(
-          baseline[tile].values[index],
-          11,
-        );
+    const probes: Point[] = [-1000, -800, -600, -400, -160].map((x) => [
+      x,
+      -320,
+    ]);
+    const results: number[][] = [];
+    for (const elapsedMs of [24, 48]) {
+      const doc = new EditorDocument(`travel-${elapsedMs}`, { empty: true });
+      beginTestBrush(doc, brush);
+      const windows = [];
+      for (let i = 1; i <= 40; i++) {
+        const from: Point = [-1000 + 21 * (i - 1), -300];
+        const to: Point = [-1000 + 21 * i, -300];
+        expect(applyTestBrush(doc, from, to, elapsedMs)).not.toBeNull();
+        // Only the model's reserve release is simulated here. Actual graphics
+        // feedback and latency are exercised by the desktop checks.
+        expect(acknowledgeTestBrush(doc)).toBe(true);
+        windows.push({
+          at: i * elapsedMs,
+          points: [{ point: to, at: i * elapsedMs, input: i }],
+          end: i === 40,
+        });
       }
+      const expected = referenceC1Stroke(
+        {
+          brush,
+          start: { point: [-1000, -300], at: 0, input: 0 },
+          windows,
+        },
+        probes,
+      );
+      const actual = probes.map(([x, y]) => control(doc, x / 40, y / 40, 3));
+      actual.forEach((value, index) =>
+        expect(value).toBeCloseTo(expected.total[index], 11),
+      );
+      results.push(actual);
+      finishTestBrush(doc);
+      expect(doc.metrics.historyActions).toBe(1);
+    }
+    results[1].forEach((value, index) =>
+      expect(value).toBeGreaterThan(results[0][index]),
+    );
   });
 
   it("requires the whole segment and halo across a gap between ready endpoints", () => {
@@ -831,29 +895,29 @@ describe("local gestures, history and persistence patches", () => {
     const brush = { level: 0, radius: 20, amount: 10 };
     doc.acceptCoverage([-50, -50, 50, 50], []);
     doc.acceptCoverage([950, -50, 1050, 50], []);
-    doc.beginGesture(brush);
-    doc.applySegment([0, 0], [0, 0], 100);
+    beginTestBrush(doc, brush);
+    applyTestBrush(doc, [0, 0], [0, 0], 50);
     const needed = heightBrushReadBounds(brush, [0, 0], [1000, 0]);
     expect(needed).toEqual([-30, -30, 1030, 30]);
     expect(doc.isReady([970, -30, 1030, 30])).toBe(true);
     const before = { metrics: doc.metrics, revision: doc.revision };
-    expect(() => doc.applySegment([0, 0], [1000, 0], 1000)).toThrow(
+    expect(() => applyTestBrush(doc, [0, 0], [1000, 0], 50)).toThrow(
       SourcesNotReadyError,
     );
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
     doc.acceptCoverage(needed, []);
-    doc.applySegment([0, 0], [1000, 0], 1000);
+    applyTestBrush(doc, [0, 0], [1000, 0], 50);
 
     const uninterrupted = new EditorDocument("known-segment", { empty: true });
-    uninterrupted.beginGesture(brush);
-    uninterrupted.applySegment([0, 0], [0, 0], 100);
-    uninterrupted.applySegment([0, 0], [1000, 0], 1000);
+    beginTestBrush(uninterrupted, brush);
+    applyTestBrush(uninterrupted, [0, 0], [0, 0], 50);
+    applyTestBrush(uninterrupted, [0, 0], [1000, 0], 50);
     expect(values(doc.snapshot(needed).tiles)).toEqual(
       values(uninterrupted.snapshot(needed).tiles),
     );
   });
 
-  it("keeps timed negative strokes and subdivision exact at both world edges", () => {
+  it("keeps C1 negative strokes and subdivision exact at both world edges", () => {
     for (const sign of [-1, 1]) {
       const doc = new EditorDocument(`edge-${sign}`, { empty: true });
       const divided = new EditorDocument(`edge-split-${sign}`, { empty: true });
@@ -863,14 +927,15 @@ describe("local gestures, history and persistence patches", () => {
       ];
       const to: Point = [sign * WORLD_LIMIT, sign * WORLD_LIMIT];
       const brush = { level: 0, radius: 30, amount: -2 };
-      for (const target of [doc, divided]) target.beginGesture(brush);
+      for (const target of [doc, divided]) beginTestBrush(target, brush);
       const bounds = heightBrushReadBounds(brush, from, to);
       expect(bounds.every((value) => Math.abs(value) <= WORLD_LIMIT)).toBe(
         true,
       );
-      doc.applySegment(from, to, 1000);
+      applyTestBrush(doc, from, to, 40);
       for (let i = 1; i <= 10; i++)
-        divided.applySegment(
+        applyTestBrush(
+          divided,
           [
             from[0] + ((to[0] - from[0]) * (i - 1)) / 10,
             from[1] + ((to[1] - from[1]) * (i - 1)) / 10,
@@ -879,11 +944,35 @@ describe("local gestures, history and persistence patches", () => {
             from[0] + ((to[0] - from[0]) * i) / 10,
             from[1] + ((to[1] - from[1]) * i) / 10,
           ],
-          100,
+          4,
         );
-      expect(control(doc, to[0] / 5, to[1] / 5)).toBeCloseTo(
-        -32 / Math.hypot(40, 20),
-        12,
+      const probes: Point[] = [
+        from,
+        [sign * (WORLD_LIMIT - 20), sign * (WORLD_LIMIT - 10)],
+        to,
+      ];
+      // Evaluate the independent quadrature in local coordinates so its own
+      // interpolation does not lose precision near +/-100 million feet.
+      const local = ([x, y]: Point): Point => [x - from[0], y - from[1]];
+      const expected = referenceC1Stroke(
+        {
+          brush,
+          start: { point: [0, 0], at: 0, input: 0 },
+          windows: [
+            {
+              at: 40,
+              points: [{ point: local(to), at: 40, input: 1 }],
+              end: true,
+            },
+          ],
+        },
+        probes.map(local),
+      );
+      probes.forEach(([x, y], index) =>
+        expect(control(doc, x / 5, y / 5)).toBeCloseTo(
+          expected.total[index],
+          12,
+        ),
       );
       const whole = values(doc.snapshot(bounds).tiles);
       const split = values(divided.snapshot(bounds).tiles);
@@ -896,7 +985,7 @@ describe("local gestures, history and persistence patches", () => {
             whole[tile].values[index],
             11,
           );
-      doc.finishGesture();
+      finishTestBrush(doc);
       doc.undo();
       expect(doc.sampleHeight(...to)).toBe(-100);
       doc.redo();
@@ -910,18 +999,18 @@ describe("local gestures, history and persistence patches", () => {
       maxGestureCells: 100,
     });
     const brush = { level: 0, radius: 20, amount: 10 };
-    doc.beginGesture(brush);
-    doc.applySegment([0, 0], [0, 0], 100);
+    beginTestBrush(doc, brush);
+    applyTestBrush(doc, [0, 0], [0, 0], 50);
     const before = {
       metrics: doc.metrics,
       revision: doc.revision,
       height: doc.sampleHeight(0, 0),
     };
     for (const duration of [-1, NaN, Infinity])
-      expect(() => doc.applySegment([0, 0], [10, 0], duration)).toThrow(
+      expect(() => applyTestBrush(doc, [0, 0], [10, 0], duration)).toThrow(
         /Pinselzeit/,
       );
-    expect(() => doc.applySegment([0, 0], [1000, 0], 1000)).toThrow(
+    expect(() => applyTestBrush(doc, [0, 0], [1000, 0], 50)).toThrow(
       /Höhenpunkte/,
     );
     expect({
@@ -932,26 +1021,26 @@ describe("local gestures, history and persistence patches", () => {
     expect(heightBrushReadBounds(brush, [0, 0], [1000, 0])).toEqual([
       -30, -30, 1030, 30,
     ]);
-    expect(doc.finishGesture()).not.toBeNull();
+    expect(finishTestBrush(doc)).not.toBeNull();
     doc.undo();
     expect(doc.sampleHeight(0, 0)).toBe(-100);
   });
 
   it("rejects unready edits before mutation and preserves a valid partial stroke on failure", () => {
     const doc = new EditorDocument("partial");
-    doc.beginGesture({ level: 0, amount: 10, radius: 20 });
-    expect(() => doc.applySegment([100, 100], [100, 100], 1000)).toThrow(
+    beginTestBrush(doc, { level: 0, amount: 10, radius: 20 });
+    expect(() => applyTestBrush(doc, [100, 100], [100, 100], 50)).toThrow(
       SourcesNotReadyError,
     );
     expect(doc.metrics.gestureCells).toBe(0);
     doc.acceptCoverage(LOCAL, []);
-    doc.applySegment([100, 100], [100, 100], 1000);
+    applyTestBrush(doc, [100, 100], [100, 100], 50);
     const accepted = doc.sampleHeight(100, 100);
     expect(() =>
-      doc.applySegment([100, 100], [50_000, 50_000], 1000),
+      applyTestBrush(doc, [100, 100], [50_000, 50_000], 50),
     ).toThrow();
     expect(doc.sampleHeight(100, 100)).toBe(accepted);
-    const change = doc.finishGesture()!;
+    const change = finishTestBrush(doc)!;
     expect(change.sequence).toBe(1);
     expect(doc.metrics.historyActions).toBe(1);
     doc.undo();
@@ -979,53 +1068,54 @@ describe("local gestures, history and persistence patches", () => {
     });
     const first = stroke(doc, [[100, 100]]).change!;
     const original = doc.sampleHeight(100, 100);
-    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    expect(() => doc.applySegment([100, 100], [100, 100], 1000)).toThrow(
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 10 });
+    expect(() => applyTestBrush(doc, [100, 100], [100, 100], 50)).toThrow(
       /Arbeitskopie/,
     );
-    expect(doc.finishGesture()).toBeNull();
+    expect(finishTestBrush(doc)).toBeNull();
     expect(doc.sampleHeight(100, 100)).toBe(original);
     doc.acceptPersistence(first.sequence);
     expect(stroke(doc, [[100, 100]]).change).not.toBeNull();
     expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES * 2);
   });
 
-  it("budgets deleted authors retained for projection and releases them only after ACK", () => {
+  it("reserves deletion before/after payloads and releases its retained original only after ACK", () => {
     const doc = new EditorDocument("deletion-backlog", {
-      maxPendingBytes: HEIGHT_TILE_BYTES,
+      // C1 reserves both possible payloads before it knows the final action.
+      maxPendingBytes: HEIGHT_TILE_BYTES * 2,
     });
     doc.acceptCoverage(
       ALL,
       heightTilesFromControls(0, [
-        [20, 20, 10],
-        [84, 20, 10],
+        [20, 20, 0.5],
+        [84, 20, 0.5],
       ]),
     );
-    doc.beginGesture({ level: 0, radius: 1, amount: -10 });
-    doc.applySegment([100, 100], [100, 100], 1000);
+    beginTestBrush(doc, { level: 0, radius: 1, amount: -10 });
+    applyTestBrush(doc, [100, 100], [100, 100], 50);
     const live = doc.presentationPatchesAfter(0);
     expect(live).toHaveLength(1);
     expect(live[0].before?.values.byteLength).toBe(HEIGHT_TILE_BYTES);
     expect(live[0].after).toBeNull();
     const acceptedDeletion = { metrics: doc.metrics, revision: doc.revision };
-    // Continuing onto a zero neighbour would retain a nonempty after as well.
-    expect(() => doc.applySegment([100, 100], [105, 100], 1000)).toThrow(
+    // A second source still needs its own reserved before/after payloads.
+    expect(() => applyTestBrush(doc, [420, 100], [420, 100], 50)).toThrow(
       /Arbeitskopie/,
     );
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(
       acceptedDeletion,
     );
-    const first = doc.finishGesture()!;
+    const first = finishTestBrush(doc)!;
     expect(first.patches[0].after).toBeNull();
     expect(doc.metrics.pendingBytes).toBe(HEIGHT_TILE_BYTES);
 
     const before = { metrics: doc.metrics, revision: doc.revision };
     const unchanged = doc.sampleHeight(420, 100);
-    doc.beginGesture({ level: 0, radius: 1, amount: -10 });
-    expect(() => doc.applySegment([420, 100], [420, 100], 1000)).toThrow(
+    beginTestBrush(doc, { level: 0, radius: 1, amount: -10 });
+    expect(() => applyTestBrush(doc, [420, 100], [420, 100], 50)).toThrow(
       /Arbeitskopie/,
     );
-    expect(doc.finishGesture()).toBeNull();
+    expect(finishTestBrush(doc)).toBeNull();
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
     expect(doc.sampleHeight(420, 100)).toBe(unchanged);
 
@@ -1049,11 +1139,11 @@ describe("local gestures, history and persistence patches", () => {
     });
     tooSmall.acceptCoverage(ALL, source);
     const original = tooSmall.sampleHeight(100, 100);
-    tooSmall.beginGesture({ level: 0, radius: 1, amount: 5 });
-    expect(() => tooSmall.applySegment([100, 100], [100, 100], 1000)).toThrow(
+    beginTestBrush(tooSmall, { level: 0, radius: 1, amount: 5 });
+    expect(() => applyTestBrush(tooSmall, [100, 100], [100, 100], 50)).toThrow(
       /Arbeitskopie/,
     );
-    expect(tooSmall.finishGesture()).toBeNull();
+    expect(finishTestBrush(tooSmall)).toBeNull();
     expect(tooSmall.sampleHeight(100, 100)).toBe(original);
     expect(tooSmall.metrics.historyActions).toBe(0);
 
@@ -1093,16 +1183,21 @@ describe("local gestures, history and persistence patches", () => {
     // The supported 8px brush at maximum zoom has this world radius. A
     // continuous line can span 513 source tiles with only 32,769 changed
     // controls, so the cell and byte budgets alone do not bound a commit.
-    doc.beginGesture({ level: 0, radius: 8 / (2 * 25.6), amount: 10 });
+    beginTestBrush(doc, { level: 0, radius: 8 / (2 * 25.6), amount: 10 });
     for (let tile = 0; tile < HEIGHT_MAX_ACTION_TILES; tile++)
-      doc.applySegment([Math.max(0, tile - 1) * 320, 0], [tile * 320, 0], 1000);
+      applyTestBrush(
+        doc,
+        [Math.max(0, tile - 1) * 320, 0],
+        [tile * 320, 0],
+        50,
+      );
     const lastPoint: Point = [(HEIGHT_MAX_ACTION_TILES - 1) * 320, 0];
     const lastKey = heightTileKey(0, HEIGHT_MAX_ACTION_TILES - 1, 0);
     const accepted = author(doc, lastKey)!.values;
     const acceptedHeight = doc.sampleHeight(...lastPoint);
     const before = { metrics: doc.metrics, revision: doc.revision };
     expect(() =>
-      doc.applySegment(lastPoint, [HEIGHT_MAX_ACTION_TILES * 320, 0], 1000),
+      applyTestBrush(doc, lastPoint, [HEIGHT_MAX_ACTION_TILES * 320, 0], 50),
     ).toThrow(/höchstens 512 Höhenkacheln/);
     expect({ metrics: doc.metrics, revision: doc.revision }).toEqual(before);
     expect(author(doc, lastKey)!.values).toEqual(accepted);
@@ -1110,7 +1205,7 @@ describe("local gestures, history and persistence patches", () => {
       "absent",
     );
 
-    const change = doc.finishGesture()!;
+    const change = finishTestBrush(doc)!;
     expect(change.patches).toHaveLength(HEIGHT_MAX_ACTION_TILES);
     doc.acceptPersistence(change.sequence);
     expect(doc.undo()!.patches).toHaveLength(HEIGHT_MAX_ACTION_TILES);
@@ -1145,22 +1240,22 @@ describe("local gestures, history and persistence patches", () => {
       maxSourceBytes: HEIGHT_TILE_BYTES,
     });
     expect(() =>
-      doc.beginGesture({ level: 22, radius: 10, amount: 1 }),
+      beginTestBrush(doc, { level: 22, radius: 10, amount: 1 }),
     ).toThrow();
     expect(() =>
-      doc.beginGesture({ level: 0, radius: Number.NaN, amount: 1 }),
+      beginTestBrush(doc, { level: 0, radius: Number.NaN, amount: 1 }),
     ).toThrow();
-    doc.beginGesture({ level: 0, radius: 20, amount: 1 });
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 1 });
     expect(() =>
-      doc.applySegment([Number.POSITIVE_INFINITY, 0], [0, 0], 1000),
+      applyTestBrush(doc, [Number.POSITIVE_INFINITY, 0], [0, 0], 50),
     ).toThrow();
     expect(() =>
-      doc.applySegment([0, 0], [Number.POSITIVE_INFINITY, 0], 1000),
+      applyTestBrush(doc, [0, 0], [Number.POSITIVE_INFINITY, 0], 50),
     ).toThrow();
-    expect(() => doc.applySegment([0, 0], [0, 0], 1000)).toThrow(
+    expect(() => applyTestBrush(doc, [0, 0], [0, 0], 50)).toThrow(
       /Speicherbudget/,
     );
-    expect(doc.finishGesture()).toBeNull();
+    expect(finishTestBrush(doc)).toBeNull();
     expect(doc.sequence).toBe(0);
     expect(doc.metrics.readyTiles).toBe(0);
   });
@@ -1173,22 +1268,22 @@ describe("bounded source reads and presentation projection", () => {
     expect(doc.isReady(LOCAL, [8, 9, 21])).toBe(true);
     expect(doc.sourceState(heightTileKey(0, 0, 0))).toBe("unknown");
     expect(doc.isReady(LOCAL)).toBe(false);
-    doc.beginGesture({ level: 8, radius: 10_000, amount: 10 });
-    const update = doc.applySegment([0, 0], [0, 0], 1000);
+    beginTestBrush(doc, { level: 8, radius: 10_000, amount: 10 });
+    const update = applyTestBrush(doc, [0, 0], [0, 0], 50);
     expect(update?.patches.length).toBeGreaterThan(0);
     expect(update?.patches.every((p) => p.after?.level === 8)).toBe(true);
     expect(doc.snapshot(LOCAL, [8]).tiles.length).toBeGreaterThan(0);
     expect(() => doc.sampleHeight(0, 0)).toThrow(SourcesNotReadyError);
   });
 
-  it("returns incremental owned source patches while one gesture retains its original undo values", () => {
+  it("returns immutable incremental source patches while owned snapshots remain transferable", () => {
     const doc = new EditorDocument("live-patches", { empty: true });
-    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    const first = doc.applySegment([0, 0], [0, 0], 1000)!;
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 10 });
+    const first = applyTestBrush(doc, [0, 0], [0, 0], 50)!;
     const firstValues = values(
       first.patches.flatMap((p) => (p.after ? [p.after] : [])),
     );
-    const next = doc.applySegment([0, 0], [10, 0], 1000)!;
+    const next = applyTestBrush(doc, [0, 0], [10, 0], 50)!;
     const repeated = next.patches.find(
       (p) => p.before && first.patches.some((prior) => prior.key === p.key),
     )!;
@@ -1198,10 +1293,12 @@ describe("bounded source reads and presentation projection", () => {
     expect(
       values(first.patches.flatMap((p) => (p.after ? [p.after] : []))),
     ).toEqual(firstValues);
-    const transfer = first.patches[0].after!.values.buffer as ArrayBuffer;
-    structuredClone(transfer, { transfer: [transfer] });
+    const snapshot = doc.snapshot(LOCAL);
+    structuredClone(snapshot, {
+      transfer: snapshot.tiles.map((tile) => tile.values.buffer),
+    });
     expect(Number.isFinite(doc.sampleHeight(0, 0))).toBe(true);
-    doc.finishGesture();
+    finishTestBrush(doc);
     doc.undo();
     expect(doc.sampleHeight(0, 0)).toBe(-100);
   });
@@ -1218,13 +1315,13 @@ describe("bounded source reads and presentation projection", () => {
     );
     doc.acceptPersistence(a.sequence);
     expect(() => doc.presentationPatchesAfter(0)).toThrow(/aktuell/);
-    doc.beginGesture({ level: 0, radius: 20, amount: 10 });
-    const live = doc.applySegment([200, 0], [200, 0], 1000)!;
+    beginTestBrush(doc, { level: 0, radius: 20, amount: 10 });
+    const live = applyTestBrush(doc, [200, 0], [200, 0], 50)!;
     const pending = doc.presentationPatchesAfter(b.sequence);
     expect(pending).toHaveLength(live.patches.length);
     pending[0].after!.values.fill(0);
     expect(doc.sampleHeight(200, 0)).toBeGreaterThan(-100);
-    doc.finishGesture();
+    finishTestBrush(doc);
     doc.undo();
     expect(doc.sampleHeight(200, 0)).toBe(-100);
   });

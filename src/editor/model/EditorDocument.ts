@@ -1,8 +1,4 @@
-import {
-  heightBrushReadBounds,
-  prepareHeightSampler,
-  quarticBrushSegmentIntegral,
-} from "./height";
+import { prepareHeightSampler } from "./height";
 import {
   HEIGHT_LEVELS,
   HEIGHT_MAX_ACTION_TILES,
@@ -76,16 +72,9 @@ function assertSourceNeed(need: SourceNeed): void {
 const coversLevel = (coverage: SourceNeed, level: number) =>
   level >= coverage.minLevel;
 
-/** One timed part of an atomically accepted brush path. */
-export interface HeightSegment {
-  from: Point;
-  to: Point;
-  elapsedMs: number;
-}
-
 export interface HeightUpdate {
   bounds: Bounds;
-  /** Owned changed sources only; unrelated fine sources are never copied. */
+  /** Shared immutable changed sources. Never mutate or transfer these buffers. */
   patches: HeightPatch[];
 }
 
@@ -712,7 +701,7 @@ export class EditorDocument {
     return removed;
   }
 
-  beginGesture(brush: HeightBrush): void {
+  private initializeGesture(brush: HeightBrush): void {
     if (this.invalidationError) throw this.invalidationError;
     if (this.gesture) throw new Error("Eine Höhengeste ist bereits aktiv.");
     assertLevel(brush.level);
@@ -765,7 +754,7 @@ export class EditorDocument {
       context,
       maxCells: this.options.maxGestureCells,
     });
-    this.beginGesture(brush);
+    this.initializeGesture(brush);
     this.prepaid = {
       account,
       context: { ...context },
@@ -1103,216 +1092,8 @@ export class EditorDocument {
     return result;
   }
 
-  /** Existing single-segment callers share the atomic path integrator. */
-  applySegment(from: Point, to: Point, elapsedMs: number): HeightUpdate | null {
-    return this.applySegments([{ from, to, elapsedMs }]);
-  }
-
-  /** Validate the whole path and its budgets before mutating any author value. */
-  applySegments(segments: readonly HeightSegment[]): HeightUpdate | null {
-    const gesture = this.gesture;
-    if (!gesture) throw new Error("Keine aktive Höhengeste.");
-    if (this.prepaid)
-      throw new Error(
-        "Vorausbezahlte Höhengesten nur über ihre Reserve materialisieren.",
-      );
-    const { brush } = gesture;
-    const step = heightSpacing(brush.level);
-    const levels = HEIGHT_LEVELS.slice(brush.level);
-    let examinedCells = 0;
-    const prepared = segments.flatMap(({ from, to, elapsedMs }) => {
-      assertPoint(from);
-      assertPoint(to);
-      if (!Number.isFinite(elapsedMs) || elapsedMs < 0)
-        throw new RangeError(
-          "Die Pinselzeit muss endlich und nichtnegativ sein.",
-        );
-      if (elapsedMs === 0 || brush.amount === 0) return [];
-      const sampleBounds = heightBrushReadBounds(brush, from, to);
-      if (!this.isReady(sampleBounds, levels))
-        throw new SourcesNotReadyError(sampleBounds);
-      const minX = Math.max(
-        Math.ceil(-WORLD_LIMIT / step),
-        Math.ceil((Math.min(from[0], to[0]) - brush.radius) / step),
-      );
-      const minY = Math.max(
-        Math.ceil(-WORLD_LIMIT / step),
-        Math.ceil((Math.min(from[1], to[1]) - brush.radius) / step),
-      );
-      const maxX = Math.min(
-        Math.floor(WORLD_LIMIT / step),
-        Math.floor((Math.max(from[0], to[0]) + brush.radius) / step),
-      );
-      const maxY = Math.min(
-        Math.floor(WORLD_LIMIT / step),
-        Math.floor((Math.max(from[1], to[1]) + brush.radius) / step),
-      );
-      examinedCells += (maxX - minX + 1) * (maxY - minY + 1);
-      if (examinedCells > 400_000)
-        throw new RangeError(
-          "Pinselabschnitt ist zu groß für die direkte lokale Bearbeitung.",
-        );
-      return [{ from, to, elapsedMs, minX, minY, maxX, maxY }];
-    });
-    const updates = new Map<
-      string,
-      { tileX: number; tileY: number; values: Map<number, number> }
-    >();
-    let newCells = 0;
-    let dirty: Bounds | null = null;
-    for (const { from, to, elapsedMs, minX, minY, maxX, maxY } of prepared) {
-      const dx = to[0] - from[0];
-      const dy = to[1] - from[1];
-      const length = Math.hypot(dx, dy);
-      const directionX = length ? dx / length : 0;
-      const directionY = length ? dy / length : 0;
-      for (let y = minY; y <= maxY; y++)
-        for (let x = minX; x <= maxX; x++) {
-          const qx = x * step - from[0];
-          const qy = y * step - from[1];
-          let weight: number;
-          if (length > 0) {
-            weight =
-              quarticBrushSegmentIntegral(
-                qx * directionX + qy * directionY,
-                qx * directionY - qy * directionX,
-                length,
-                brush.radius,
-              ) / length;
-          } else {
-            const d2 = (qx / brush.radius) ** 2 + (qy / brush.radius) ** 2;
-            weight = d2 < 1 ? (1 - d2) ** 2 : 0;
-          }
-          if (weight === 0) continue;
-          const { key, tileX, tileY, index } = heightControlAddress(
-            brush.level,
-            x,
-            y,
-          );
-          let update = updates.get(key);
-          if (!update)
-            updates.set(key, (update = { tileX, tileY, values: new Map() }));
-          const old =
-            update.values.get(index) ??
-            this.entries.get(key)?.tile?.values[index] ??
-            0;
-          const value = old + brush.amount * ((elapsedMs / 1000) * weight);
-          if (!Number.isFinite(value))
-            throw new RangeError("Relative Höhe ist nicht endlich.");
-          if (value === old) continue;
-          if (!gesture.cells.get(key)?.has(index) && !update.values.has(index))
-            newCells++;
-          if (gesture.cellCount + newCells > this.options.maxGestureCells)
-            throw new RangeError(
-              "Höchstens 100.000 Höhenpunkte je Aktion; einen kürzeren Strich malen.",
-            );
-          update.values.set(index, value);
-          const changed: Bounds = [
-            x * step - 2 * step,
-            y * step - 2 * step,
-            x * step + 2 * step,
-            y * step + 2 * step,
-          ];
-          dirty = dirty ? unionBounds(dirty, changed) : changed;
-        }
-    }
-    for (const [key, update] of updates)
-      if (!update.values.size) updates.delete(key);
-    if (!updates.size) return null;
-    const newKeys = [...updates.keys()].filter(
-      (key) => !gesture.before.has(key),
-    );
-    const totalGestureTiles = gesture.before.size + newKeys.length;
-    if (totalGestureTiles > HEIGHT_MAX_ACTION_TILES)
-      throw new RangeError(
-        `Eine Höhengeste darf höchstens ${HEIGHT_MAX_ACTION_TILES} Höhenkacheln ändern; einen kürzeren Strich malen.`,
-      );
-    let retainedBytes = gesture.retainedBytes;
-    for (const [key, update] of updates) {
-      const live = this.entries.get(key)?.tile;
-      const alreadyChanged = gesture.before.has(key);
-      if (!alreadyChanged && live) retainedBytes += HEIGHT_TILE_BYTES;
-      const hadAfter =
-        alreadyChanged && Boolean(live?.values.some((value) => value !== 0));
-      let hasAfter = false;
-      for (const value of update.values.values())
-        if (value !== 0) {
-          hasAfter = true;
-          break;
-        }
-      if (!hasAfter && live)
-        hasAfter = live.values.some(
-          (value, index) => value !== 0 && !update.values.has(index),
-        );
-      retainedBytes +=
-        (Number(hasAfter) - Number(hadAfter)) * HEIGHT_TILE_BYTES;
-    }
-    if (this.pendingBytes + retainedBytes > this.options.maxPendingBytes)
-      throw new RangeError(
-        "Die Arbeitskopie muss vorhandene Änderungen sichern, bevor dieser Pinselabschnitt angenommen werden kann.",
-      );
-    if (
-      totalGestureTiles * HEIGHT_TILE_BYTES * 2 >
-      this.options.maxHistoryBytes
-    )
-      throw new RangeError(
-        "Diese Aktion überschreitet die lokale History; einen kürzeren Strich malen.",
-      );
-    const extraTiles = [...updates.keys()].filter(
-      (key) => this.entries.get(key)?.state !== "ready",
-    ).length;
-    if (
-      this.sourceBytes + extraTiles * HEIGHT_TILE_BYTES >
-      this.options.maxSourceBytes
-    )
-      throw new RangeError(
-        "Aktive Höhenquellen überschreiten das Speicherbudget.",
-      );
-    this.revision++;
-    const patches: HeightPatch[] = [];
-    for (const [key, update] of updates) {
-      let entry = this.entries.get(key);
-      const before = entry?.tile ?? null;
-      if (!gesture.before.has(key)) gesture.before.set(key, before);
-      if (entry?.state !== "ready") {
-        entry = {
-          state: "ready",
-          localSequence: this.sequence + 1,
-          tile: {
-            key,
-            level: brush.level,
-            tileX: update.tileX,
-            tileY: update.tileY,
-            revision: this.revision,
-            values: new Float64Array(HEIGHT_TILE_CELLS),
-          },
-        };
-        this.entries.set(key, entry);
-        this.sourceBytes += HEIGHT_TILE_BYTES;
-      } else
-        entry.tile = { ...entry.tile!, values: entry.tile!.values.slice() };
-      let cells = gesture.cells.get(key);
-      if (!cells) gesture.cells.set(key, (cells = new Set()));
-      for (const [index, value] of update.values) {
-        entry.tile!.values[index] = value;
-        cells.add(index);
-      }
-      entry.localSequence = this.sequence + 1;
-      entry.tile!.revision = this.revision;
-      patches.push({ key, before, after: entry.tile! });
-    }
-    gesture.cellCount += newCells;
-    gesture.retainedBytes = retainedBytes;
-    dirty = clipBounds(dirty!);
-    gesture.bounds = gesture.bounds
-      ? unionBounds(gesture.bounds, dirty)
-      : dirty;
-    this.generation++;
-    return { bounds: dirty, patches };
-  }
-
   /** Heights keep accepted live changes on release, Escape, blur and cancel. */
-  finishGesture(): ChangeSet | null {
+  private finishGesture(): ChangeSet | null {
     const gesture = this.gesture;
     if (!gesture) return null;
     if (this.prepaid && (!this.prepaid.sealed || this.prepaid.queue.length))

@@ -1,5 +1,4 @@
 import { quarticBrushSegmentMean } from "./height";
-import type { HeightSegment } from "./EditorDocument";
 import type { PrepaidBrushOffer } from "./PrepaidBrush";
 import {
   WORLD_LIMIT,
@@ -11,6 +10,7 @@ import {
   unionBounds,
   type Bounds,
   type HeightBrush,
+  type HeightSegment,
   type Point,
 } from "./types";
 

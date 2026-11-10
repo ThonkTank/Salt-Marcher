@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyTestBrush,
+  beginTestBrush,
+  finishTestBrush,
+} from "../../../tests/support/prepaidBrush";
+import {
   referenceC1Stroke,
   reconstructReferenceC1Stroke,
 } from "../../../scripts/atlas-p0-brush-reference.mjs";
@@ -197,9 +202,12 @@ describe("R2 document-owned C1 admission and bounded continuation", () => {
 
   it("keeps earlier unacknowledged authors pinned after a rounded-equal action", () => {
     const doc = new EditorDocument("r2-rounded-pending", { empty: true });
-    doc.beginGesture({ level: 0, radius: 3, amount: 1e20 });
-    doc.applySegment([20, 20], [20, 20], 1000);
-    const prior = doc.finishGesture()!;
+    // The C1 minimum creates the same huge pending author used to make the
+    // later tiny dose round away; no persistence receipt is supplied.
+    beginTestBrush(doc, { level: 0, radius: 3, amount: 6e21 });
+    applyTestBrush(doc, [20, 20], [20, 20], 0);
+    const prior = finishTestBrush(doc)!;
+    expect(valuesAt(doc, [[20, 20]])).toEqual([1e20]);
     doc.beginPrepaidGesture({ level: 0, radius: 3, amount: 1 }, context(doc));
     doc.admitBrushBatch({
       admissionId: 1,
@@ -559,7 +567,7 @@ describe("R2 document-owned C1 admission and bounded continuation", () => {
       /Dokumentsitzung wurde beendet/,
     );
     expect(doc.disposed).toBe(true);
-    expect(() => doc.beginGesture(brush)).toThrow(
+    expect(() => doc.beginPrepaidGesture(brush, context(doc))).toThrow(
       /Dokumentsitzung wurde beendet/,
     );
     const revision = doc.revision;
@@ -590,7 +598,7 @@ describe("R2 document-owned C1 admission and bounded continuation", () => {
     expect(valuesAt(doc, [[5000, 5020]])).toEqual([0]);
   });
 
-  it("keeps borrowed patches and committed history immutable across later C1 and legacy edits", () => {
+  it("keeps borrowed patches and committed history immutable across later C1 windows and gestures", () => {
     const doc = new EditorDocument("r2-immutable", { empty: true });
     doc.beginPrepaidGesture(brush, context(doc));
     doc.admitBrushBatch({
@@ -616,9 +624,9 @@ describe("R2 document-owned C1 admission and bounded continuation", () => {
     );
     const history = doc.pendingChanges()[0];
     const saved = history.patches.map((patch) => patch.after!.values.slice());
-    doc.beginGesture(brush);
-    doc.applySegment([20, 20], [20, 20], 50);
-    doc.finishGesture();
+    beginTestBrush(doc, brush);
+    applyTestBrush(doc, [20, 20], [20, 20], 50);
+    finishTestBrush(doc);
     history.patches.forEach((patch, index) =>
       expect(patch.after!.values).toEqual(saved[index]),
     );

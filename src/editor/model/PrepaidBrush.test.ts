@@ -18,9 +18,9 @@ import {
   heightControlAddress,
   heightTileKey,
   type HeightBrush,
+  type HeightSegment,
   type Point,
 } from "./types";
-import type { HeightSegment } from "./EditorDocument";
 
 const context: BrushReservationContext = {
   sessionId: "c1-proof",

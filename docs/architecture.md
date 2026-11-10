@@ -552,7 +552,11 @@ es gibt keine zweite Stempelrestliste.
 Koeffizienten und kopiert jede dabei geänderte Quellkachel höchstens einmal.
 Livequellen und ausgegebene Nachherpuffer bleiben danach unveränderlich.
 Eine versiegelte Geste endet erst nach ihrer letzten Übernahme mit genau einem
-History-/Pendingeintrag. Der aktive Editor besitzt keine zweite Autorenautorität.
+History-/Pendingeintrag. Initialisierung und Historyabschluss sind interne Schritte
+dieses C1-Wegs; ein weiterer direkter Höhen-Schreibweg ist nicht verfügbar.
+Modell- und Integrationsfixtures verwenden dieselbe Annahme und Fortsetzung oder
+ausdrücklich vorbereitete unveränderliche Quellen. Der aktive Editor besitzt
+keine zweite Autorenautorität.
 
 ### Autoren, Übersicht und Quellenbedarf
 

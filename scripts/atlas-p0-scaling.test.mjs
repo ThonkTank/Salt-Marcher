@@ -86,14 +86,40 @@ test("the independent coarse-dab oracle holds after a real save and fine digest 
       minLevel: 0,
     });
     doc.acceptCoverage(bounds, sources.tiles, info.sequence);
-    doc.beginGesture(SCALING_REGION.brush);
-    doc.applySegment(
-      SCALING_REGION.brush.center,
-      SCALING_REGION.brush.center,
-      1000,
-    );
-    const change = doc.finishGesture();
+    doc.beginPrepaidGesture(SCALING_REGION.brush, {
+      sessionId: doc.sessionId,
+      gestureId: 1,
+      viewId: 1,
+      preparationId: 1,
+    });
+    const point = SCALING_REGION.brush.center;
+    let change = null;
+    // Twenty explicit, acknowledged 50-ms windows retain the independent
+    // one-second stationary oracle. No long interval bypasses the C1 limit.
+    for (let window = 0; window < 20; window++) {
+      doc.admitBrushBatch({
+        admissionId: window + 1,
+        path: { from: point, points: [point], end: window === 19 },
+        time: [{ from: point, to: point, elapsedMs: 50 }],
+        pointCount: 1,
+      });
+      let steps = 0;
+      while (doc.brushWork?.pendingCells || doc.finishing) {
+        const advanced = doc.advanceBrushGesture({
+          maxCells: 256,
+          maxMs: 1000,
+        });
+        if (advanced.change) change = advanced.change;
+        assert.ok(++steps < 1000, "The C1 continuation must finish.");
+      }
+      if (window < 19) {
+        const receipt = doc.freezeBrushEffect();
+        assert.ok(receipt);
+        assert.equal(doc.acknowledgeBrushEffect(receipt), true);
+      }
+    }
     assert.ok(change);
+    assert.equal(doc.metrics.historyActions, 1);
     store.commit(change);
     const raised = join(directory, "raised.saltatlas");
     await store.saveProject(

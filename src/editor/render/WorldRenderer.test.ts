@@ -4,6 +4,12 @@ import { EditorController } from "../EditorController";
 import { editorBudgets } from "../budgets";
 import { MAX_BRUSH_POINTS } from "../brush";
 import { evaluateBrushTime } from "../../../scripts/atlas-p0-evaluate.mjs";
+import {
+  acknowledgeTestBrush,
+  applyTestBrush,
+  beginTestBrush,
+  finishTestBrush,
+} from "../../../tests/support/prepaidBrush";
 import type {
   AtlasDesktop,
   CommitRequest,
@@ -432,9 +438,9 @@ it("mirrors coarse Undo/Redo after unrelated fine sources were evicted", () => {
   const document = new EditorDocument("history-source-transfer");
   document.acceptCoverage(broad, [...createCoastFixture(), distant]);
   const original = document.sampleHeight(320, 0);
-  document.beginGesture({ level: 8, radius: 12_000, amount: 100 });
-  document.applySegment([0, 0], [0, 0], 1000);
-  const edit = document.finishGesture()!;
+  beginTestBrush(document, { level: 8, radius: 12_000, amount: 2000 });
+  applyTestBrush(document, [0, 0], [0, 0], 50);
+  const edit = finishTestBrush(document)!;
   document.acceptPersistence(edit.sequence);
   const lifted = document.sampleHeight(320, 0);
   expect(lifted).toBeGreaterThan(original);
@@ -522,13 +528,15 @@ async function readyRenderer({
   }
   const change = (
     point: [number, number],
-    brush = { level: 0, radius: 20, amount: 400 },
+    brush = { level: 0, radius: 20, amount: 8000 },
   ) => {
-    document.beginGesture(brush);
-    const update = document.applySegment(point, point, 1000)!;
+    // Source fixtures use one legal C1 window. The chosen rate preserves their
+    // authored amplitude; publication and invalidation are measured below.
+    beginTestBrush(document, brush);
+    const update = applyTestBrush(document, point, point, 50)!;
     world.updateSourcePatches(update.patches);
     world.invalidate(update.bounds);
-    document.finishGesture();
+    finishTestBrush(document);
     prepareSources(world);
     return update;
   };
@@ -1004,7 +1012,7 @@ it("draws the complete warm 512px footprint in one eligible frame from changed n
   const update = change([-1600, -300], {
     level: 4,
     radius: 1024,
-    amount: 4000,
+    amount: 80000,
   });
   expect(world.inspectRegion(update.bounds).status).toBe("stale");
   const revision = document.revision;
@@ -1083,14 +1091,14 @@ it("holds delayed terrain until its deadline and does not mislabel a redraw", as
 it("holds terrain during pointerup control then displays the already accepted dose after release", async () => {
   const { world, frame, document } = await readyRenderer();
   world.fault = "pointerup-render";
-  document.beginGesture({ level: 0, radius: 20, amount: 400 });
-  const update = document.applySegment([160, 160], [160, 160], 16)!;
+  beginTestBrush(document, { level: 0, radius: 20, amount: 400 });
+  const update = applyTestBrush(document, [160, 160], [160, 160], 16)!;
   world.updateSourcePatches(update.patches);
   world.invalidate(update.bounds);
   frame();
   expect(world.inspectRegion(update.bounds).status).toBe("stale");
   expect(document.revision).toBe(1);
-  document.finishGesture();
+  finishTestBrush(document);
   frame();
   expect(world.inspectRegion(update.bounds).status).toBe("current");
   expect(document.revision).toBe(1);
@@ -2705,14 +2713,15 @@ it("projects fine source changes into a certified empty overview exactly once, i
     heightFromScaledSum(
       -100 / HEIGHT_SUM_SCALE + (field.overviews.get(key)?.values[0] ?? 0),
     );
-  document.beginGesture({ level: 0, radius: 20, amount: 400 });
-  const first = document.applySegment([32, 32], [32, 32], 1000)!;
+  beginTestBrush(document, { level: 0, radius: 20, amount: 8000 });
+  const first = applyTestBrush(document, [32, 32], [32, 32], 50)!;
   world.updateSourcePatches(first.patches);
   world.invalidate(first.bounds);
   prepareSources(world);
   frame();
   expect(rendered()).toBeCloseTo(document.sampleHeight(32, 32), 10);
-  const second = document.applySegment([48, 32], [48, 32], 1000)!;
+  expect(acknowledgeTestBrush(document)).toBe(true);
+  const second = applyTestBrush(document, [32, 32], [48, 32], 50)!;
   world.updateSourcePatches(second.patches);
   world.invalidate(second.bounds);
   prepareSources(world);
@@ -2723,7 +2732,7 @@ it("projects fine source changes into a certified empty overview exactly once, i
       (patch) => patch.after!.values.byteLength === HEIGHT_TILE_BYTES,
     ),
   ).toBe(true);
-  document.finishGesture();
+  finishTestBrush(document);
   const undone = document.undo()!;
   world.updateSourcePatches(undone.patches);
   for (const bounds of undone.dirtyBounds) world.invalidate(bounds);
@@ -4146,7 +4155,7 @@ it("R3 publishes an older complete local scene while a newer author revision rem
     x: 0,
     y: 0,
   });
-  const brush = { level: 0, radius: 64, amount: 400 };
+  const brush = { level: 0, radius: 64, amount: 8000 };
   const first = change([0, 0], brush);
   const receipt = world.freezeRender(first.bounds)!;
   expect(world["frozen"]!.targets).toHaveLength(4);

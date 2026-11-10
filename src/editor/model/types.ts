@@ -56,6 +56,13 @@ export interface HeightSnapshot {
   tiles: HeightTile[];
 }
 
+/** One timed part of an atomically accepted brush path. */
+export interface HeightSegment {
+  from: Point;
+  to: Point;
+  elapsedMs: number;
+}
+
 export interface HeightBrush {
   level: number;
   radius: number;
