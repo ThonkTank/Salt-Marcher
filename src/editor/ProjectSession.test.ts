@@ -6,7 +6,7 @@ import type {
   ProjectInfo,
   SaveResult,
 } from "./bridge";
-import { EditorDocument, type HouseHeader } from "./model";
+import { EditorDocument, type HouseHeader, type WaterSource } from "./model";
 import { ProjectSession } from "./ProjectSession";
 import {
   applyTestBrush,
@@ -73,7 +73,7 @@ function fixture() {
   const info: ProjectInfo = {
     sessionId: "session",
     projectId: "project",
-    format: 26,
+    format: 27,
     title: "Testwelt",
     sequence: 0,
     savedSequence: 0,
@@ -82,6 +82,7 @@ function fixture() {
     sourceTiles: 0,
     landscapeTiles: 0,
     houses: 0,
+    waters: 0,
     activeLandscapeLevels: [],
   };
   let sequence = 0;
@@ -109,6 +110,7 @@ function fixture() {
     readRegion: vi.fn(),
     readPresentation: vi.fn(),
     readHouseRegion: vi.fn(),
+    readWaterRegion: vi.fn(),
     readLandscapeRegion: vi.fn(),
     readLandscapePresentation: vi.fn(),
     commit,
@@ -127,6 +129,7 @@ function fixture() {
     empty: true,
     landscapeEmpty: true,
     housesEmpty: true,
+    watersEmpty: true,
   });
   const session = new ProjectSession(bridge, observer);
   session.attach(document, info);
@@ -134,6 +137,92 @@ function fixture() {
 }
 
 describe("one document journal and ordered project session", () => {
+  it("persists water through the same writer and replays an unchanged mask and dependency after a lost ACK", async () => {
+    const { document, session, bridge, commit, committed } = fixture();
+    const source: WaterSource = {
+      kind: "lake",
+      id: "session-lake",
+      revision: 0,
+      name: "See",
+      rings: [
+        [
+          [0, 0],
+          [100, 0],
+          [100, 100],
+          [0, 100],
+        ],
+        [
+          [20, 20],
+          [40, 20],
+          [40, 40],
+          [20, 40],
+        ],
+      ],
+      level: 32,
+      terrain: {
+        kind: "height",
+        bounds: [0, 0, 100, 100],
+        identity: `height-controls-v1:${"a".repeat(64)}`,
+      },
+    };
+    document.applyWaterSources([{ id: source.id, after: source }]);
+    const accepted = document.water(source.id);
+    editLandscape(document);
+    edit(document);
+    const writes: CommitRequest[] = [];
+    bridge.commit = vi.fn(async (request) => {
+      writes.push(request);
+      const receipt = await commit(request);
+      if (writes.length === 1) throw new Error("lost water ACK");
+      return receipt;
+    });
+    await expect(session.flush()).rejects.toThrow("lost water ACK");
+    expect(document.pendingChanges()).toHaveLength(3);
+    await session.recover();
+    expect(writes[1]).toEqual(writes[0]);
+    expect(
+      [...committed.values()].map((request) => request.patches[0].kind),
+    ).toEqual(["water", "landscape", "height"]);
+    expect(writes[0].patches[0]).toEqual({
+      kind: "water",
+      key: "water:session-lake",
+      after: accepted,
+    });
+    expect(writes[0].patches[0]).not.toHaveProperty("before");
+    expect(document.pendingChanges()).toEqual([]);
+    expect(document.water(source.id)).toEqual(accepted);
+    expect(document.sequence).toBe(3);
+    expect(document.persistedSequence).toBe(3);
+    await session.save();
+    expect(bridge.saveProject).toHaveBeenCalledWith({
+      sessionId: document.sessionId,
+      sequence: 3,
+      saveAs: false,
+    });
+  });
+
+  it("prepares the complete accepted action before requesting the normal water template and keeps default New empty", async () => {
+    const { document, session, bridge } = fixture();
+    finishingEdit(document);
+    const replacing = session.changeProject(true, "water");
+    await Promise.resolve();
+    expect(bridge.newProject).not.toHaveBeenCalled();
+    finishAcceptedWork(document);
+    expect(await replacing).toBeNull();
+    expect(bridge.newProject).toHaveBeenLastCalledWith({
+      sessionId: document.sessionId,
+      sequence: 1,
+      persistenceError: null,
+      template: "water",
+    });
+    await session.changeProject(true);
+    expect(bridge.newProject).toHaveBeenLastCalledWith({
+      sessionId: document.sessionId,
+      sequence: 1,
+      persistenceError: null,
+    });
+  });
+
   it("waits for a live house action before saving and preserves the house discriminant alongside terrain", async () => {
     const { document, session, bridge, committed } = fixture();
     const header: HouseHeader = {

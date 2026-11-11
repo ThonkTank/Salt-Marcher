@@ -1089,13 +1089,20 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 P0 ist ein eigener, ausdrücklich gewählter Höhen-, Landschafts- und Hauseditor.
 Er bietet Verschieben und Zoom vom Nahbereich bis zur Welt, Raster ein/aus,
 Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel, rechteckige
-Häuser mit Auswahl, Drehung und Bewegung, Undo/Redo sowie
+Häuser mit Auswahl, Drehung und Bewegung, eine vorbereitete Gewässerszene mit
+aktuellen Fundamenten, Undo/Redo sowie
 Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
 in Bildschirmpixeln, die Höhenänderungsrate in Metern pro Sekunde eingestellt;
-die Berechnung verwendet Fuß und Sekunden. Straßen, vollständiger Hausbau, Innenräume,
-Regionen und lokale
-Gewässerwerkzeuge gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht
-verfügbar.
+die Berechnung verwendet Fuß und Sekunden. Straßen, vollständiger Hausbau,
+Innenräume, Regionen sowie Werkzeuge zum Erstellen oder Anpassen von Gewässern
+gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht verfügbar.
+
+Numerische Einstellungen müssen endlich sein. Pinselgröße und Stärke werden
+auf ihre wirksamen Grenzen begrenzt: 8–512 Bildschirmpixel für Höhe,
+8–128 für Landschaft und 0,03048–3.048 Meter pro Sekunde Höhenrate.
+Landschaftsdichte bleibt bei 0–100 Prozent. Hausmaße und Fundamentparameter
+müssen ihre unten angegebenen Grenzen einhalten; ungültige Werte werden mit
+sichtbarem Fehler abgewiesen und nicht als neue Autoren übernommen.
 
 Eine neue P0-Welt ist Ozean mit natürlicher Höhe −100 Fuß und Meeresspiegel 0.
 Die natürliche Oberfläche entsteht aus der Summe relativer Höhenfelder mit
@@ -1275,10 +1282,10 @@ ab. Jede abgeschlossene Änderung zählt als ein gemeinsamer Undo-Schritt.
 
 Fundamenthöhe (0–30,48 Meter, Vorgabe 0,3048 Meter) und Übergangsbreite
 (0–152,4 Meter, Vorgabe 3,048 Meter) werden pro Haus gespeichert und sind
-rückgängig machbar. **Die geländeabhängige Fundamentdarstellung ist noch nicht
-implementiert; sie folgt im P3.3-Fall.** Geländeänderungen lassen die gespeicherte
-Hauspose, ID und Fundamenteinstellungen unverändert. Innenräume und Parzellen
-sind noch nicht mit diesem Hausheader verbunden.
+rückgängig machbar. Ihre lokale Darstellung wird aus dem aktuellen Gelände
+einschließlich bestätigtem Flussbett abgeleitet. Geländeänderungen lassen die
+gespeicherte Hauspose, ID und Fundamenteinstellungen unverändert. Innenräume
+und Parzellen sind noch nicht mit diesem Hausheader verbunden.
 
 Hausheader werden räumlich geladen. Kalte Bereiche bleiben bis zur vollständigen
 Antwort unbekannt; ein Ausschnitt mit mehr als 4.096 Häusern wird mit einer
@@ -1287,13 +1294,99 @@ bleiben unabhängig davon bearbeitbar. Beim Verlassen eines Bereichs dürfen
 bestätigte Header verdrängt werden; Wiederkehr, Undo/Redo und Wiederöffnen
 erhalten die stabile Identität und die vollständigen Autorenwerte.
 
+### Vorbereitete Gewässer und Fundamente im P3.3-Fall
+
+**Gewässerszene öffnen** im Panel **Gewässer und Fundamente** erzeugt über den
+regulären Dateiwechsel eine neue Karte mit echtem See samt Loch, einem kleinen
+bestätigten Flussprofil und einem Haus am Hang nahe dem Flussufer. Der See hat
+32 Fuß beziehungsweise 9,7536 Meter Pegel. Die schräge Oberfläche lässt zugleich
+nasse und trockene Teile der gespeicherten Maske erkennen. Die Szene enthält
+editierbare Höhenautoren und echte gespeicherte Gewässer- und Hausquellen; sie
+ist auch ohne Diagnosemodus verfügbar. **Neu** erzeugt weiterhin die leere Welt.
+Ungespeicherte Änderungen werden bei beiden Wegen über denselben
+Speichern-/Verwerfen-/Abbrechen-Ablauf behandelt.
+
+Ein See speichert einen Außenring, mögliche Löcher und seinen Pegel. Ein Fluss
+speichert Weltpunkte, Breite und absolute Pegel in nicht ansteigender Reihenfolge.
+Gewöhnliches Anheben oder Absenken verändert weder diese Daten noch ihre IDs.
+Sichtbares Wasser wird gegen das **aktuelle natürliche Gelände einschließlich
+Flussbett, vor Hausfundamenten** geprüft: Nur Gelände unter dem jeweiligen Pegel
+ist nass. Bei mehreren nassen Gewässern gilt der niedrigste Pegel. Löcher bleiben
+ausgespart. Angehobene Maskenteile werden trocken; späteres Absenken kann sie
+wieder sichtbar machen, weil die gespeicherte Maske erhalten bleibt.
+
+Das bestätigte Flussprofil senkt das aktuelle Gelände auf ein Bett zwei Fuß unter
+seinem Wasserstand ab, soweit das natürliche Gelände höher liegt. Es hebt tieferes
+Gelände nicht an; der Uferübergang läuft weich aus. Auch nach einer groben
+Geländeanhebung bleiben die absoluten Pegel bestehen, sodass ein tieferer
+Einschnitt entstehen kann. Wasserstände werden durch einen Höhenstrich nicht
+automatisch neu berechnet.
+
+Jedes gespeicherte Gewässer hält die vollständigen Bounds seines damaligen
+Geländereads und eine SHA-256-Inhaltsidentität der wirksamen Kontrollwerte aller
+22 Höhenstufen. Diese Identität enthält auch den Nachweis bekannter Abwesenheit
+im abgefragten Bereich. Ein dort später hinzugekommener wirksamer Kontrollwert
+entwertet sie. Der lokale Status zeigt **Aktuell**, **Veraltet**, **Wird geprüft**
+oder mit Begründung **Nicht geprüft**. Die Folge A → B → Undo(A) stellt die
+ursprüngliche Inhaltsidentität wieder her und kann das unveränderte Gewässer
+erneut als aktuell bestätigen. Die steigende Laufzeitrevision allein hält es
+nicht veraltet. Unbekannte Quellen gelten niemals als leer oder als erfolgreich
+geprüft; entfernte Gewässer werden nicht weltweit nachgeführt.
+
+Ein aktuelles Fundament verwendet das belegte Maximum des natürlichen Geländes
+nach Flussabsenkung über seiner vollständigen gedrehten Grundfläche. Diese
+**Basis** trägt Plateau und Geländeübergang. Die **Oberkante** liegt um die
+gespeicherte Fundamenthöhe darüber; eine Änderung dieser Höhe verändert nicht
+die Geländeplattform. Innerhalb einer Hausgrundfläche gilt ihre Basis, bei
+mehreren überlappenden Grundflächen die höchste Basis. Außerhalb kann ein
+weicher Übergang das Gelände anheben; eine benachbarte Übergangszone ersetzt
+keine Grundfläche. Der Nachweis arbeitet mit einer Höhentoleranz von 0,0001 Fuß.
+Fehlende Eingaben oder ein nicht belegbares Maximum bleiben sichtbar unbekannt,
+statt ein altes Fundament als aktuell auszugeben.
+
+Die Ableitung erfolgt nur für den lokalen Bedarf. Es gelten folgende Grenzen:
+
+| Lokaler Bedarf                 | Grenze und Verhalten                                                                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Geladene Gewässerquellen       | Höchstens 128 pro vollständigem Read und Ansicht; größere Bereiche verlangen näheren Zoom.                                                                 |
+| Einzelne Gewässerquelle        | Höchstens 512 Punkte einschließlich Lochringen und 128 KiB; alle Koordinaten und Pegel sind endlich.                                                       |
+| Ableitungssnapshot             | Höchstens 4 MiB vollständige lokale Höhenquellen; ohne vollständigen Read keine aktuelle Freigabe.                                                         |
+| Aktuelle Fundamente            | Höchstens 64 lokale Kandidaten mit mindestens einem Bildschirmpixel Ausdehnung von Grundfläche oder Übergang; weitere werden in näherer Ansicht berechnet. |
+| Fundamentnachweis              | Höchstens 8.192 gehaltene relevante Kontrollwerte und 16.384 bearbeitete Suchknoten; ein ausgeschöpfter Nachweis bleibt unbekannt.                         |
+| Gewässerdarstellung pro Kachel | Höchstens 8 verschiedene Seepegel, 512 Flusssegmente und 4.096 Seemaskenpunkte; Überschreitungen erscheinen als lokale Grenze, ohne stille Kürzung.        |
+
+Wasserautoren teilen Quellen, History, Pendingjournal, Writer, Dateisnapshot
+und den begrenzten Quellenleseslot mit den übrigen Autoren. Die kooperative
+Ableitung erhält höchstens 0,5 ms und 32 Schritte aus dem gemeinsamen
+2-ms-Vorbereitungsbudget eines Frames. GPU und numerischer CPU-Ausnahmeweg
+führen zur selben Oberflächen-Farbkomposition; der Ausnahmeweg liefert dafür
+zusätzlich absolute Hi/Lo-Höhen. Diese Arbeitsgrenzen sind keine Aussage über
+bereits nachgewiesene native Reaktionszeiten.
+
+Zum gemeinsamen Speicherbudget gehören auch die Kontrollwert- und Suchstrukturen:
+Ein neuer Ableitungsjob benötigt eine konservative Zulassung von 10 MiB, ein
+laufender Fundamentjob trägt 4 MiB Metadaten zusätzlich zu seinen Höhendaten.
+Für das Zusammenführen der Hash-Eingabe werden höchstens 2 MiB zusätzlich zu den
+bereits gehaltenen Puffern reserviert. Ein laufender Hash behält seinen Slot und
+seine gezählten Eingaben über einen Projektwechsel bis zum tatsächlichen Ende.
+Veraltete Lesefehler sperren keinen neueren lokalen Bedarf. Verschieben oder
+Verkleinern eines Fundaments aktualisiert dessen alte und neue Fläche auch beim
+Zurückkehren in noch zwischengespeicherte Ansichten.
+
+**Gewässer an Gelände anpassen** bleibt sichtbar deaktiviert und erklärt die
+ausstehende automatische Anpassung. Vollständige Erstellungs- und
+Anpassungswerkzeuge gehören weiterhin zu P7. Die vorbereitete Szene und der
+lokale Status ersetzen deren Autorenoperationen nicht.
+
 ### Gemeinsame P0-Projektdatei
 
-P0-Projekte verwenden `.saltatlas` als SQLite-Format **26** mit Schemakennung
-`atlas-p3-house-1`. Gespeichert werden sparse relative Höhenkacheln,
-maskierte Landschaftskacheln, räumliche Hausheader, Projektmetadaten und abgeleitete numerische
+P0-Projekte verwenden `.saltatlas` als SQLite-Format **27** mit Schemakennung
+`atlas-p3-derived-water-1`. Gespeichert werden sparse relative Höhenkacheln,
+maskierte Landschaftskacheln, räumliche Hausheader, bestätigte Seemasken/Pegel
+und Flussprofile einschließlich vollständiger Bounds und Inhaltsabhängigkeiten,
+Projektmetadaten und abgeleitete numerische
 Übersichten desselben bestätigten Sequenzstands. Dieses Versuchsformat ist
-getrennt vom V7-Format 22; frühere P0-Formate 23 bis 25 werden verständlich
+getrennt vom V7-Format 22; frühere P0-Formate 23 bis 26 werden verständlich
 abgelehnt und nicht migriert.
 Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
 auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der

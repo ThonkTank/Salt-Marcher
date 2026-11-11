@@ -100,6 +100,65 @@ it("reserves both colour and land buffers in the physical output budget", () => 
   expect(estimateHeightProjectionBytes(request)).toBe(
     bytes + request.overview.byteLength + 16 * 5 + 4 * 96 + 32 * 1024,
   );
+  expect(
+    estimateHeightProjectionBytes({ ...request, includeHeights: true }) -
+      estimateHeightProjectionBytes(request),
+  ).toBe(16 * 8);
+});
+
+it.each([undefined, new Float32Array(31), new Float32Array(32).fill(NaN)])(
+  "rejects incomplete numeric pairs requested for the shared surface pass",
+  async (heights) => {
+    const port = new WorkerPort();
+    const service = new WorkerHeightProjectionService(
+      new ComputeJobs(),
+      () => port,
+    );
+    const task = service.request({ ...input(), includeHeights: true });
+    expect(port.sent[0]).toMatchObject({ kind: "begin", includeHeights: true });
+    port.hydrate(1);
+    const rejected = expect(task.promise).rejects.toThrow("Unvollständiges");
+    port.onmessage?.({
+      data: {
+        kind: "finished",
+        id: 1,
+        sessionId: "",
+        pixels: new Uint8Array(64),
+        land: new Uint8Array(16),
+        heights,
+        samples: 16,
+        maxChunkMs: 1,
+      },
+    } as MessageEvent<HeightProjectionResponse>);
+    await rejected;
+    expect(service.metrics().bytes).toBe(0);
+  },
+);
+
+it("returns the validated absolute-pair image and releases its worker reservation", async () => {
+  const port = new WorkerPort();
+  const service = new WorkerHeightProjectionService(
+    new ComputeJobs(),
+    () => port,
+  );
+  const task = service.request({ ...input(), includeHeights: true });
+  port.hydrate(1);
+  const heights = new Float32Array(32);
+  heights.set([32, -1e-7]);
+  port.onmessage?.({
+    data: {
+      kind: "finished",
+      id: 1,
+      sessionId: "",
+      pixels: new Uint8Array(64),
+      land: new Uint8Array(16),
+      heights,
+      samples: 16,
+      maxChunkMs: 1,
+    },
+  } as MessageEvent<HeightProjectionResponse>);
+  expect((await task.promise)?.heights).toBe(heights);
+  expect(service.metrics()).toMatchObject({ bytes: 0, completed: 1 });
 });
 
 it("runs only one exception, accepts its older frozen content, and keeps only latest pending", async () => {

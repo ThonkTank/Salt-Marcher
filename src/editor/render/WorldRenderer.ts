@@ -35,6 +35,11 @@ import type { HeightProjectionService } from "./HeightProjectionService";
 import { CursorOverlay } from "./CursorOverlay";
 import { HouseView } from "./HouseView";
 import {
+  DerivedSurfaceView,
+  type SurfaceFrame,
+  type SurfaceReadNeed,
+} from "./DerivedSurfaceView";
+import {
   HeightField,
   type HeightCompositionStats,
   type HeightFieldTile,
@@ -92,6 +97,7 @@ interface FrozenRender {
   targets: FrozenTarget[];
   overviews: Map<string, HeightOverviewTile>;
   landscapes: Map<string, LandscapeFrame | null>;
+  surfaces: Map<string, SurfaceFrame | null>;
 }
 
 interface GpuSubmission {
@@ -261,6 +267,8 @@ export class WorldRenderer {
   private knownOverviews = new Set<string>();
   private document!: EditorDocument;
   private landscape!: LandscapeView;
+  private surfaces!: DerivedSurfaceView;
+  private readonly retiredSurfaces = new Set<DerivedSurfaceView>();
   private sessionId = "";
   private frame = 0;
   private viewGeneration = 0;
@@ -294,6 +302,7 @@ export class WorldRenderer {
     target: FrozenTarget;
     overview: HeightOverviewTile | null;
     landscape: LandscapeFrame | null;
+    surface: SurfaceFrame | null;
   } | null = null;
   private completedRender: FrozenRenderReceipt | null = null;
   private readonly queuedSources = new Map<string, QueuedSource>();
@@ -428,6 +437,12 @@ export class WorldRenderer {
     this.document = document;
     this.houses.reset();
     this.landscape = new LandscapeView(document, landscapeEmpty);
+    this.surfaces?.destroy();
+    if (this.surfaces?.pendingDigest) this.retiredSurfaces.add(this.surfaces);
+    this.surfaces = new DerivedSurfaceView(document, (bounds) => {
+      if (bounds) this.invalidateSurface(bounds);
+      this.redraw();
+    });
     this.sessionId = document.sessionId;
     for (const tile of this.tiles.values())
       this.terrain.removeChild(tile.field.mesh);
@@ -1024,6 +1039,14 @@ export class WorldRenderer {
 
   private retainedBufferBytes(): number {
     const buffers = new Set<ArrayBufferLike>(this.landscape?.retainedBuffers());
+    for (const buffer of this.surfaces?.retainedBuffers() ?? [])
+      buffers.add(buffer);
+    for (const surface of this.retiredSurfaces)
+      for (const buffer of surface.retainedBuffers()) buffers.add(buffer);
+    for (const frame of this.frozen?.surfaces.values() ?? [])
+      for (const buffer of frame?.buffers ?? []) buffers.add(buffer);
+    for (const buffer of this.exceptionTarget?.surface?.buffers ?? [])
+      buffers.add(buffer);
     for (const frame of this.frozen?.landscapes.values() ?? [])
       for (const buffer of frame?.buffers ?? []) buffers.add(buffer);
     for (const buffer of this.exceptionTarget?.landscape?.buffers ?? [])
@@ -1258,10 +1281,43 @@ export class WorldRenderer {
   }
 
   invalidate(bounds: Bounds): void {
+    this.surfaces.invalidate(bounds);
     this.faultArmed = true;
     if (this.fault === "delay-render")
       this.delayUntil = performance.now() + 250;
     this.invalidateTiles(bounds);
+  }
+
+  private invalidateSurface(bounds: Bounds): void {
+    for (const tile of this.tiles.values()) {
+      if (!intersectsBounds(tile.bounds, bounds)) continue;
+      tile.contentVersion++;
+      tile.dirty = [...WHOLE];
+      tile.revision = this.document.revision;
+      tile.preparedRevision = -1;
+    }
+    this.requestFrame = true;
+  }
+
+  surfaceReadNeed(): SurfaceReadNeed | null {
+    this.surfaces.sync(this.bounds(), this.camera.scale);
+    return this.surfaces.readNeed();
+  }
+
+  surfaceRetainHeight(): Bounds | null {
+    return this.surfaces.retainHeightBounds();
+  }
+  surfaceRetainWater(): Bounds[] {
+    return this.surfaces.retainWaterBounds();
+  }
+  surfaceReadFailed(need: SurfaceReadNeed, error: unknown): void {
+    this.surfaces.failed(need, error);
+  }
+  surfaceState() {
+    return this.surfaces?.state() ?? null;
+  }
+  surfaceSample(point: Point, natural: number | null) {
+    return this.surfaces.sample(point, natural);
   }
 
   private invalidateTiles(
@@ -1306,6 +1362,7 @@ export class WorldRenderer {
 
   /** Explicit retry keeps failed remote work out of ordinary scheduling meanwhile. */
   retryPreparation(): void {
+    this.surfaces.retry();
     for (const tile of this.tiles.values()) {
       if (!tile.failedPreparation) continue;
       tile.failedPreparation = undefined;
@@ -1581,6 +1638,12 @@ export class WorldRenderer {
           this.landscape.freeze(tile.bounds, tile.power),
         ]),
       ),
+      surfaces: new Map(
+        targets.map(({ tile }) => [
+          tile.key,
+          this.surfaces.freeze(tile.bounds, tile.power),
+        ]),
+      ),
     };
     this.checkBudgets();
     this.requestFrame = true;
@@ -1817,7 +1880,7 @@ export class WorldRenderer {
       return;
     const exception = this.exceptionTarget;
     if (exception) {
-      const { target, receipt, overview, landscape } = exception;
+      const { target, receipt, overview, landscape, surface } = exception;
       if (target.preparation !== target.tile.field.preparationVersion) {
         this.exceptionTarget = null;
       } else if (
@@ -1830,6 +1893,7 @@ export class WorldRenderer {
           targets: [target],
           overviews: new Map(overview ? [[overview.key, overview]] : []),
           landscapes: new Map([[target.tile.key, landscape]]),
+          surfaces: new Map([[target.tile.key, surface]]),
         };
         this.exceptionTarget = null;
         return;
@@ -1891,6 +1955,12 @@ export class WorldRenderer {
           this.landscape.freeze(tile.bounds, tile.power),
         ]),
       ),
+      surfaces: new Map(
+        targets.map(({ tile }) => [
+          tile.key,
+          this.surfaces.freeze(tile.bounds, tile.power),
+        ]),
+      ),
     };
   }
 
@@ -1938,12 +2008,37 @@ export class WorldRenderer {
             this.preparationDeadline,
             editorBudgets.preparationStepsPerFrame,
           );
+    const sourceSteps = this.preparationSteps;
+    // A session replacement cannot cancel WebCrypto. Its previous input keeps
+    // the shared derivation slot until settlement, including its byte charge.
+    for (const surface of this.retiredSurfaces)
+      if (!surface.pendingDigest) this.retiredSurfaces.delete(surface);
+    if (
+      !this.contextLost &&
+      !this.graphicsFailed &&
+      !this.destroyed &&
+      this.surfaces
+    ) {
+      this.surfaces.sync(this.bounds(), this.camera.scale);
+      if (
+        !this.retiredSurfaces.size &&
+        this.surfaces.pending &&
+        this.reservePreparation(null, this.surfaces.nextPreparationBytes)
+      )
+        this.preparationSteps += this.surfaces.step(
+          Math.min(this.preparationDeadline, performance.now() + 0.5),
+          Math.min(
+            32,
+            editorBudgets.preparationStepsPerFrame - this.preparationSteps,
+          ),
+        );
+    }
     this.preparationRecord = {
       id: ++this.preparationSerial,
       at: this.preparationStarted,
       ms: performance.now() - this.preparationStarted,
       steps: this.preparationSteps,
-      sourceSteps: this.preparationSteps,
+      sourceSteps,
     };
     this.framePrepared = true;
     return this.preparationSteps > 0;
@@ -2044,6 +2139,7 @@ export class WorldRenderer {
           const overview =
             group.overviews.get(`height-overview:${tile.key}`) ?? null;
           tile.field.setLandscape(group.landscapes.get(tile.key) ?? null);
+          tile.field.setSurface(group.surfaces.get(tile.key) ?? null);
           tile.field.update(
             overview === tile.overview ? undefined : overview,
             target.dirty ?? WHOLE,
@@ -2109,6 +2205,7 @@ export class WorldRenderer {
               overview:
                 group.overviews.get(`height-overview:${tile.key}`) ?? null,
               landscape: group.landscapes.get(tile.key) ?? null,
+              surface: group.surfaces.get(tile.key) ?? null,
               receipt: Object.freeze({
                 ...group.receipt,
                 bounds: Object.freeze([tile.bounds]),
@@ -2431,6 +2528,9 @@ export class WorldRenderer {
     }
     if (this.projections) metrics.cpuBytes += this.projections.metrics().bytes;
     metrics.cpuBytes += this.extraComputeBytes();
+    metrics.cpuBytes += this.surfaces?.retainedMetadataBytes ?? 0;
+    for (const surface of this.retiredSurfaces)
+      metrics.cpuBytes += surface.retainedMetadataBytes;
     metrics.cpuBytes += this.houses.bytes;
     metrics.gpuBytes += this.houses.bytes;
     return metrics;
@@ -2611,6 +2711,7 @@ export class WorldRenderer {
   }
 
   destroy(): void {
+    this.surfaces?.destroy();
     this.releaseFence();
     this.invalidateProofs();
     this.resetSourceQueue();

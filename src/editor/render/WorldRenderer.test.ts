@@ -225,6 +225,12 @@ vi.mock("./HeightField", () => ({
         setLandscape(frame: unknown) {
           this.landscape = frame;
         },
+        setSurface(frame: unknown) {
+          if (frame !== null)
+            throw new Error(
+              "Height-only numeric fake cannot sample a derived surface frame.",
+            );
+        },
         sampleLandscape() {
           if (this.landscape !== null)
             throw new Error(
@@ -433,6 +439,85 @@ beforeEach(() => {
   // real renderer checks, not this mocked GL driver.
   let clock = 1000;
   vi.spyOn(performance, "now").mockImplementation(() => (clock += 0.001));
+});
+
+it("retains an unfinished dependency digest across project replacement and admits only one asynchronous hash", async () => {
+  const completions: ((value: ArrayBuffer) => void)[] = [];
+  const digest = vi.fn(
+    () => new Promise<ArrayBuffer>((resolve) => completions.push(resolve)),
+  );
+  vi.stubGlobal("crypto", { subtle: { digest } });
+  const document = (id: string) => {
+    const doc = new EditorDocument(id, {
+      empty: true,
+      landscapeEmpty: true,
+      housesEmpty: true,
+      watersEmpty: true,
+    });
+    doc.acceptWaterCoverage(
+      [-1e8, -1e8, 1e8, 1e8],
+      [
+        {
+          kind: "lake",
+          id: `lake-${id}`,
+          name: id,
+          revision: 0,
+          level: 5,
+          rings: [
+            [
+              [-40, -40],
+              [40, -40],
+              [40, 40],
+              [-40, 40],
+            ],
+          ],
+          terrain: {
+            kind: "height",
+            bounds: [-40, -40, 40, 40],
+            identity: `height-controls-v1:${"0".repeat(64)}`,
+          },
+        },
+      ],
+    );
+    return doc;
+  };
+  const world = new WorldRenderer(new Observation());
+  world.reset(document("before"));
+  for (let frame = 0; frame < 8 && !digest.mock.calls.length; frame++)
+    world.prepareFrame();
+  expect(digest).toHaveBeenCalledOnce();
+  const oldView = world["surfaces"];
+  const oldBytes = [...oldView.retainedBuffers()].reduce(
+    (total, buffer) => total + buffer.byteLength,
+    0,
+  );
+  expect(oldBytes).toBeGreaterThan(0);
+  world.reset(document("after"));
+  for (let frame = 0; frame < 8; frame++) world.prepareFrame();
+  expect(digest).toHaveBeenCalledOnce();
+  expect(world.state().presentationBytes).toBeGreaterThanOrEqual(oldBytes);
+  expect(
+    [...oldView.retainedBuffers()].reduce(
+      (total, buffer) => total + buffer.byteLength,
+      0,
+    ),
+  ).toBe(oldBytes);
+  expect(world.surfaceState()!.water[0]).toMatchObject({
+    id: "lake-after",
+    status: "unknown",
+  });
+  completions[0](new ArrayBuffer(32));
+  await Promise.resolve();
+  await Promise.resolve();
+  for (let frame = 0; frame < 8 && digest.mock.calls.length < 2; frame++)
+    world.prepareFrame();
+  expect(digest).toHaveBeenCalledTimes(2);
+  expect(oldView.retainedBuffers().size).toBe(0);
+  expect(world.surfaceState()!.water[0].id).toBe("lake-after");
+  completions[1](new ArrayBuffer(32));
+  await Promise.resolve();
+  await Promise.resolve();
+  world.destroy();
 });
 
 /** Explicit source-publication boundary; it does not draw or acknowledge a GPU. */
@@ -1223,6 +1308,48 @@ it("R2 renderer rejects an imported foundation while completing its older immuta
   expect(world.inspectFoundation(area, foundation).status).toBe("missing");
 });
 
+it.each(["source", "view"])(
+  "keeps a house gesture's completed surface through its own foundation colour, then rejects a %s change",
+  async (changeKind) => {
+    const { world, document } = await readyRenderer();
+    const coverage: Bounds = [-1000, -1000, 1000, 1000];
+    document.acceptHouseCoverage(coverage, []);
+    document.acceptWaterCoverage(coverage, []);
+    world.surfaceReadNeed();
+    const header = {
+      id: "pending-foundation-house",
+      revision: 0,
+      x: 220,
+      y: 220,
+      width: 40,
+      depth: 30,
+      rotation: 0,
+      foundationHeight: 1,
+      foundationTransition: 10,
+    };
+    const area: Bounds = [200, 205, 240, 235];
+    const foundation = world.captureFoundation();
+    expect(world.acceptFoundation(area, foundation)).toBe(true);
+    document.beginHouseGesture(header);
+    // Synchronize the actual derived view without completing its colour pass.
+    world.surfaceReadNeed();
+    expect(world.inspectRegion(area).status).toBe("stale");
+    expect(world.inspectFoundation(area, foundation).status).toBe("current");
+    expect(world.acceptFoundation(area, foundation)).toBe(true);
+    if (changeKind === "source")
+      world.updatePresentation(
+        heightTilesFromControls(0, [[44, 44, 100]]),
+        [],
+        [],
+      );
+    else world.moveCamera({ x: 260, y: 256, scale: 0.25 });
+    expect(world.inspectFoundation(area, foundation).status).toBe("missing");
+    expect(world.acceptFoundation(area, foundation)).toBe(false);
+    document.cancelHouseGesture();
+    world.destroy();
+  },
+);
+
 it("R2 renderer captures partial current foundations without mutating them during inspection", async () => {
   const { world, change, frame } = await readyRenderer();
   const left: Bounds = [180, 180, 230, 230];
@@ -1462,7 +1589,7 @@ async function readyController(
   const info: ProjectInfo = {
     sessionId: "shared-frame",
     projectId: "frame-test",
-    format: 26,
+    format: 27,
     title: "Frame test",
     sequence: 0,
     savedSequence: 0,
@@ -1471,6 +1598,7 @@ async function readyController(
     sourceTiles,
     landscapeTiles: 0,
     houses: 0,
+    waters: 0,
     activeLandscapeLevels: [],
   };
   const bridge = {
@@ -1507,6 +1635,13 @@ async function readyController(
         ...request,
         sequence: info.sequence,
         headers: [],
+      }),
+    ),
+    readWaterRegion: vi.fn(
+      async (request: { sessionId: string; bounds: Bounds }) => ({
+        ...request,
+        sequence: info.sequence,
+        sources: [],
       }),
     ),
     readRegion: vi.fn(

@@ -5,6 +5,52 @@
   font-synthesis: none;
   color-scheme: dark;
 }
+.surface-panel > button {
+  width: 100%;
+}
+.surface-item {
+  margin: 14px 0;
+  padding: 10px;
+  background: #1b3037;
+  border: 1px solid #3c514f;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.surface-item strong {
+  display: block;
+  margin-bottom: 5px;
+}
+.surface-status {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #394b50;
+}
+.surface-status.current {
+  background: #2c4b3c;
+  color: #b7d9b9;
+}
+.surface-status.stale {
+  background: #685330;
+  color: #ffe1a3;
+}
+.surface-item p {
+  line-height: 1.5;
+  margin-bottom: 0;
+  color: #c5d1cd;
+}
+.surface-item dl {
+  margin: 10px 0 0;
+}
+.surface-item dt {
+  color: #b8c8c3;
+  margin-top: 8px;
+}
+.surface-item dd {
+  margin: 3px 0 0;
+  font-variant-numeric: tabular-nums;
+}
 * {
   box-sizing: border-box;
 }

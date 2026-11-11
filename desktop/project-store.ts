@@ -15,6 +15,8 @@ import type {
   CommitReceipt,
   HouseRegionRead,
   ReadHouseRegionRequest,
+  WaterRegionRead,
+  ReadWaterRegionRequest,
   LandscapeRegionRead,
   ReadLandscapeRegionRequest,
   LandscapePresentationRequest,
@@ -32,6 +34,8 @@ import {
   HEIGHT_MAX_ACTION_TILES,
   HOUSE_HEADER_BYTES,
   parseHouseKey,
+  parseWaterKey,
+  waterSourceBytes,
   HEIGHT_TILE_CELLS,
   HEIGHT_TILE_BYTES,
   WORLD_LIMIT,
@@ -84,13 +88,22 @@ import {
   readHouseHeaders,
   houseWriter,
 } from "./house-store";
+import {
+  createWaterTables,
+  validateWaterMetadata,
+  rebuildWaterSpatialIndex,
+  encodeWaterSource,
+  readWaterSources,
+  waterWriter,
+} from "./water-store";
+import { preparedWaterScene } from "./prepared-water-scene";
 
-export const PROJECT_FORMAT = 26 as const;
+export const PROJECT_FORMAT = 27 as const;
 export const MAX_TRANSFER_TILES = 512;
 const APPLICATION_ID = 0x5341544c;
 const TILE_VALUES = HEIGHT_TILE_CELLS;
 const TILE_BYTES = HEIGHT_TILE_BYTES;
-const SCHEMA_KIND = "atlas-p3-house-1";
+const SCHEMA_KIND = "atlas-p3-derived-water-1";
 const OVERVIEW_ALGORITHM = "fine-cubic-centres-128-scale32-v1";
 const OVERVIEW_CACHE_TILES = 256;
 
@@ -119,6 +132,7 @@ interface WorkingProject extends Metadata {
   levelCounts: Map<number, number>;
   landscapeLevelCounts: Map<number, number>;
   houses: number;
+  waters: number;
 }
 
 interface StoredTile {
@@ -399,7 +413,7 @@ function configure(database: Database.Database) {
   database.pragma("trusted_schema = OFF");
 }
 
-function createDatabase(path: string): Database.Database {
+function createDatabase(path: string, title = "Neue Welt"): Database.Database {
   const database = new Database(path);
   try {
     configure(database);
@@ -445,12 +459,13 @@ function createDatabase(path: string): Database.Database {
     `);
     database
       .prepare("INSERT INTO project_meta VALUES (1, ?, ?, ?, 0)")
-      .run(SCHEMA_KIND, randomUUID(), "Neue Welt");
+      .run(SCHEMA_KIND, randomUUID(), title);
     database
       .prepare("INSERT INTO height_overview_state VALUES (1,?,0)")
       .run(OVERVIEW_ALGORITHM);
     createLandscapeTables(database);
     createHouseTables(database);
+    createWaterTables(database);
     return database;
   } catch (error) {
     database.close();
@@ -462,7 +477,7 @@ function metadata(database: Database.Database): Metadata {
   check(
     database.pragma("application_id", { simple: true }) === APPLICATION_ID &&
       database.pragma("user_version", { simple: true }) === PROJECT_FORMAT,
-    "Diese Datei ist kein unterstütztes Atlas-Projekt (Format 26).",
+    "Diese Datei ist kein unterstütztes Atlas-Projekt (Format 27).",
   );
   const row = database
     .prepare(
@@ -501,6 +516,7 @@ function metadata(database: Database.Database): Metadata {
     .all();
   validateLandscapeMetadata(database, row.sequence);
   validateHouseMetadata(database);
+  validateWaterMetadata(database);
   return {
     projectId: row.project_id,
     title: row.title,
@@ -656,6 +672,7 @@ export class ProjectStore {
       projectId: project.projectId,
       format: PROJECT_FORMAT,
       houses: project.houses,
+      waters: project.waters,
       title: project.title,
       sequence: project.sequence,
       savedSequence: project.savedSequence,
@@ -679,12 +696,19 @@ export class ProjectStore {
     return { ...this.counters };
   }
 
-  newProject(expected?: SourceBoundary): ProjectInfo {
+  newProject(expected?: SourceBoundary, template?: "water"): ProjectInfo {
     if (expected) this.exactBoundary(expected);
+    check(
+      template === undefined || template === "water",
+      "Unbekannte Projektvorlage.",
+    );
     const directory = mkdtempSync(join(this.rootDirectory, "working-"));
     let database: Database.Database;
     try {
-      database = createDatabase(join(directory, "working.sqlite"));
+      database = createDatabase(
+        join(directory, "working.sqlite"),
+        template === "water" ? "Gewässer am Hang" : undefined,
+      );
     } catch (error) {
       rmSync(directory, { recursive: true, force: true });
       throw error;
@@ -699,7 +723,21 @@ export class ProjectStore {
       levelCounts: new Map(),
       landscapeLevelCounts: new Map(),
       houses: 0,
+      waters: 0,
     };
+    try {
+      if (template === "water")
+        this.commitProject(candidate, {
+          sessionId: candidate.sessionId,
+          sequence: 1,
+          transactionId: randomUUID(),
+          patches: preparedWaterScene(),
+        });
+    } catch (error) {
+      candidate.database.close();
+      rmSync(directory, { recursive: true, force: true });
+      throw error;
+    }
     this.replace(candidate);
     return this.status();
   }
@@ -734,6 +772,7 @@ export class ProjectStore {
       const counts = rebuildSpatialIndex(candidateDb);
       const landscapeCounts = rebuildLandscapeSpatialIndex(candidateDb);
       const houses = rebuildHouseSpatialIndex(candidateDb);
+      const waters = rebuildWaterSpatialIndex(candidateDb);
       // Do not materialize all source payloads during open. Each selected read
       // validates its binary payload before returning it to the active document.
       candidateDb
@@ -753,6 +792,7 @@ export class ProjectStore {
         levelCounts: counts,
         landscapeLevelCounts: landscapeCounts,
         houses,
+        waters,
       };
     } catch (error) {
       candidateDb?.close();
@@ -964,10 +1004,40 @@ export class ProjectStore {
     };
   }
 
+  readWaterRegion(request: ReadWaterRegionRequest): WaterRegionRead {
+    const project = this.session(request.sessionId);
+    validateBounds(request.bounds);
+    const sources = readWaterSources(project.database, request.bounds);
+    this.counters.reads++;
+    this.counters.returnedBytes += sources.reduce(
+      (sum, source) => sum + waterSourceBytes(source),
+      0,
+    );
+    return {
+      sessionId: project.sessionId,
+      sequence: project.sequence,
+      bounds: [...request.bounds],
+      sources,
+    };
+  }
+
   commit(request: CommitRequest): CommitReceipt {
-    const commitStartedAt = performance.now();
     validateBoundary(request);
     const project = this.session(request.sessionId);
+    return this.commitProject(project, request);
+  }
+
+  /** Templates and live edits share the same atomic author/receipt path. */
+  private commitProject(
+    project: WorkingProject,
+    request: CommitRequest,
+  ): CommitReceipt {
+    const commitStartedAt = performance.now();
+    validateBoundary(request);
+    check(
+      project.sessionId === request.sessionId,
+      "Veraltete Dokumentsitzung.",
+    );
     check(text(request.transactionId, 200), "Ungültige Transaktionskennung.");
     check(
       Array.isArray(request.patches) &&
@@ -985,11 +1055,21 @@ export class ProjectStore {
       check(
         patch.kind === "height" ||
           patch.kind === "landscape" ||
-          patch.kind === "house",
+          patch.kind === "house" ||
+          patch.kind === "water",
         "Ungültige Quellenart.",
       );
       seen.add(patch.key);
       hash.update(`${patch.kind}\0${patch.key}\0`);
+      if (patch.kind === "water") {
+        parseWaterKey(patch.key);
+        const after =
+          patch.after === null
+            ? null
+            : encodeWaterSource(patch.after, patch.key);
+        hash.update(JSON.stringify(after));
+        return { kind: "water" as const, key: patch.key, after };
+      }
       if (patch.kind === "house") {
         parseHouseKey(patch.key);
         const after =
@@ -1104,6 +1184,7 @@ export class ProjectStore {
     };
     const counts = new Map(project.levelCounts);
     let houseCount = project.houses;
+    let waterCount = project.waters;
     let derivedMetrics = {
       updatedSamples: 0,
       readBytes: 0,
@@ -1114,7 +1195,13 @@ export class ProjectStore {
       const overviews = overviewWriter(database);
       const landscapeOverviews = landscapeOverviewWriter(database);
       let writeHouse: ReturnType<typeof houseWriter> | undefined;
+      let writeWater: ReturnType<typeof waterWriter> | undefined;
       for (const patch of patches) {
+        if (patch.kind === "water") {
+          writeWater ??= waterWriter(database);
+          waterCount += writeWater(patch.key, patch.after);
+          continue;
+        }
         if (patch.kind === "house") {
           writeHouse ??= houseWriter(database);
           houseCount += writeHouse(patch.key, patch.after);
@@ -1252,6 +1339,7 @@ export class ProjectStore {
     project.levelCounts = counts;
     project.landscapeLevelCounts = landscapeCounts;
     project.houses = houseCount;
+    project.waters = waterCount;
     this.counters.commits++;
     this.counters.committedTiles += patches.length;
     return {

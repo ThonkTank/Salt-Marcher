@@ -431,6 +431,7 @@ function registerBridge() {
         case "readRegion":
         case "readPresentation":
         case "readHouseRegion":
+        case "readWaterRegion":
         case "readLandscapeRegion":
         case "readLandscapePresentation":
           if (
@@ -478,16 +479,29 @@ function registerBridge() {
         case "saveProject":
           checkedBoundary(argument);
           return oneFileAction(() => save(argument as unknown as SaveRequest));
-        case "newProject":
+        case "newProject": {
+          const template = argument?.template;
+          if (template !== undefined && template !== "water")
+            throw new Error("Unbekannte Projektvorlage.");
           return oneFileAction(async () => {
             const permit = await mayReplace(checkedPreparedDocument(argument));
             if (!permit) return null;
             if (!permit.boundary) {
               await replaceUnavailableStore();
-              return store.request("status");
+              const fresh = await store.request<ProjectInfo>("status");
+              if (!template) return fresh;
+              return store.request("newProject", {
+                sessionId: fresh.sessionId,
+                sequence: fresh.sequence,
+                template,
+              });
             }
-            return store.request("newProject", permit.boundary);
+            return store.request("newProject", {
+              ...permit.boundary,
+              ...(template ? { template } : {}),
+            });
           });
+        }
         case "openProject":
           return oneFileAction(async () => {
             const permit = await mayReplace(checkedPreparedDocument(argument));

@@ -3,6 +3,7 @@ import type {
   CommitRequest,
   ReadRegionRequest,
   ReadHouseRegionRequest,
+  ReadWaterRegionRequest,
   ReadPresentationRequest,
   ReadLandscapeRegionRequest,
   LandscapePresentationRequest,
@@ -50,6 +51,8 @@ async function dispatch({ method, argument }: ParentMessage) {
       return store.readPresentation(argument as ReadPresentationRequest);
     case "readHouseRegion":
       return store.readHouseRegion(argument as ReadHouseRegionRequest);
+    case "readWaterRegion":
+      return store.readWaterRegion(argument as ReadWaterRegionRequest);
     case "readLandscapeRegion":
       return store.readLandscapeRegion(argument as ReadLandscapeRegionRequest);
     case "readLandscapePresentation":
@@ -58,8 +61,11 @@ async function dispatch({ method, argument }: ParentMessage) {
       );
     case "commit":
       return store.commit(argument as CommitRequest);
-    case "newProject":
-      return store.newProject(argument as SourceBoundary | undefined);
+    case "newProject": {
+      const input = argument as
+        (SourceBoundary & { template?: "water" }) | undefined;
+      return store.newProject(input, input?.template);
+    }
     case "openProject": {
       const input = argument as { path: string; expected?: SourceBoundary };
       return store.openProject(input.path, input.expected);
@@ -103,6 +109,7 @@ port.on("message", ({ data }: { data: ParentMessage }) => {
       "readRegion",
       "readPresentation",
       "readHouseRegion",
+      "readWaterRegion",
       "readLandscapeRegion",
       "readLandscapePresentation",
     ].includes(data.method)

@@ -67,6 +67,7 @@ self.onmessage = async (event: MessageEvent<HeightProjectionRequest>) => {
         sources: [],
         bounds: request.bounds,
         size: request.size,
+        ...(request.includeHeights ? { includeHeights: true } : {}),
         overview: request.hasOverview
           ? new Float64Array(request.size * request.size)
           : undefined,
@@ -137,7 +138,13 @@ self.onmessage = async (event: MessageEvent<HeightProjectionRequest>) => {
           sessionId: run.sessionId,
           ...result,
         } satisfies HeightProjectionResponse,
-        { transfer: [result.pixels.buffer, result.land.buffer] },
+        {
+          transfer: [
+            result.pixels.buffer,
+            result.land.buffer,
+            ...(result.heights ? [result.heights.buffer] : []),
+          ],
+        },
       );
     else respond(run, "cancelled");
   } catch (error) {

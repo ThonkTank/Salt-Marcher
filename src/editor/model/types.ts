@@ -1,4 +1,5 @@
 import type { HousePatch } from "./house";
+import type { WaterPatch } from "./water";
 
 export type Point = [number, number];
 export type Bounds = [number, number, number, number];
@@ -48,7 +49,8 @@ export interface LandscapePatch {
 export type SourcePatch =
   | ({ kind: "height" } & HeightPatch)
   | ({ kind: "landscape" } & LandscapePatch)
-  | ({ kind: "house" } & HousePatch);
+  | ({ kind: "house" } & HousePatch)
+  | ({ kind: "water" } & WaterPatch);
 
 export interface LandscapeBrush {
   level: number;

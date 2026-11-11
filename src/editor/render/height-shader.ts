@@ -161,10 +161,85 @@ uniform sampler2D uHeights;
 uniform sampler2D uFallbackPixels;
 uniform sampler2D uFallbackLand;
 uniform sampler2D uLandscape;
+uniform sampler2D uFallbackHeights;
+uniform sampler2D uSurfaceLake;
+uniform sampler2D uSurfaceRivers;
+uniform sampler2D uSurfaceFoundations;
 uniform int uHasLandscape;
 uniform int uFallback;
+uniform int uHasSurface;
+uniform int uLakeLayers;
+uniform int uRiverCount;
+uniform int uFoundationCount;
+uniform float uTileSpan;
 uniform vec4 uClip;
 ${heightFragment.slice(heightFragment.indexOf("vec2 addPair"), heightFragment.indexOf("void main()"))}
+bool lessPair(vec2 a, vec2 b) { return negativePair(addPair(a, -b)); }
+vec2 minPair(vec2 a, vec2 b) { return lessPair(a, b) ? a : b; }
+vec2 maxPair(vec2 a, vec2 b) { return lessPair(a, b) ? b : a; }
+float softEdge(float t) { t = clamp(t, 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
+void applySurface(vec2 natural, ivec2 pixel, out vec2 ground, out bool wet, out vec2 depth) {
+  vec2 point = (vec2(pixel) + 0.5) * (uTileSpan / 128.0);
+  vec2 bed = natural;
+  vec2 water = vec2(0.0);
+  wet = false;
+  for (int i = 0; i < 512; i++) {
+    if (i >= uRiverCount) break;
+    vec4 ends = texelFetch(uSurfaceRivers, ivec2(0, i), 0);
+    vec4 shape = texelFetch(uSurfaceRivers, ivec2(1, i), 0);
+    vec4 endLevel = texelFetch(uSurfaceRivers, ivec2(2, i), 0);
+    vec2 segment = ends.zw - ends.xy;
+    float lengthSquared = dot(segment, segment);
+    float t = lengthSquared > 0.0 ? clamp(dot(point - ends.xy, segment) / lengthSquared, 0.0, 1.0) : 0.0;
+    float distance = length(point - ends.xy - t * segment);
+    float width = mix(shape.x, shape.y, t);
+    vec2 level = addPair(shape.zw, scalePair(addPair(endLevel.xy, -shape.zw), t));
+    float halfWidth = width * 0.5;
+    float influence = softEdge(1.0 - max(0.0, (distance - halfWidth - 7.0710678118654755) / max(width, 5.0)));
+    vec2 cut = minPair(addPair(addPair(level, vec2(-2.0, 0.0)), -natural), vec2(0.0));
+    bed = minPair(bed, addPair(natural, scalePair(cut, influence)));
+    // Inside this channel influence is exactly one, so its own cut guarantees
+    // bed <= level-2; any other segment only lowers the same natural reference.
+    if (distance <= halfWidth && (!wet || lessPair(level, water))) {
+      water = level;
+      wet = true;
+    }
+  }
+  for (int layer = 0; layer < 8; layer++) {
+    if (layer >= uLakeLayers) break;
+    vec4 lake = texelFetch(uSurfaceLake, pixel + ivec2(0, layer * 128), 0);
+    if (lake.b > 0.5 && lessPair(bed, lake.rg) && (!wet || lessPair(lake.rg, water))) {
+      water = lake.rg;
+      wet = true;
+    }
+  }
+  wet = wet && lessPair(bed, water);
+  depth = wet ? addPair(water, -bed) : vec2(0.0);
+  ground = bed;
+  bool insideAny = false;
+  vec2 insideBase = vec2(0.0);
+  for (int i = 0; i < 64; i++) {
+    if (i >= uFoundationCount) break;
+    vec4 footprint = texelFetch(uSurfaceFoundations, ivec2(0, i), 0);
+    vec4 rotation = texelFetch(uSurfaceFoundations, ivec2(1, i), 0);
+    vec4 heights = texelFetch(uSurfaceFoundations, ivec2(2, i), 0);
+    vec2 delta = point - footprint.xy;
+    vec2 local = vec2(delta.x * rotation.x + delta.y * rotation.y, -delta.x * rotation.y + delta.y * rotation.x);
+    vec2 outside = max(abs(local) - footprint.zw, vec2(0.0));
+    vec2 base = vec2(rotation.w, heights.x);
+    if (outside.x == 0.0 && outside.y == 0.0) {
+      insideBase = insideAny ? maxPair(insideBase, base) : base;
+      insideAny = true;
+    } else if (rotation.z > 0.0) {
+      float influence = softEdge(1.0 - length(outside) / rotation.z);
+      vec2 rise = maxPair(addPair(base, -bed), vec2(0.0));
+      ground = maxPair(ground, addPair(bed, scalePair(rise, influence)));
+    }
+  }
+  // A footprint wins over every neighboring transition; among footprints the
+  // highest current natural base wins. Building top is a separate visible edge.
+  if (insideAny) ground = insideBase;
+}
 void main() {
   ivec2 pixel = clamp(ivec2(floor(vUV * 128.0)), ivec2(0), ivec2(127));
   if (float(pixel.x) < uClip.x || float(pixel.y) < uClip.y || float(pixel.x) >= uClip.z || float(pixel.y) >= uClip.w) {
@@ -177,14 +252,24 @@ void main() {
     + landscape.g * vec3(105.0,126.0,66.0)
     + landscape.b * vec3(143.0,159.0,82.0)
     + landscape.a * vec3(135.0,132.0,126.0);
-  if (uFallback != 0) {
+  if (uFallback != 0 && uHasSurface == 0) {
     vec4 base = texelFetch(uFallbackPixels, pixel, 0);
     if (texelFetch(uFallbackLand, pixel, 0).r > 0.5)
       base.rgb = floor(base.rgb * 255.0 * (1.0 - coverage) + vegetation + 0.5) / 255.0;
     finalColor = base;
     return;
   }
-  vec2 height = scalePair(texelFetch(uHeights, pixel, 0).rg, 32.0);
+  vec2 height = uFallback != 0
+    ? texelFetch(uFallbackHeights, pixel, 0).rg
+    : scalePair(texelFetch(uHeights, pixel, 0).rg, 32.0);
+  bool wet = false;
+  vec2 depthPair = vec2(0.0);
+  if (uHasSurface != 0) {
+    height = maxPair(minPair(height, vec2(100000.0, 0.0)), vec2(-100000.0, 0.0));
+    vec2 ground;
+    applySurface(height, pixel, ground, wet, depthPair);
+    height = ground;
+  }
   float h = clamp(height.x + height.y, -100000.0, 100000.0);
   if (nearBoundary(height, 0.0)) {
     h = 0.0;
@@ -194,7 +279,10 @@ void main() {
     height = vec2(12.0, 0.0);
   }
   vec3 colour;
-  if (negativePair(height)) {
+  if (wet) {
+    float depth = clamp((depthPair.x + depthPair.y) / 300.0, 0.0, 1.0);
+    colour = floor(vec3(94.0,147.0,166.0) - vec3(53.0,57.0,44.0) * depth + 0.5);
+  } else if (negativePair(height)) {
     float depth = min(1.0, -h / 300.0);
     colour = floor(vec3(94.0,147.0,166.0) - vec3(53.0,57.0,44.0) * depth + 0.5);
   } else if (negativePair(addPair(height, vec2(-12.0, 0.0)))) {
@@ -203,6 +291,6 @@ void main() {
     float shade = min(1.0, h / 600.0);
     colour = floor(vec3(132.0,151.0,103.0) + vec3(60.0,34.0,64.0) * shade + 0.5);
   }
-  if (!negativePair(height)) colour = floor(colour * (1.0 - coverage) + vegetation + 0.5);
+  if (!wet && !negativePair(height)) colour = floor(colour * (1.0 - coverage) + vegetation + 0.5);
   finalColor = vec4(colour / 255.0, 1.0);
 }`;

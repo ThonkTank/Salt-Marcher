@@ -15,7 +15,7 @@ export type { HeightProjectionInput } from "./height-projection";
 
 export type HeightProjectionImage = Pick<
   HeightProjectionResult,
-  "pixels" | "land"
+  "pixels" | "land" | "heights"
 >;
 
 export interface HeightProjectionTask {
@@ -87,7 +87,7 @@ export function estimateHeightProjectionBytes(
 ): number {
   return (
     inputBuffers(input).reduce((sum, buffer) => sum + buffer.byteLength, 0) +
-    input.size * input.size * 5 +
+    input.size * input.size * (input.includeHeights ? 13 : 5) +
     input.size * 96 +
     32 * 1024
   );
@@ -186,6 +186,7 @@ export class WorkerHeightProjectionService implements HeightProjectionService {
           size: task.input.size,
           sourceCount: task.input.sources.length,
           hasOverview: Boolean(task.input.overview),
+          ...(task.input.includeHeights ? { includeHeights: true } : {}),
         });
       } catch (error) {
         this.tasks.delete(task);
@@ -295,6 +296,11 @@ export class WorkerHeightProjectionService implements HeightProjectionService {
         !(response.land instanceof Uint8Array) ||
         response.land.length !== task.input.size * task.input.size ||
         response.land.some((value) => value !== 0 && value !== 255) ||
+        (task.input.includeHeights
+          ? !(response.heights instanceof Float32Array) ||
+            response.heights.length !== task.input.size * task.input.size * 2 ||
+            !response.heights.every(Number.isFinite)
+          : response.heights !== undefined) ||
         response.samples !== task.input.size * task.input.size ||
         !Number.isFinite(response.maxChunkMs) ||
         response.maxChunkMs < 0
@@ -306,7 +312,11 @@ export class WorkerHeightProjectionService implements HeightProjectionService {
         task.resolve?.(
           task.cancelled
             ? null
-            : { pixels: response.pixels, land: response.land },
+            : {
+                pixels: response.pixels,
+                land: response.land,
+                ...(response.heights ? { heights: response.heights } : {}),
+              },
         );
       }
       if (this.closed) {

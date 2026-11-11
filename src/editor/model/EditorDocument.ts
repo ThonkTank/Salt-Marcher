@@ -1,6 +1,17 @@
 import { prepareHeightSampler } from "./height";
 import { prepareLandscapeSampler } from "./landscape";
 import {
+  WATER_MAX_REGION_SOURCES,
+  freezeWaterSource,
+  sameWaterSource,
+  validateWaterSource,
+  waterBounds,
+  waterKey,
+  waterSourceBytes,
+  type WaterSource,
+  type WaterPatch,
+} from "./water";
+import {
   HOUSE_HEADER_BYTES,
   HOUSE_MAX_REGION_HEADERS,
   cloneHouseHeader,
@@ -75,6 +86,8 @@ export interface EditorDocumentOptions {
   landscapeEmpty?: boolean;
   /** Header absence is independent from both raster source families. */
   housesEmpty?: boolean;
+  /** Confirmed water sources have their own complete spatial reads. */
+  watersEmpty?: boolean;
   sequence?: number;
   maxSourceBytes?: number;
   maxPendingBytes?: number;
@@ -95,8 +108,8 @@ interface LandscapeEntry {
   localSequence: number;
 }
 
-interface HouseEntry {
-  header: HouseHeader | null;
+interface SpatialEntry<T> {
+  header: T | null;
   localSequence: number;
 }
 
@@ -379,18 +392,156 @@ function retainedPatchBytes(patches: readonly SourcePatch[]): number {
   return patches.reduce(
     (sum, patch) =>
       sum +
-      (Number(!!patch.before) + Number(!!patch.after)) *
-        (patch.kind === "height"
-          ? HEIGHT_TILE_BYTES
-          : patch.kind === "landscape"
-            ? LANDSCAPE_TILE_BYTES
-            : HOUSE_HEADER_BYTES),
+      (patch.kind === "water"
+        ? (patch.before ? waterSourceBytes(patch.before) : 0) +
+          (patch.after ? waterSourceBytes(patch.after) : 0)
+        : (Number(!!patch.before) + Number(!!patch.after)) *
+          (patch.kind === "height"
+            ? HEIGHT_TILE_BYTES
+            : patch.kind === "landscape"
+              ? LANDSCAPE_TILE_BYTES
+              : HOUSE_HEADER_BYTES)),
     0,
   );
 }
 
 function contained(a: Bounds, b: Bounds): boolean {
   return a[0] <= b[0] && a[1] <= b[1] && a[2] >= b[2] && a[3] >= b[3];
+}
+
+interface SpatialAuthorRules<T extends { id: string; revision: number }> {
+  limit: number;
+  key(id: string): string;
+  bounds(author: T): Bounds;
+  bytes(author: T): number;
+  validate(author: T): void;
+  same(a: T | null, b: T | null): boolean;
+  own(author: T): T;
+}
+
+const houseRules: SpatialAuthorRules<HouseHeader> = {
+  limit: HOUSE_MAX_REGION_HEADERS,
+  key: houseKey,
+  bounds: houseBounds,
+  bytes: () => HOUSE_HEADER_BYTES,
+  validate: validateHouseHeader,
+  same: (a, b) => sameHouseAuthors(a, b) && a?.revision === b?.revision,
+  own: (header) => Object.freeze(cloneHouseHeader(header)),
+};
+const waterRules: SpatialAuthorRules<WaterSource> = {
+  limit: WATER_MAX_REGION_SOURCES,
+  key: waterKey,
+  bounds: waterBounds,
+  bytes: waterSourceBytes,
+  validate: validateWaterSource,
+  same: sameWaterSource,
+  own: freezeWaterSource,
+};
+
+/** Common complete-query/absence plan; no source changes before all validation. */
+function spatialReadPlan<T extends { id: string; revision: number }>(
+  entries: ReadonlyMap<string, SpatialEntry<T>>,
+  bounds: Bounds,
+  authors: readonly T[],
+  sequence: number,
+  pinned: (key: string) => boolean,
+  rules: SpatialAuthorRules<T>,
+): { changes: [string, T | null][]; bytes: number } {
+  if (!Array.isArray(authors) || authors.length > rules.limit)
+    throw new RangeError("Die räumliche Antwort überschreitet ihr Budget.");
+  const received = new Map<string, T>();
+  for (const author of authors) {
+    rules.validate(author);
+    const key = rules.key(author.id);
+    if (!intersectsBounds(rules.bounds(author), bounds) || received.has(key))
+      throw new Error("Unvollständige oder unpassende räumliche Antwort.");
+    received.set(key, author);
+  }
+  const affected = new Set(received.keys());
+  for (const [key, entry] of entries)
+    if (entry.header && intersectsBounds(rules.bounds(entry.header), bounds))
+      affected.add(key);
+  const changes: [string, T | null][] = [];
+  let bytes = 0;
+  for (const key of affected) {
+    const prior = entries.get(key);
+    if (pinned(key) || (prior?.localSequence ?? 0) > sequence) continue;
+    const next = received.get(key) ?? null;
+    if (rules.same(prior?.header ?? null, next)) continue;
+    bytes +=
+      (next ? rules.bytes(next) : 0) -
+      (prior?.header ? rules.bytes(prior.header) : 0);
+    changes.push([key, next]);
+  }
+  return { changes, bytes };
+}
+
+function rememberSpatialCoverage(coverage: Bounds[], bounds: Bounds): boolean {
+  if (coverage.some((prior) => contained(prior, bounds))) return false;
+  const retained = coverage.filter((prior) => !contained(bounds, prior));
+  coverage.splice(0, coverage.length, ...retained, [...bounds]);
+  if (coverage.length > 256) coverage.shift();
+  return true;
+}
+
+function spatialRegionReady(
+  coverage: readonly Bounds[],
+  bounds: Bounds,
+): boolean {
+  assertBounds(bounds);
+  let remaining: Bounds[] = [bounds];
+  for (const part of coverage) {
+    if (contained(part, bounds)) return true;
+    remaining = remaining.flatMap((area) => subtract(area, part));
+    if (!remaining.length) return true;
+  }
+  return false;
+}
+
+function clipSpatialCoverage(
+  coverage: readonly Bounds[],
+  needs: readonly Bounds[],
+): Bounds[] {
+  const result: Bounds[] = [];
+  for (const part of coverage)
+    for (const need of needs) {
+      const bounds: Bounds = [
+        Math.max(part[0], need[0]),
+        Math.max(part[1], need[1]),
+        Math.min(part[2], need[2]),
+        Math.min(part[3], need[3]),
+      ];
+      if (bounds[0] < bounds[2] && bounds[1] < bounds[3])
+        rememberSpatialCoverage(result, bounds);
+    }
+  return result;
+}
+
+function sameSpatialCoverage(
+  a: readonly Bounds[],
+  b: readonly Bounds[],
+): boolean {
+  return (
+    a.length === b.length &&
+    a.every((bounds, index) => bounds.every((n, axis) => n === b[index][axis]))
+  );
+}
+
+function spatialAuthors<T extends { id: string; revision: number }>(
+  entries: ReadonlyMap<string, SpatialEntry<T>>,
+  bounds: Bounds,
+  rules: SpatialAuthorRules<T>,
+): T[] {
+  const authors: T[] = [];
+  for (const { header } of entries.values()) {
+    if (!header || !intersectsBounds(rules.bounds(header), bounds)) continue;
+    if (authors.length === rules.limit)
+      throw new RangeError(
+        "Der Bereich überschreitet sein Darstellungsbudget; näher heranzoomen.",
+      );
+    authors.push(header);
+  }
+  return authors.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 /** Subtract a closed rectangle's interior; no false coverage across an L-shaped hole. */
@@ -415,17 +566,23 @@ export class EditorDocument {
   generation = 0;
   /** Header presentation identity; terrain changes never rebuild roof geometry. */
   houseGeneration = 0;
+  waterGeneration = 0;
   sequence: number;
   persistedSequence: number;
   private readonly options: Required<
-    Omit<EditorDocumentOptions, "empty" | "landscapeEmpty" | "housesEmpty">
+    Omit<
+      EditorDocumentOptions,
+      "empty" | "landscapeEmpty" | "housesEmpty" | "watersEmpty"
+    >
   >;
   private readonly entries = new Map<string, Entry>();
   private readonly landscapeEntries = new Map<string, LandscapeEntry>();
-  private readonly houseEntries = new Map<string, HouseEntry>();
+  private readonly houseEntries = new Map<string, SpatialEntry<HouseHeader>>();
+  private readonly waterEntries = new Map<string, SpatialEntry<WaterSource>>();
   private coverage: SourceNeed[] = [];
   private landscapeCoverage: SourceNeed[] = [];
   private houseCoverage: Bounds[] = [];
+  private waterCoverage: Bounds[] = [];
   private gesture: Gesture | null = null;
   private landscapeGesture: LandscapeGesture | null = null;
   private houseGesture: HouseGesture | null = null;
@@ -440,6 +597,7 @@ export class EditorDocument {
   private sourceBytes = 0;
   private landscapeSourceBytes = 0;
   private houseSourceBytes = 0;
+  private waterSourceBytes = 0;
   private historyBytes = 0;
   private pendingBytes = 0;
 
@@ -476,6 +634,13 @@ export class EditorDocument {
       });
     if (options.housesEmpty)
       this.houseCoverage.push([
+        -WORLD_LIMIT,
+        -WORLD_LIMIT,
+        WORLD_LIMIT,
+        WORLD_LIMIT,
+      ]);
+    if (options.watersEmpty)
+      this.waterCoverage.push([
         -WORLD_LIMIT,
         -WORLD_LIMIT,
         WORLD_LIMIT,
@@ -588,6 +753,7 @@ export class EditorDocument {
       sourceBytes: this.sourceBytes,
       landscapeSourceBytes: this.landscapeSourceBytes,
       houseSourceBytes: this.houseSourceBytes,
+      waterSourceBytes: this.waterSourceBytes,
       historyBytes: this.historyBytes,
       pendingBytes: this.pendingBytes,
       gestureBeforeBytes:
@@ -598,16 +764,26 @@ export class EditorDocument {
         this.gesture?.cellCount ?? this.landscapeGesture?.cellCount ?? 0,
       historyActions: this.history.length,
       readyTiles:
-        (this.sourceBytes - this.landscapeSourceBytes - this.houseSourceBytes) /
+        (this.sourceBytes -
+          this.landscapeSourceBytes -
+          this.houseSourceBytes -
+          this.waterSourceBytes) /
         HEIGHT_TILE_BYTES,
       landscapeReadyTiles: this.landscapeSourceBytes / LANDSCAPE_TILE_BYTES,
       readyHouses: this.houseSourceBytes / HOUSE_HEADER_BYTES,
+      readyWaters: [...this.waterEntries.values()].filter(
+        (entry) => entry.header,
+      ).length,
       sourceEntries:
-        this.entries.size + this.landscapeEntries.size + this.houseEntries.size,
+        this.entries.size +
+        this.landscapeEntries.size +
+        this.houseEntries.size +
+        this.waterEntries.size,
       coverageRegions:
         this.coverage.length +
         this.landscapeCoverage.length +
-        this.houseCoverage.length,
+        this.houseCoverage.length +
+        this.waterCoverage.length,
     };
   }
 
@@ -649,99 +825,78 @@ export class EditorDocument {
     storeSequence = this.persistedSequence,
     sessionId = this.sessionId,
   ): void {
+    const result = this.acceptSpatialCoverage(
+      this.houseEntries,
+      this.houseCoverage,
+      houseRules,
+      bounds,
+      headers,
+      storeSequence,
+      sessionId,
+      (key) => this.houseGesture?.key === key,
+    );
+    this.houseSourceBytes += result.bytes;
+    if (result.changed) this.houseGeneration++;
+  }
+
+  private acceptSpatialCoverage<T extends { id: string; revision: number }>(
+    entries: Map<string, SpatialEntry<T>>,
+    coverage: Bounds[],
+    rules: SpatialAuthorRules<T>,
+    bounds: Bounds,
+    authors: readonly T[],
+    sequence: number,
+    sessionId: string,
+    pinned: (key: string) => boolean,
+  ): { bytes: number; changed: boolean } {
     assertBounds(bounds);
     if (bounds[0] === bounds[2] || bounds[1] === bounds[3])
-      throw new RangeError("Ein Hausbereich benötigt eine positive Fläche.");
+      throw new RangeError("Ein Quellenbereich benötigt eine positive Fläche.");
     if (this.invalidationError) throw this.invalidationError;
     if (sessionId !== this.sessionId)
-      throw new Error("Hausdaten gehören zu einer anderen Sitzung.");
+      throw new Error("Quellen gehören zu einer anderen Sitzung.");
     if (
-      !Number.isSafeInteger(storeSequence) ||
-      storeSequence < 0 ||
-      storeSequence > this.sequence
+      !Number.isSafeInteger(sequence) ||
+      sequence < 0 ||
+      sequence > this.sequence
     )
       throw new Error("Ungültige Lesesequenz der Arbeitskopie.");
-    if (storeSequence < this.persistedSequence) return;
-    if (!Array.isArray(headers) || headers.length > HOUSE_MAX_REGION_HEADERS)
-      throw new RangeError(
-        "Die räumliche Hausantwort überschreitet ihr Budget.",
-      );
-    const received = new Map<string, HouseHeader>();
-    for (const header of headers) {
-      validateHouseHeader(header);
-      const key = houseKey(header.id);
-      if (!intersectsBounds(houseBounds(header), bounds) || received.has(key))
-        throw new Error(
-          "Unvollständige oder unpassende räumliche Hausantwort.",
-        );
-      received.set(key, header);
-    }
-    const affected = new Set(received.keys());
-    for (const [key, entry] of this.houseEntries)
-      if (entry.header && intersectsBounds(houseBounds(entry.header), bounds))
-        affected.add(key);
-    const changes: [string, HouseHeader | null][] = [];
-    let nextBytes = this.sourceBytes;
-    for (const key of affected) {
-      const prior = this.houseEntries.get(key);
-      // A read from before a move can contain its old position or omit its new
-      // one. The same local sequence marker protects both spatial directions.
-      if (
-        this.houseGesture?.key === key ||
-        (prior?.localSequence ?? 0) > storeSequence
-      )
-        continue;
-      const next = received.get(key) ?? null;
-      if (
-        sameHouseAuthors(prior?.header ?? null, next) &&
-        prior?.header?.revision === next?.revision
-      )
-        continue;
-      nextBytes +=
-        (Number(!!next) - Number(!!prior?.header)) * HOUSE_HEADER_BYTES;
-      changes.push([key, next]);
-    }
-    if (nextBytes + this.reservedSourceBytes() > this.options.maxSourceBytes)
+    if (sequence < this.persistedSequence) return { bytes: 0, changed: false };
+    const plan = spatialReadPlan(
+      entries,
+      bounds,
+      authors,
+      sequence,
+      pinned,
+      rules,
+    );
+    if (
+      this.sourceBytes + plan.bytes + this.reservedSourceBytes() >
+      this.options.maxSourceBytes
+    )
       throw new RangeError(
         "Aktive Quellen überschreiten das Speicherbudget; bestätigte Quellen zuerst verdrängen.",
       );
-    for (const [key, header] of changes) {
-      const localSequence = this.houseEntries.get(key)?.localSequence ?? 0;
-      if (header) {
-        this.houseEntries.set(key, {
-          header: Object.freeze(cloneHouseHeader(header)),
-          localSequence,
-        });
-        this.revision = Math.max(this.revision, header.revision);
-      } else this.houseEntries.delete(key);
-    }
-    this.houseSourceBytes += nextBytes - this.sourceBytes;
-    this.sourceBytes = nextBytes;
-    const coverageChanged = this.rememberHouseCoverage(bounds);
-    if (changes.length || coverageChanged) this.houseGeneration++;
-    this.generation++;
-  }
-
-  private rememberHouseCoverage(bounds: Bounds): boolean {
-    if (this.houseCoverage.some((prior) => contained(prior, bounds)))
-      return false;
-    this.houseCoverage = this.houseCoverage.filter(
-      (prior) => !contained(bounds, prior),
+    // Own all new data before publishing any entry, including deep water geometry.
+    const changes = plan.changes.map(
+      ([key, author]) => [key, author && rules.own(author)] as const,
     );
-    this.houseCoverage.push([...bounds]);
-    if (this.houseCoverage.length > 256) this.houseCoverage.shift();
-    return true;
+    for (const [key, header] of changes) {
+      const localSequence = entries.get(key)?.localSequence ?? 0;
+      if (header) {
+        entries.set(key, { header, localSequence });
+        this.revision = Math.max(this.revision, header.revision);
+      } else entries.delete(key);
+    }
+    this.sourceBytes += plan.bytes;
+    const changed =
+      rememberSpatialCoverage(coverage, bounds) || changes.length > 0;
+    this.generation++;
+    return { bytes: plan.bytes, changed };
   }
 
   isHouseRegionReady(bounds: Bounds): boolean {
-    assertBounds(bounds);
-    let remaining: Bounds[] = [bounds];
-    for (const coverage of this.houseCoverage) {
-      if (contained(coverage, bounds)) return true;
-      remaining = remaining.flatMap((area) => subtract(area, coverage));
-      if (!remaining.length) return true;
-    }
-    return false;
+    return spatialRegionReady(this.houseCoverage, bounds);
   }
 
   /** Bounded resident headers only; a missing spatial proof remains unknown. */
@@ -750,74 +905,202 @@ export class EditorDocument {
       throw new Error(
         "Die benötigten lokalen Hausdaten sind noch nicht geladen.",
       );
-    const headers: HouseHeader[] = [];
-    for (const { header } of this.houseEntries.values())
-      if (header && intersectsBounds(houseBounds(header), bounds)) {
-        if (headers.length === HOUSE_MAX_REGION_HEADERS)
-          throw new RangeError(
-            "Der Hausbereich überschreitet sein Darstellungsbudget; näher heranzoomen.",
-          );
-        headers.push(header);
-      }
-    // IDs use ASCII only. This order is independent of read arrival or locale,
-    // so roof stacking and reversed hit testing survive cold loads and Reopen.
-    return headers.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return spatialAuthors(this.houseEntries, bounds, houseRules);
   }
 
-  retainHouseSources(needs: readonly Bounds[]): string[] {
+  private retainSpatialSources<T extends { id: string; revision: number }>(
+    entries: Map<string, SpatialEntry<T>>,
+    coverage: Bounds[],
+    rules: SpatialAuthorRules<T>,
+    needs: readonly Bounds[],
+    pinned: (key: string) => boolean,
+    extra: readonly Bounds[] = [],
+  ): {
+    coverage: Bounds[];
+    removed: string[];
+    bytes: number;
+    changed: boolean;
+  } {
     if (needs.length > 2)
       throw new RangeError(
         "Höchstens Darstellungs- und Werkzeugbedarf halten.",
       );
     needs.forEach(assertBounds);
-    const retained = [...needs];
-    const gesture = this.houseGesture;
-    if (gesture?.before) retained.push(houseBounds(gesture.before));
-    const live = gesture && this.houseEntries.get(gesture.key)?.header;
-    if (live) retained.push(houseBounds(live));
-    const clipped: Bounds[] = [];
-    for (const coverage of this.houseCoverage)
-      for (const need of retained) {
-        const bounds: Bounds = [
-          Math.max(coverage[0], need[0]),
-          Math.max(coverage[1], need[1]),
-          Math.min(coverage[2], need[2]),
-          Math.min(coverage[3], need[3]),
-        ];
-        if (bounds[0] < bounds[2] && bounds[1] < bounds[3])
-          clipped.push(bounds);
-      }
-    const previousCoverage = this.houseCoverage;
-    this.houseCoverage = [];
-    for (const bounds of clipped) this.rememberHouseCoverage(bounds);
+    const retained = [...needs, ...extra];
+    const nextCoverage = clipSpatialCoverage(coverage, retained);
     const removed: string[] = [];
-    for (const [key, entry] of this.houseEntries) {
-      if (entry.localSequence > this.persistedSequence || gesture?.key === key)
-        continue;
+    let bytes = 0;
+    for (const [key, entry] of entries) {
+      if (entry.localSequence > this.persistedSequence || pinned(key)) continue;
       if (
         entry.header &&
         retained.some((bounds) =>
-          intersectsBounds(houseBounds(entry.header!), bounds),
+          intersectsBounds(rules.bounds(entry.header!), bounds),
         )
       )
         continue;
-      this.houseEntries.delete(key);
+      entries.delete(key);
       if (entry.header) {
-        this.sourceBytes -= HOUSE_HEADER_BYTES;
-        this.houseSourceBytes -= HOUSE_HEADER_BYTES;
+        bytes -= rules.bytes(entry.header);
         removed.push(key);
       }
     }
-    const coverageChanged =
-      previousCoverage.length !== this.houseCoverage.length ||
-      previousCoverage.some((bounds, index) =>
-        bounds.some(
-          (value, axis) => value !== this.houseCoverage[index]?.[axis],
-        ),
-      );
-    if (removed.length || coverageChanged) this.houseGeneration++;
+    this.sourceBytes += bytes;
     this.generation++;
-    return removed;
+    return {
+      coverage: nextCoverage,
+      removed,
+      bytes,
+      changed:
+        removed.length > 0 || !sameSpatialCoverage(coverage, nextCoverage),
+    };
+  }
+
+  retainHouseSources(needs: readonly Bounds[]): string[] {
+    const gesture = this.houseGesture;
+    const extra: Bounds[] = [];
+    if (gesture?.before) extra.push(houseBounds(gesture.before));
+    const live = gesture && this.houseEntries.get(gesture.key)?.header;
+    if (live) extra.push(houseBounds(live));
+    const result = this.retainSpatialSources(
+      this.houseEntries,
+      this.houseCoverage,
+      houseRules,
+      needs,
+      (key) => gesture?.key === key,
+      extra,
+    );
+    this.houseCoverage = result.coverage;
+    this.houseSourceBytes += result.bytes;
+    if (result.changed) this.houseGeneration++;
+    return result.removed;
+  }
+
+  water(id: string): WaterSource | null {
+    return this.waterEntries.get(waterKey(id))?.header ?? null;
+  }
+
+  acceptWaterCoverage(
+    bounds: Bounds,
+    sources: readonly WaterSource[],
+    storeSequence = this.persistedSequence,
+    sessionId = this.sessionId,
+  ): void {
+    const result = this.acceptSpatialCoverage(
+      this.waterEntries,
+      this.waterCoverage,
+      waterRules,
+      bounds,
+      sources,
+      storeSequence,
+      sessionId,
+      () => false,
+    );
+    this.waterSourceBytes += result.bytes;
+    if (result.changed) this.waterGeneration++;
+  }
+
+  isWaterRegionReady(bounds: Bounds): boolean {
+    return spatialRegionReady(this.waterCoverage, bounds);
+  }
+
+  waterSourcesInBounds(bounds: Bounds): readonly WaterSource[] {
+    if (!this.isWaterRegionReady(bounds))
+      throw new Error(
+        "Die benötigten lokalen Gewässerdaten sind noch nicht geladen.",
+      );
+    return spatialAuthors(this.waterEntries, bounds, waterRules);
+  }
+
+  retainWaterSources(needs: readonly Bounds[]): string[] {
+    const result = this.retainSpatialSources(
+      this.waterEntries,
+      this.waterCoverage,
+      waterRules,
+      needs,
+      () => false,
+    );
+    this.waterCoverage = result.coverage;
+    this.waterSourceBytes += result.bytes;
+    if (result.changed) this.waterGeneration++;
+    return result.removed;
+  }
+
+  /** Atomic confirmed-source action, using the existing journal and history. */
+  applyWaterSources(
+    changes: readonly { id: string; after: WaterSource | null }[],
+    label = "Gewässer ändern",
+  ): ChangeSet | null {
+    if (this.invalidationError) throw this.invalidationError;
+    if (this.active) throw new Error("Eine andere Aktion ist bereits aktiv.");
+    if (!Array.isArray(changes) || changes.length > WATER_MAX_REGION_SOURCES)
+      throw new RangeError("Die Gewässeraktion überschreitet ihr Budget.");
+    const seen = new Set<string>();
+    const revision = this.revision + 1;
+    const patches: WaterPatch[] = [];
+    const dirty: Bounds[] = [];
+    let nextBytes = this.sourceBytes;
+    for (const change of changes) {
+      const key = waterKey(change.id);
+      if (seen.has(key))
+        throw new RangeError("Doppelte Gewässeridentität in einer Aktion.");
+      seen.add(key);
+      const before = this.waterEntries.get(key)?.header ?? null;
+      if (change.after) {
+        validateWaterSource(change.after);
+        if (change.after.id !== change.id)
+          throw new RangeError("Gewässeridentität stimmt nicht überein.");
+      }
+      if (!before && !change.after) continue;
+      const after = change.after && { ...change.after, revision };
+      // Runtime author revisions do not turn an identical confirmed source into an edit.
+      if (
+        before &&
+        after &&
+        sameWaterSource(before, { ...after, revision: before.revision })
+      )
+        continue;
+      for (const source of [before, after])
+        if (source) {
+          const bounds = waterBounds(source);
+          if (!this.isWaterRegionReady(bounds))
+            throw new Error(
+              "Die benötigten lokalen Gewässerdaten sind noch nicht geladen.",
+            );
+          dirty.push(bounds);
+        }
+      nextBytes +=
+        (after ? waterSourceBytes(after) : 0) -
+        (before ? waterSourceBytes(before) : 0);
+      patches.push({ key, before, after: after && freezeWaterSource(after) });
+    }
+    if (!patches.length) return null;
+    const authored: SourcePatch[] = patches.map((patch) => ({
+      kind: "water",
+      ...patch,
+    }));
+    const bytes = retainedPatchBytes(authored);
+    if (nextBytes > this.options.maxSourceBytes)
+      throw new RangeError("Aktive Quellen überschreiten das Speicherbudget.");
+    if (bytes > this.options.maxHistoryBytes)
+      throw new RangeError(
+        "Die Gewässeraktion überschreitet das Historybudget.",
+      );
+    if (this.pendingBytes + bytes > this.options.maxPendingBytes)
+      throw new RangeError(
+        "Die Arbeitskopie muss vorhandene Änderungen zuerst sichern.",
+      );
+    for (const patch of patches)
+      this.waterEntries.set(patch.key, {
+        header: patch.after,
+        localSequence: this.sequence + 1,
+      });
+    this.waterSourceBytes += nextBytes - this.sourceBytes;
+    this.sourceBytes = nextBytes;
+    this.revision = revision;
+    this.generation++;
+    this.waterGeneration++;
+    return this.recordHistory(label, authored, dirty);
   }
 
   /** A string edits a loaded ID; a fresh header creates a placement preview. */
@@ -1388,8 +1671,14 @@ export class EditorDocument {
   snapshot(
     bounds: Bounds,
     levels: readonly number[] = HEIGHT_LEVELS,
+    maxBytes = Infinity,
   ): HeightSnapshot {
     if (!this.isReady(bounds, levels)) throw new SourcesNotReadyError(bounds);
+    if (
+      maxBytes !== Infinity &&
+      (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
+    )
+      throw new RangeError("Ungültiges Höhen-Snapshotbudget.");
     const selected = new Set(levels);
     const tiles: HeightTile[] = [];
     for (const entry of this.entries.values())
@@ -1397,8 +1686,13 @@ export class EditorDocument {
         entry.tile &&
         selected.has(entry.tile.level) &&
         intersectsBounds(heightTileSupport(entry.tile), bounds)
-      )
-        tiles.push(cloneHeightTile(entry.tile));
+      ) {
+        if ((tiles.length + 1) * HEIGHT_TILE_BYTES > maxBytes)
+          throw new RangeError(
+            "Die lokale Höhenmomentaufnahme überschreitet ihr Speicherbudget.",
+          );
+        tiles.push(entry.tile);
+      }
     return {
       sessionId: this.sessionId,
       generation: this.generation,
@@ -1406,7 +1700,7 @@ export class EditorDocument {
       sequence: this.sequence,
       bounds: [...bounds],
       levels: [...levels],
-      tiles,
+      tiles: tiles.map(cloneHeightTile),
     };
   }
 
@@ -2363,6 +2657,18 @@ export class EditorDocument {
       );
     const revision = this.revision + 1;
     const patches = action.patches.map((patch): SourcePatch => {
+      if (patch.kind === "water") {
+        const expected = forward ? patch.before : patch.after;
+        const entry = this.waterEntries.get(patch.key);
+        if (entry && !sameWaterSource(entry.header, expected))
+          throw new Error("History passt nicht zum aktuellen Gewässerstand.");
+        return {
+          kind: "water",
+          key: patch.key,
+          before: expected,
+          after: forward ? patch.after : patch.before,
+        };
+      }
       if (patch.kind === "house") {
         const expected = forward ? patch.before : patch.after;
         const entry = this.houseEntries.get(patch.key);
@@ -2413,20 +2719,25 @@ export class EditorDocument {
       patches.reduce(
         (sum, p) =>
           sum +
-          (Number(!!p.after) -
-            Number(
-              p.kind === "house"
-                ? !!this.houseEntries.get(p.key)?.header
-                : (p.kind === "height"
-                    ? this.entries
-                    : this.landscapeEntries
-                  ).get(p.key)?.state === "ready",
-            )) *
-            (p.kind === "height"
-              ? HEIGHT_TILE_BYTES
-              : p.kind === "landscape"
-                ? LANDSCAPE_TILE_BYTES
-                : HOUSE_HEADER_BYTES),
+          (p.kind === "water"
+            ? (p.after ? waterSourceBytes(p.after) : 0) -
+              (this.waterEntries.get(p.key)?.header
+                ? waterSourceBytes(this.waterEntries.get(p.key)!.header!)
+                : 0)
+            : (Number(!!p.after) -
+                Number(
+                  p.kind === "house"
+                    ? !!this.houseEntries.get(p.key)?.header
+                    : (p.kind === "height"
+                        ? this.entries
+                        : this.landscapeEntries
+                      ).get(p.key)?.state === "ready",
+                )) *
+              (p.kind === "height"
+                ? HEIGHT_TILE_BYTES
+                : p.kind === "landscape"
+                  ? LANDSCAPE_TILE_BYTES
+                  : HOUSE_HEADER_BYTES)),
         0,
       );
     if (nextSourceBytes > this.options.maxSourceBytes)
@@ -2434,7 +2745,16 @@ export class EditorDocument {
         "History benötigt mehr aktive Quellen als das Speicherbudget erlaubt.",
       );
     for (const patch of patches) {
-      if (patch.kind === "house") {
+      if (patch.kind === "water") {
+        const current = this.waterEntries.get(patch.key)?.header;
+        this.waterSourceBytes +=
+          (patch.after ? waterSourceBytes(patch.after) : 0) -
+          (current ? waterSourceBytes(current) : 0);
+        this.waterEntries.set(patch.key, {
+          header: patch.after && freezeWaterSource(patch.after),
+          localSequence: this.sequence + 1,
+        });
+      } else if (patch.kind === "house") {
         this.houseSourceBytes +=
           (Number(!!patch.after) -
             Number(!!this.houseEntries.get(patch.key)?.header)) *
@@ -2475,6 +2795,7 @@ export class EditorDocument {
     this.revision = revision;
     this.generation++;
     if (patches.some((patch) => patch.kind === "house")) this.houseGeneration++;
+    if (patches.some((patch) => patch.kind === "water")) this.waterGeneration++;
     return this.commit(
       `${forward ? "Wiederholen" : "Rückgängig"}: ${action.label}`,
       patches,
@@ -2516,6 +2837,9 @@ export class EditorDocument {
         this.houseGesture?.key !== key
       )
         this.houseEntries.delete(key);
+    for (const [key, entry] of this.waterEntries)
+      if (!entry.header && entry.localSequence <= sequence)
+        this.waterEntries.delete(key);
   }
 
   /** Overlay only changes absent from this store read, then the current live action.

@@ -37,6 +37,7 @@ export function rasterize(
   rect: RasterRect,
   fineHeights?: Float64Array,
   land?: Uint8Array,
+  heightPairs?: Float32Array,
 ): Uint8Array {
   const [x0, y0, x1, y1] = rect;
   const width = x1 - x0,
@@ -48,6 +49,10 @@ export function rasterize(
     throw new Error("Unvollständige numerische Höhenübersicht.");
   if (land && land.length !== width * height)
     throw new Error("Unvollständige Landmaske für das Darstellungsraster.");
+  if (heightPairs && heightPairs.length !== width * height * 2)
+    throw new Error(
+      "Unvollständige numerische Höhenpaare für das Darstellungsraster.",
+    );
   const stepX = (bounds[2] - bounds[0]) / size;
   const stepY = (bounds[3] - bounds[1]) / size;
   for (let row = 0; row < height; row++) {
@@ -60,9 +65,15 @@ export function rasterize(
       // tile's sample spacing to fit its clipped drawable/query bounds.
       if (Math.abs(x) > WORLD_LIMIT || Math.abs(y) > WORLD_LIMIT) continue;
       const fine = fineHeights?.[(y0 + row) * size + x0 + column] ?? 0;
-      const height = stabilizeDisplayHeight(
-        heightFromScaledSum(scaledHeights[row * width + column] + fine),
+      const exactHeight = heightFromScaledSum(
+        scaledHeights[row * width + column] + fine,
       );
+      if (heightPairs) {
+        const index = (row * width + column) * 2;
+        heightPairs[index] = Math.fround(exactHeight);
+        heightPairs[index + 1] = Math.fround(exactHeight - heightPairs[index]);
+      }
+      const height = stabilizeDisplayHeight(exactHeight);
       writeColour(height, pixels, i);
       if (land) land[row * width + column] = height >= 0 ? 255 : 0;
       pixels[i + 3] = 255;

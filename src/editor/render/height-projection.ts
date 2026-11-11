@@ -7,11 +7,14 @@ export interface HeightProjectionInput {
   readonly overview?: Float64Array;
   readonly bounds: Bounds;
   readonly size: number;
+  /** Optional absolute high/low pairs for the shared derived-surface colour pass. */
+  readonly includeHeights?: boolean;
 }
 
 export interface HeightProjectionResult {
   pixels: Uint8Array;
   land: Uint8Array;
+  heights?: Float32Array;
   samples: number;
   maxChunkMs: number;
 }
@@ -29,6 +32,7 @@ export type HeightProjectionRequest = ProjectionIdentity &
         size: number;
         sourceCount: number;
         hasOverview: boolean;
+        includeHeights?: boolean;
       }
     | { kind: "source"; source: HeightTile }
     | { kind: "overview"; offset: number; values: Float64Array }
@@ -100,6 +104,9 @@ export async function projectHeightPixels(
   const grid = next.value;
   const pixels = new Uint8Array(size * size * 4);
   const land = new Uint8Array(size * size);
+  const heightPairs = input.includeHeights
+    ? new Float32Array(size * size * 2)
+    : undefined;
   for (let row = 0; row < size; row++) {
     if (execution.cancelled()) return null;
     const rect: [number, number, number, number] = [0, row, size, row + 1];
@@ -112,11 +119,18 @@ export async function projectHeightPixels(
         rect,
         overview,
         land.subarray(row * size, (row + 1) * size),
+        heightPairs?.subarray(row * size * 2, (row + 1) * size * 2),
       ),
       row * size * 4,
     );
     if (await yieldIfNeeded()) return null;
   }
   maxChunkMs = Math.max(maxChunkMs, execution.now() - chunkStarted);
-  return { pixels, land, samples: size * size, maxChunkMs };
+  return {
+    pixels,
+    land,
+    ...(heightPairs ? { heights: heightPairs } : {}),
+    samples: size * size,
+    maxChunkMs,
+  };
 }

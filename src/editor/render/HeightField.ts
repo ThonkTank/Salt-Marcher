@@ -45,6 +45,7 @@ import {
   heightVertex,
 } from "./height-shader";
 import type { LandscapeFrame } from "./LandscapeView";
+import type { SurfaceFrame } from "./DerivedSurfaceView";
 import { HeightAtlasSource } from "./height-atlas-upload";
 import { DISPLAY_HEIGHT_BOUNDARY_EPSILON } from "./raster";
 import {
@@ -67,6 +68,7 @@ export const MAX_HEIGHT_BASIS_TRANSFERS = 32;
 const PAIR_PROJECTION_ERROR = 256 * 2 ** -48;
 const PAIR_ADD_ERROR = 8 * 2 ** -48;
 const ANCHOR_ERROR_BUDGET = DISPLAY_HEIGHT_BOUNDARY_EPSILON / 4;
+const MAX_SURFACE_BYTES = SIZE * SIZE * 16 * 8 + (512 + 64) * 12 * 4;
 
 export interface HeightCompositionStats {
   canonicalSamples: number;
@@ -313,6 +315,25 @@ export class HeightFieldTile {
     alphaMode: "no-premultiply-alpha",
     autoGarbageCollect: false,
   });
+  private fallbackHeightSource = numericSource(new Float32Array(2), 1, 1);
+  private surfaceLakeSource = numericSource(new Float32Array(4), 1, 1, true);
+  private surfaceRiverSource = numericSource(new Float32Array(4), 1, 1, true);
+  private surfaceFoundationSource = numericSource(
+    new Float32Array(4),
+    1,
+    1,
+    true,
+  );
+  private surfaceFrame: SurfaceFrame | null = null;
+  private surfaceEncoded: SurfaceFrame | null = null;
+  private surfaceLakeDirty = true;
+  private surfaceRiverDirty = true;
+  private surfaceFoundationDirty = true;
+  private surfaceColourDirty = false;
+  private fallbackHeightDirty = true;
+  private lakeLayers = 0;
+  private riverCount = 0;
+  private foundationCount = 0;
   private landscapeFrame: LandscapeFrame | null = null;
   private landscapeEncoded: LandscapeFrame | null = null;
   private landscapeDirty = true;
@@ -468,9 +489,18 @@ export class HeightFieldTile {
         uFallbackPixels: this.fallbackSource,
         uFallbackLand: this.fallbackLandSource,
         uLandscape: this.landscapeSource,
+        uFallbackHeights: this.fallbackHeightSource,
+        uSurfaceLake: this.surfaceLakeSource,
+        uSurfaceRivers: this.surfaceRiverSource,
+        uSurfaceFoundations: this.surfaceFoundationSource,
         heightUniforms: {
           uHasLandscape: { value: 0, type: "i32" },
           uFallback: { value: 0, type: "i32" },
+          uHasSurface: { value: 0, type: "i32" },
+          uLakeLayers: { value: 0, type: "i32" },
+          uRiverCount: { value: 0, type: "i32" },
+          uFoundationCount: { value: 0, type: "i32" },
+          uTileSpan: { value: bounds[2] - bounds[0], type: "f32" },
           uClip: { value: new Float32Array(WHOLE), type: "vec4<f32>" },
         },
       },
@@ -498,6 +528,27 @@ export class HeightFieldTile {
 
   setLandscape(frame: LandscapeFrame | null): void {
     this.landscapeFrame = frame;
+  }
+
+  setSurface(frame: SurfaceFrame | null): void {
+    if (
+      frame &&
+      (!Number.isSafeInteger(frame.bytes) ||
+        frame.bytes < 0 ||
+        frame.bytes > MAX_SURFACE_BYTES)
+    )
+      throw new Error(
+        "Ungültiges Speicherbudget für die lokale Gewässer- und Fundamentdarstellung.",
+      );
+    this.surfaceFrame = frame;
+  }
+
+  private get surfacePreparationBytes(): number {
+    // Encoded frame plus the optional worker's absolute-pair image and small
+    // dummy textures. Existing resources remain independently accounted below.
+    return this.surfaceFrame
+      ? this.surfaceFrame.bytes + SIZE * SIZE * 8 + 4096
+      : 0;
   }
 
   sampleLandscape(point: Point): LandscapeWeights {
@@ -639,7 +690,8 @@ export class HeightFieldTile {
     }
     if (this.preparation) {
       this.preparationReservedBytes =
-        (512 + (this.landscapeFrame ? 256 : 0)) * 1024;
+        (512 + (this.landscapeFrame ? 256 : 0)) * 1024 +
+        this.surfacePreparationBytes;
       if (!this.preparation.next().done) return true;
       this.preparation = null;
       this.preparationReservedBytes = 0;
@@ -696,6 +748,8 @@ export class HeightFieldTile {
     return [
       ...(this.landscapeFrame?.buffers ?? []),
       ...(this.landscapeEncoded?.buffers ?? []),
+      ...(this.surfaceFrame?.buffers ?? []),
+      ...(this.surfaceEncoded?.buffers ?? []),
       ...(this.overview ? [this.overview.values.buffer] : []),
       ...(this.projectionInput?.sources.map((source) => source.values.buffer) ??
         []),
@@ -720,6 +774,7 @@ export class HeightFieldTile {
         : 0;
     const dataBytes =
       (512 + (this.landscapeFrame ? 256 : 0)) * 1024 +
+      this.surfacePreparationBytes +
       this.field.atlas.nextPageAllocationBytes;
     const cpuBytes = dataBytes - this.preparationReservedBytes + workerBytes;
     const horizontalBytes = SIZE * (2 * 16 * 64 + 22 * 4) * 8;
@@ -738,6 +793,92 @@ export class HeightFieldTile {
     forceOverview: boolean,
     rect: RasterRect,
   ): Generator<void, void, void> {
+    if (this.surfaceFrame !== this.surfaceEncoded) {
+      this.preparationPhase = "surface";
+      const frame = this.surfaceFrame;
+      const data = frame ? yield* frame.prepare() : null;
+      if (
+        data &&
+        (!Number.isInteger(data.lakeLayers) ||
+          data.lakeLayers < 0 ||
+          data.lakeLayers > 8 ||
+          (data.lakeLayers === 0
+            ? data.lake !== null
+            : !(data.lake instanceof Float32Array) ||
+              data.lake.length !== SIZE * SIZE * 4 * data.lakeLayers) ||
+          !(data.rivers instanceof Float32Array) ||
+          data.rivers.length % 12 !== 0 ||
+          data.rivers.length > 512 * 12 ||
+          !(data.foundations instanceof Float32Array) ||
+          data.foundations.length % 12 !== 0 ||
+          data.foundations.length > 64 * 12)
+      )
+        throw new Error(
+          "Ungültige oder zu große lokale Gewässer- und Fundamentdarstellung.",
+        );
+      if (
+        data &&
+        (data.lake?.byteLength ?? 0) +
+          data.rivers.byteLength +
+          data.foundations.byteLength >
+          frame!.bytes
+      )
+        throw new Error(
+          "Die lokale Gewässerdarstellung überschreitet ihr reserviertes Speicherbudget.",
+        );
+      for (const values of [data?.lake, data?.rivers, data?.foundations])
+        if (values) {
+          for (let from = 0; from < values.length; from += 4096) {
+            for (let i = from; i < Math.min(values.length, from + 4096); i++)
+              if (!Number.isFinite(values[i]))
+                throw new Error(
+                  "Nichtendliche lokale Gewässer- oder Fundamentdarstellung.",
+                );
+            yield;
+          }
+        }
+      this.lakeLayers = data?.lakeLayers ?? 0;
+      this.riverCount = (data?.rivers.length ?? 0) / 12;
+      this.foundationCount = (data?.foundations.length ?? 0) / 12;
+      this.surfaceLakeSource.resource = data?.lake ?? new Float32Array(4);
+      this.surfaceRiverSource.resource = this.riverCount
+        ? data!.rivers
+        : new Float32Array(4);
+      this.surfaceFoundationSource.resource = this.foundationCount
+        ? data!.foundations
+        : new Float32Array(4);
+      this.stageSource(
+        this.surfaceLakeSource,
+        data?.lake ? SIZE : 1,
+        data?.lake ? SIZE * data.lakeLayers : 1,
+      );
+      this.stageSource(
+        this.surfaceRiverSource,
+        this.riverCount ? 3 : 1,
+        this.riverCount || 1,
+      );
+      this.stageSource(
+        this.surfaceFoundationSource,
+        this.foundationCount ? 3 : 1,
+        this.foundationCount || 1,
+      );
+      const uniforms = this.colourShader.resources.heightUniforms.uniforms;
+      uniforms.uHasSurface = Number(frame !== null);
+      uniforms.uLakeLayers = this.lakeLayers;
+      uniforms.uRiverCount = this.riverCount;
+      uniforms.uFoundationCount = this.foundationCount;
+      this.surfaceLakeDirty =
+        this.surfaceRiverDirty =
+        this.surfaceFoundationDirty =
+          true;
+      this.surfaceColourDirty = true;
+      this.surfaceEncoded = frame;
+      if (!frame) {
+        this.fallbackHeightSource.resource = new Float32Array(2);
+        this.stageSource(this.fallbackHeightSource, 1, 1);
+        this.fallbackHeightDirty = true;
+      }
+    }
     if (this.landscapeFrame !== this.landscapeEncoded) {
       this.preparationPhase = "landscape";
       const frame = this.landscapeFrame;
@@ -842,6 +983,7 @@ export class HeightFieldTile {
         this.numericValid &&
         this.numericCurrent &&
         !this.landscapeColourDirty &&
+        !this.surfaceColourDirty &&
         this.numericDepth < MAX_HEIGHT_BASIS_TRANSFERS &&
         this.admitsBasis(
           this.numericMagnitude,
@@ -946,7 +1088,10 @@ export class HeightFieldTile {
         next.width,
         HEIGHT_DESCRIPTOR_HEIGHT,
       );
-      this.rect = this.mode === "live" ? [...rect] : [...WHOLE];
+      this.rect =
+        this.mode === "live" && !this.surfaceColourDirty
+          ? [...rect]
+          : [...WHOLE];
       this.operationRect =
         this.mode === "live" && !this.currentIsBasis
           ? [...this.rect]
@@ -988,6 +1133,7 @@ export class HeightFieldTile {
           overview: this.overview?.values,
           bounds: this.bounds,
           size: SIZE,
+          ...(this.surfaceEncoded ? { includeHeights: true } : {}),
         };
         // The next selected step reserves this exact worker snapshot and output.
         yield;
@@ -1076,6 +1222,18 @@ export class HeightFieldTile {
         this.projectionTask = null;
         if (image) {
           this.projectionInput = null;
+          if (this.surfaceEncoded && !image.heights) {
+            this.fallbackError = new Error(
+              "Numerische Höhenpaare für die Gewässerdarstellung fehlen.",
+            );
+            this.field.wake();
+            return;
+          }
+          if (image.heights) {
+            this.fallbackHeightSource.resource = image.heights;
+            this.stageSource(this.fallbackHeightSource, SIZE, SIZE);
+            this.fallbackHeightDirty = true;
+          }
           this.fallbackSource.resource = image.pixels;
           this.stageSource(this.fallbackSource, SIZE, SIZE);
           this.fallbackLandSource.resource = image.land;
@@ -1148,6 +1306,18 @@ export class HeightFieldTile {
     upload(this.landscapeSource, this.landscapeDirty, () => {
       this.landscapeDirty = false;
     });
+    upload(this.fallbackHeightSource, this.fallbackHeightDirty, () => {
+      this.fallbackHeightDirty = false;
+    });
+    upload(this.surfaceLakeSource, this.surfaceLakeDirty, () => {
+      this.surfaceLakeDirty = false;
+    });
+    upload(this.surfaceRiverSource, this.surfaceRiverDirty, () => {
+      this.surfaceRiverDirty = false;
+    });
+    upload(this.surfaceFoundationSource, this.surfaceFoundationDirty, () => {
+      this.surfaceFoundationDirty = false;
+    });
     return bytes;
   }
   invalidateGPU(): void {
@@ -1161,6 +1331,10 @@ export class HeightFieldTile {
       this.fallbackDirty =
       this.fallbackLandDirty =
       this.landscapeDirty =
+      this.fallbackHeightDirty =
+      this.surfaceLakeDirty =
+      this.surfaceRiverDirty =
+      this.surfaceFoundationDirty =
         true;
     this.update(undefined, WHOLE);
   }
@@ -1197,7 +1371,12 @@ export class HeightFieldTile {
       (this.fallback
         ? 0
         : Math.ceil((this.projectionProducts + basisAdds) / 20)) +
-      Math.ceil((colour + copied + capture) / 16)
+      Math.ceil((colour + copied + capture) / 16) +
+      Math.ceil(
+        (colour *
+          (this.lakeLayers + this.riverCount * 4 + this.foundationCount * 2)) /
+          16,
+      )
     );
   }
   get compositionLevels(): number {
@@ -1289,7 +1468,10 @@ export class HeightFieldTile {
     this.preparationPhase = complete ? "complete" : "next-strip";
     this.compositionStats = stats;
     if (!complete) return samples;
-    if (this.mode !== "capture") this.landscapeColourDirty = false;
+    if (this.mode !== "capture") {
+      this.landscapeColourDirty = false;
+      this.surfaceColourDirty = false;
+    }
     this.numericValid = !this.fallback;
     this.numericCurrent = true;
     this.numericMagnitude = this.plannedMagnitude;
@@ -1322,7 +1504,17 @@ export class HeightFieldTile {
       (this.fallbackLandDirty
         ? this.fallbackLandSource.resource.byteLength
         : 0) +
-      (this.landscapeDirty ? this.landscapeSource.resource.byteLength : 0)
+      (this.landscapeDirty ? this.landscapeSource.resource.byteLength : 0) +
+      (this.fallbackHeightDirty
+        ? this.fallbackHeightSource.resource.byteLength
+        : 0) +
+      (this.surfaceLakeDirty ? this.surfaceLakeSource.resource.byteLength : 0) +
+      (this.surfaceRiverDirty
+        ? this.surfaceRiverSource.resource.byteLength
+        : 0) +
+      (this.surfaceFoundationDirty
+        ? this.surfaceFoundationSource.resource.byteLength
+        : 0)
     );
   }
   get bytes(): number {
@@ -1334,7 +1526,11 @@ export class HeightFieldTile {
       this.weightSource.resource.byteLength +
       this.fallbackSource.resource.byteLength +
       this.fallbackLandSource.resource.byteLength +
-      this.landscapeSource.resource.byteLength
+      this.landscapeSource.resource.byteLength +
+      this.fallbackHeightSource.resource.byteLength +
+      this.surfaceLakeSource.resource.byteLength +
+      this.surfaceRiverSource.resource.byteLength +
+      this.surfaceFoundationSource.resource.byteLength
     );
   }
   private get geometryBytes(): number {
@@ -1357,6 +1553,10 @@ export class HeightFieldTile {
         this.fallbackSource,
         this.fallbackLandSource,
         this.landscapeSource,
+        this.fallbackHeightSource,
+        this.surfaceLakeSource,
+        this.surfaceRiverSource,
+        this.surfaceFoundationSource,
       ].reduce(
         (sum, source) =>
           sum +
@@ -1364,7 +1564,10 @@ export class HeightFieldTile {
             source.resource.byteLength,
             source.width *
               source.height *
-              (source === this.descriptorSource
+              (source === this.descriptorSource ||
+              source === this.surfaceLakeSource ||
+              source === this.surfaceRiverSource ||
+              source === this.surfaceFoundationSource
                 ? 16
                 : source === this.fallbackLandSource
                   ? 1
@@ -1414,6 +1617,10 @@ export class HeightFieldTile {
       this.fallbackSource,
       this.fallbackLandSource,
       this.landscapeSource,
+      this.fallbackHeightSource,
+      this.surfaceLakeSource,
+      this.surfaceRiverSource,
+      this.surfaceFoundationSource,
     ]) {
       source.destroy();
       this.field.forgetSource(source);

@@ -122,13 +122,27 @@ function inspect(file) {
   }
 }
 
-async function settled(page) {
+async function settled(page, previousSessionId) {
+  if (previousSessionId)
+    await page.waitForFunction(
+      (previous) => {
+        const state = window.atlasObserve([], { events: false });
+        if (state.state.error) throw new Error(state.state.error);
+        return state.sessionId !== previous && !state.state.fileAction;
+      },
+      previousSessionId,
+      { timeout: 30_000 },
+    );
   await exact(page, 30_000);
   await page.waitForFunction(
     () => {
       const state = window.atlasObserve([], { events: false });
       if (state.state.error) throw new Error(state.state.error);
-      return state.houses?.ready === true && !state.state.writing;
+      return (
+        state.houses?.ready === true &&
+        !state.state.writing &&
+        !state.state.fileAction
+      );
     },
     null,
     { timeout: 30_000 },
@@ -547,13 +561,16 @@ export async function runHouseScenario({ launch, out, recordCheck }) {
     );
     await saveAs(session, finalFile);
 
+    const priorSessionId = (await stateSnapshot(page)).sessionId;
     await button(page, "Neu");
-    const empty = await settled(page);
+    // Rendering the old document exactly does not certify a completed New/Open.
+    const empty = await settled(page, priorSessionId);
     recordCheck(
       "house: New discards previous header residency and selection",
       empty.houses.headers.length === 0 && empty.houses.selectedId === null,
     );
     await button(page, "Öffnen");
+    await settled(page, empty.sessionId);
     await button(page, "Nahansicht");
     await page.getByLabel("Raster anzeigen").uncheck();
     const reopened = (evidence.reopened = await settled(page));

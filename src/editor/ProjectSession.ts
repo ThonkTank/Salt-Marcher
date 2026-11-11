@@ -28,6 +28,8 @@ function commitPatch(patch: SourcePatch): CommitPatch {
       return { kind: "landscape", key: patch.key, after: patch.after };
     case "house":
       return { kind: "house", key: patch.key, after: patch.after };
+    case "water":
+      return { kind: "water", key: patch.key, after: patch.after };
   }
 }
 
@@ -179,10 +181,16 @@ export class ProjectSession {
     return this.preparedDocument();
   }
 
-  async changeProject(empty: boolean): Promise<ProjectInfo | null> {
+  async changeProject(
+    empty: boolean,
+    template?: "water",
+  ): Promise<ProjectInfo | null> {
     const prepared = await this.prepareFileAction();
     return empty
-      ? this.bridge.newProject(prepared)
+      ? this.bridge.newProject({
+          ...prepared,
+          ...(template ? { template } : {}),
+        })
       : this.bridge.openProject(prepared);
   }
 

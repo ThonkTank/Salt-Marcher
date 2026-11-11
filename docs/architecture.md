@@ -8,7 +8,8 @@ den zuletzt belegten Stand und offene Abnahmen.
 
 Die folgenden V7-Besitzer und Zugriffspfade bleiben der Standard. Der gesonderte
 [optionale P0-Versuch](#optionaler-atlas-p0-versuch) ergänzt einen begrenzten
-Höhen- und Landschaftseditor, ohne den V7-Startpfad zu ersetzen.
+Höhen-, Landschafts- und Hauseditor mit vorbereiteten Gewässern und lokalen
+Fundamentableitungen, ohne den V7-Startpfad zu ersetzen.
 
 ## Besitzer und Datenfluss
 
@@ -560,7 +561,8 @@ keine zweite Autorenautorität.
 
 ### Gemeinsame Quellen und Landschaft
 
-`ChangeSet.patches` ist eine geschlossene Union mit `kind: "height" | "landscape" | "house"`.
+`ChangeSet.patches` ist eine geschlossene Union mit
+`kind: "height" | "landscape" | "house" | "water"`.
 Transaktionskennung, Sequenz, Vorher-/Nachherbilder, Pendingjournal und Undo/Redo
 gehören weiterhin zu `EditorDocument`. `ProjectSession`, Preload und Store
 transportieren den Diskriminator unverändert. Alle Autorenarten teilen die
@@ -612,7 +614,9 @@ zum Darstellungsbudget, auch Pendingpuffer noch ohne fertigen Frame.
 `HeightField` bereitet Landschaftsgewichte innerhalb desselben RAF-Budgets vor.
 Die gemeinsame Farbkomposition mischt die Flächendeckung und maskiert sie an
 der tatsächlich zusammengesetzten Wasseroberfläche. Der CPU-Ausnahmeweg liefert
-Farbe und Landmaske aus derselben kanonischen Höhenrechnung. Upload, Komposition
+Farbe und Landmaske aus derselben kanonischen Höhenrechnung; bei lokalen
+Gewässern und Fundamenten kommen absolute Hi/Lo-Höhenpaare für denselben
+Oberflächen-Farbpass hinzu. Upload, Komposition
 und GPU-Abschluss belegen die vorhandenen Grafikplätze; Landschaft erhält keine
 eigene Renderqueue. Volle Symbol- und Kronendachdarstellung gehört zu P4.
 
@@ -640,6 +644,13 @@ Platzierung, Bewegung und Einstellungen; Save und Dateiwechsel erfassen die
 abgeschlossene Pose. Die monotone `houseGeneration` invalidiert ausschließlich
 Hausdarstellung; reine Höhen-/Landschaftsänderungen bauen keine Dachgeometrie neu.
 
+Hausplatzierung und Bewegung verwenden wie Landschaft den bestehenden
+Darstellungsnachweis aus `captureFoundation`, `inspectFoundation` und
+`acceptFoundation`. Er wird vor der eigenen Autorenänderung übernommen und
+bei Abschluss oder Abbruch freigegeben. Die eigene Fundamentvorschau darf die
+angenommene Geste nicht sperren; vollständige Header sowie Session-, Ansichts-,
+Vorbereitungs- und Fremdquellenprüfungen gelten weiterhin.
+
 `house-store.ts` hält skalare Header und einen abgeleiteten SQLite-RTree. Der
 exakte REAL-Bounds-Filter entfernt Float32-Fehltreffer des RTree. Das Öffnen
 prüft Header in begrenzten Batches und rekonstruiert den Index; räumliche Reads
@@ -652,7 +663,98 @@ Header in beiden gemeinsamen Darstellungs-/GPU-Budgets; die Reservierung bleibt
 wegen möglicher Pixi-Pufferwiederverwendung bis zum Rendererende erhalten.
 Das ist eine konservative Budgetgebühr, keine gemessene native Speicherbelegung.
 Hausautoren zählen mit 512 Byte pro Header zum gemeinsamen Quellen-, History-
-und Pendingbudget. Die spätere Fundamentableitung gehört zu P3.3.
+und Pendingbudget. Die lokale Fundamentableitung verwendet diese unveränderten
+Header und den aktuellen natürlichen Geländestand.
+
+### Bestätigte Gewässer und lokale Oberflächen
+
+`model/water.ts` enthält die geschlossene Autorenunion: Ein See hält einen
+Außenring, optionale Lochringe und einen Pegel; ein Fluss hält Samples mit
+Weltpunkt, voller Breite und absolutem, nicht ansteigendem Pegel. Beide tragen
+stabile ID, Inhaltsrevision, Namen und `HeightDependency`. Deren Bounds umfassen
+mindestens die vollständige Gewässerwirkung einschließlich Flussübergang.
+`readWaterRegion` und räumliche Wasserabdeckung verwenden denselben Controller-
+Leseslot, Session-/Sequenzabgleich und Schutz unbestätigter Änderungen wie die
+anderen Autoren. Grenzen und unbekannte Daten werden ausdrücklich gemeldet.
+
+`content-identity.ts` kodiert den vollständigen lokalen Höhenread aller 22 Stufen:
+Bounds sowie Stufe, Kontrolladresse und Wert jedes wirksamen, von null
+verschiedenen Kontrollwerts im kubischen Stützbereich. SHA-256 ergibt
+`height-controls-v1:<64 Hexziffern>`. Laufzeitrevision und Generation gehören
+nicht zur Inhaltsidentität. Bestätigte Abwesenheit ist Teil des vollständigen
+Reads; ein neu hinzugekommener wirksamer Kontrollwert verändert die Identität.
+Die Folge A → B → Undo(A) erhält deshalb wieder die ursprüngliche Identität von A,
+obwohl die Laufzeitrevision weiter steigt.
+
+`water-store.ts` speichert kanonische vollständige Quellen in `water_sources`
+und deren abgeleitete Bounds im RTree. Exakte REAL-Postfilter entfernen
+Float32-Fehltreffer. Die begrenzte Headerabfrage prüft Zahl und SQL-Bytegröße vor
+dem JSON-Laden; Open validiert einzelne begrenzte Payloads in Batches und baut
+den Index nur in der Arbeitskopie neu auf. Wasserpatches durchlaufen denselben
+atomaren Commit, Payloadhash, Replay-Receipt und Snapshot wie Terrain und Häuser.
+Reine Terraincommits besuchen oder verändern keine Wasserautoren.
+
+`prepared-water-scene.ts` erzeugt echte Höhenquellen, einen Hausheader, eine
+Seemaske mit Loch und ein bestätigtes Flussprofil. Der Utility-Prozess verwendet
+den gemeinsamen Inhaltsencoder mit Node-SHA-256 und initialisiert den neuen
+Kandidaten über denselben Commitpfad, bevor er das bisherige Dokument ersetzt.
+`newProject` mit `template: "water"` ist ein normaler Dateiablauf; die leere
+Standardvorlage bleibt erhalten. Es gibt keine Diagnoseabhängigkeit oder zweite
+Autorenautorität.
+
+`DerivedSurfaceView` gehört zur Darstellung und hält nur lokale Wasser- und
+Fundamentaufgaben. Ein kooperativer Slot arbeitet an einem unveränderlichen
+Höhensnapshot von höchstens 4 MiB; ein begonnener asynchroner Digest hält seinen
+Slot und seine Eingaben auch über Projektwechsel bis zum tatsächlichen Ende.
+Die vorherige Ansicht bleibt dafür begrenzt erhalten, gibt aber ihre Referenz
+auf das alte Dokument frei. Der noch gehaltene einzelne Wasserautor erhält eine
+konservative Gebühr von 128 KiB. Neue Ableitungen warten auf diesen Abschluss;
+Terrainreads und Darstellung behalten ihre bestehende Arbeitsspur.
+
+Ein neuer Ableitungsjob reserviert konservativ 10 MiB. Die Fundamentberechnung
+hält höchstens 8.192 relevante Kontrollwerte über alle Stufen und höchstens
+16.384 bearbeitete Suchknoten. Kontrollobjekte, Maps, Samplerindex und Suchheap
+erhalten während des laufenden Jobs zusätzlich zu den Snapshotpuffern eine
+konservative Metadatengebühr von 4 MiB. Ein laufender Fundamentjob braucht keine
+erneute volle Reserve; ein laufender Wasserencoder reserviert höchstens 2 MiB
+zusätzlich für die abschließende Zusammenführung seiner bereits gezählten
+Chunks. Nach Abschluss, Fehler oder Verwerfen eines Jobs endet der Schritt,
+bevor ein neuer Job eine eigene Zulassungsprüfung benötigt. Quellenreads,
+Snapshot, Metadaten, Encoderpuffer und SurfaceFrames zählen zu den gemeinsamen
+Budgets. Sichtbare
+Häuser ab einem Pixel Ausdehnung von Grundfläche oder Übergang werden auf
+höchstens 64 lokale Fundamentberechnungen begrenzt. Weitere Fälle verlangen
+eine nähere Ansicht. Fehlende Quellen, ausgeschöpfte Rechenbudgets und nicht
+belegbare Maxima bleiben unbekannt und erscheinen mit Begründung.
+
+`model/surface.ts` setzt zuerst das bestätigte Flussbett auf das aktuelle
+natürliche Höhenfeld: Es kann nur absenken und verwendet absolute Profilpegel
+minus zwei Fuß samt weichem Uferübergang. Die Fundamentberechnung begrenzt das
+Maximum dieses Geländes über der vollständigen gedrehten Hausgrundfläche mit
+einem Intervallnachweis. `base` ist die konservativ belegte natürliche Basis;
+`top = base + foundationHeight` beschreibt die Fundamentoberkante. Plateau und
+Geländeübergang verwenden ausschließlich `base`. Ein Footprint gewinnt vor
+benachbarten Übergängen, bei mehreren Footprints die höchste Basis. Wasser wird
+gegen das aktuelle Bett vor der Fundamentwirkung geclippt; Maske und Profile
+bleiben Autoren. Änderungen invalidieren nur betroffene lokale Aufgaben. Der
+Wasserstatus vergleicht gespeicherte und aktuelle Inhaltsidentität, ohne
+entfernte Gewässer oder Häuser weltweit abzulaufen.
+
+Jeder lokale Quellenbedarf trägt eine monoton vergebene Entryversion. Ein
+verspäteter Lesefehler wird nur für dieselbe Version und dieselben Bounds
+übernommen. Geometrieersatz und Entfernung invalidieren alte und neue Wasser-
+beziehungsweise Fundamentbounds, auch in noch residenten kalten Renderkacheln.
+
+Ein unveränderlicher `SurfaceFrame` begleitet denselben eingefrorenen
+Terrainstand. Höchstens acht getrennte Seepegel-Layer, 512 Flusssegmente und
+4.096 Seemaskenpunkte pro Darstellungskachel verhindern stille Kürzungen. Der
+gemeinsame Farbpass wählt aus den tatsächlich nassen Masken den niedrigsten
+Pegel und berücksichtigt aktuelle Flussbetten und Fundamentbasen. Masken- und
+Geometriearrays, ihre angekündigte Maximalgröße, Texturen, Hi/Lo-Fallbackbilder,
+Uploads, Kompositionsarbeit und Kontextwiederaufbau sind in denselben Ressourcen-
+und Grafikgrenzen enthalten. Ohne lokale Oberfläche bleiben nur kleine
+Dummytexturen. Eine Änderung nach dem Encoding, aber vor dem Farbpass, behält
+ihre Farb-Dirtykennung; eine warme Basisaufnahme darf sie nicht unterschlagen.
 
 ### Autoren, Übersicht und Quellenbedarf
 
@@ -672,9 +774,10 @@ werden in einer SQLite-Transaktion gepflegt.
 
 Das Dokument unterscheidet vorhandene Quellen, bekannte Abwesenheit und unbekannte
 Daten. Regionale Abdeckungsbelege bestätigen leere Bereiche, ohne für jeden
-fehlenden Schlüssel einen Eintrag anzulegen. Residency folgt höchstens zwei
-Bedarfen: Darstellungsausschnitt sowie vollständiger aktueller Werkzeugbereich
-mit Halo. Aktive, angenommene noch nicht angewandte und unbestätigte Änderungen bleiben
+fehlenden Schlüssel einen Eintrag anzulegen. Residency folgt dem
+Darstellungsausschnitt und vollständigen aktuellen Werkzeugbereich mit Halo;
+benötigte lokale Ableitungsbounds werden in diesen begrenzten Bedarf einbezogen.
+Aktive, angenommene noch nicht angewandte und unbestätigte Änderungen bleiben
 einschließlich ihrer geprüften Quellen gepinnt. Nicht benötigte
 bestätigte Quellen samt unnötigen Abdeckungsbelegen werden freigegeben.
 
@@ -733,8 +836,9 @@ Der einzige Frameablauf ist gerichtet:
 2. Den nächsten fehlenden Quellenread starten.
 3. Für Höhen ein kausales Haltefenster annehmen; höchstens eine begrenzte
    Autorenscheibe als Höhenzeitfenster oder Landschaftsabschnitt materialisieren.
-4. Priorisierte Quellen und Übersichten in kleinen Schritten übernehmen. Erst
-   vollständige Abhängigkeiten erlauben den eingefrorenen Renderstand.
+4. Priorisierte Quellen und Übersichten in kleinen Schritten übernehmen und
+   lokale Gewässer-/Fundamentableitungen begrenzt fortsetzen. Erst vollständige
+   Abhängigkeiten erlauben die jeweilige Bestätigung.
 5. Innerhalb desselben Vorbereitungsbudgets Deskriptoren und Projektionsstreifen
    vorbereiten, begrenzte Terrainpakete einreichen und fertige Farbe zeichnen.
 6. Submitfakten, eventuellen Aktionsabschluss und abgeleitete Anzeige aktualisieren.
@@ -771,7 +875,9 @@ unverändert den neuesten passenden Inhalt.
 
 Quellen und Übersichten werden vor teurer Vorbereitung räumlich ausgewählt.
 Ein RAF teilt sein 2-ms-Vorbereitungsbudget und höchstens 128 Arbeitsschritte
-zwischen Quellenübernahme, Übersichtsdeltas, Deskriptoren und Projektion auf.
+zwischen Quellenübernahme, Übersichtsdeltas, lokalen Ableitungen, Deskriptoren
+und Projektion auf. Die kooperative Gewässer-/Fundamentarbeit erhält davon
+höchstens 0,5 ms und 32 Schritte; sie hat kein zusätzliches Framebudget.
 Zeitprüfungen liegen zwischen kleinen Einheiten; Laufzeit- und GC-Ausreißer bleiben
 Messgegenstände. Veraltete ungefertigte Übersichten werden vollständig verworfen;
 ihre Basisversion wird erst nach atomarer Veröffentlichung fortgeschrieben.
@@ -794,7 +900,8 @@ skalierten Gesamthöhe beziehungsweise des Beitrags der ausgewählten Autorenstu
 Ein kalter Aufbau rekonstruiert die erforderlichen Autorenstufen und addiert
 Übersicht plus Grundwert. Die aktive Stufe wird im selben Durchlauf als eigener
 Beitrag festgehalten. Der anschließende Farbpass begrenzt erst die vollständige
-Höhe und klassifiziert deren Farbe.
+Höhe, wendet die lokale Bett-/Fundamentprojektion an und klassifiziert deren
+Farbe einschließlich des gegen das aktuelle Bett geclippten Wassers.
 
 Für eine warme Kachel gilt `H_aktuell = H_basis + (C_aktuell − C_basis)`.
 `C` ist die Projektion der aktiven Autorenstufe. Gesamtstand und damaliger
@@ -853,7 +960,8 @@ Float32-Transformationen relativ zur Kamera gebildet.
 Dirtyrechtecke begrenzen die tatsächlich projizierten und gefärbten Pixel.
 Nur der erste Live-Draw nach einer Basisaufnahme übernimmt zusätzlich unveränderte
 Basispixel in das andere numerische Ziel. Spätere Dosen und gleichstufige Gesten
-verwenden dieses Ziel weiter. Ein warmer Werkzeugwechsel braucht keinen Farbpass.
+verwenden dieses Ziel weiter. Ein warmer Werkzeugwechsel braucht bei
+unveränderter Landschafts- und Oberflächenprojektion keinen Farbpass.
 Die Kamera zeichnet behaltene Sprites ohne Höhenrekonstruktion; der Cursor
 aktualisiert ausschließlich sein DOM-Overlay.
 
@@ -872,7 +980,11 @@ Ein weiterhin benötigter älterer Stand darf übernommen werden, während R+1
 wartet; Session, Ansicht und konkrete Vorbereitungsidentität müssen stimmen.
 Eine entfernte wartende Ausnahme belegt keine normale Rendergruppe. Ihre
 Eingabepuffer, Worker-Kopien, Zwischenpuffer und Ergebnisse sind im gemeinsamen
-Darstellungsbudget reserviert. Der diagnostische Lastworker verwendet dieselbe
+Darstellungsbudget reserviert. Bei einem SurfaceFrame liefert der Worker neben
+Farbe und Landmaske absolute Hi/Lo-Höhen an denselben GPU-Farbpass; ohne Surface
+bleibt der bisherige Pixelpfad erhalten. Ein Wechsel Surface → leer → Surface
+fordert bei verändertem Terrain neue Paare an und verwirft überholte Resultate.
+Der diagnostische Lastworker verwendet dieselbe
 Jobzulassung. Scheitert eine entfernte Vorbereitung, gibt sie ihre Rendergruppe
 frei und behält ihre Dirtykennung. Derselbe fehlgeschlagene Eingabestand wird
 nicht automatisch wiederholt; geänderte Abhängigkeiten oder „Erneut laden“
@@ -885,8 +997,9 @@ Uploadbereitschaft folgt den wirklichen Seiten und Texturen der einzelnen
 Kachel. Entfernte Uploads sperren keine fertige lokale Komposition. `budgets.ts`
 begrenzt Speicher, 4 MiB Upload pro Frame und Projektionsarbeit je Grafikpaket.
 Der Projektionsanteil bleibt auf 20 gewichtete Paarprodukte je historischer
-Arbeitseinheit normiert. Zusätzliche Basisadditionen, Farbe, Kopien und
-Capture-Lesezugriffe werden mitgezählt; das Paketlimit bleibt unverändert. CPU-Quellseiten entstehen in achtzeiligen Abschnitten; Atlaswachstum kopiert
+Arbeitseinheit normiert. Zusätzliche Basisadditionen, Farbe, See-Layer,
+Fluss-/Fundamentauswertung, Kopien und Capture-Lesezugriffe werden mitgezählt;
+das Paketlimit bleibt unverändert. CPU-Quellseiten entstehen in achtzeiligen Abschnitten; Atlaswachstum kopiert
 64 KiB je Schritt. GPU-Teilschritte umfassen höchstens 16 Pixelzeilen und jeweils
 die vollständige Folge horizontal → numerisch → Farbe. Mehrere solche Schritte
 dürfen innerhalb derselben unveränderten Arbeits- und Uploadgrenze liegen.
@@ -896,6 +1009,12 @@ je Kachel, bei 96 Kacheln 48 MiB. Hinzu kommen die variabel großen Zwischenzeil
 Farbe, Quellspiegel, Deskriptoren, Gewichte und Fallbackbilder; alle sind erfasst.
 
 ### History, Persistenz und Datei
+
+Der gemeinsame P0-Store verwendet SQLite-Format 27 mit
+`atlas-p3-derived-water-1`. Höhen, Landschaft, Hausheader und bestätigte
+Gewässerquellen einschließlich ihrer vollständigen Inhaltsabhängigkeit gehören
+zu einem Dateistand. Alte P0-Formate werden ohne Migration abgewiesen; V7 behält
+seinen getrennten Dateivertrag.
 
 Eine abgeschlossene Geste erzeugt einen angenommenen `ChangeSet`. History und
 Pendingjournal teilen unveränderliche Vorher-/Nachherpuffer; Liveautoren bleiben

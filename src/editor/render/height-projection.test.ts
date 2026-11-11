@@ -71,6 +71,44 @@ it("uses the same exact coastal snapping for land and colour", async () => {
     );
 });
 
+it("returns absolute high/low pairs only on request while preserving the existing colour and land result", async () => {
+  const absolute = [32 - 1e-7, 32, 32 + 1e-7, -0.5e-6];
+  const input = {
+    sources: [],
+    bounds: [0, 0, 2, 2] as Bounds,
+    size: 2,
+    overview: Float64Array.from(
+      absolute,
+      (height) => (height - HEIGHT_BASE) / HEIGHT_SUM_SCALE,
+    ),
+  };
+  const execution = {
+    cancelled: () => false,
+    now: () => 0,
+    yield: async () => {},
+  };
+  const plain = await projectHeightPixels(input, execution);
+  const derived = await projectHeightPixels(
+    { ...input, includeHeights: true },
+    execution,
+  );
+  expect(plain?.heights).toBeUndefined();
+  expect(derived?.pixels).toEqual(plain?.pixels);
+  expect(derived?.land).toEqual(plain?.land);
+  for (let i = 0; i < absolute.length; i++)
+    expect(
+      Math.abs(
+        derived!.heights![i * 2] + derived!.heights![i * 2 + 1] - absolute[i],
+      ),
+    ).toBeLessThan(1e-12);
+  expect(derived!.heights![1]).toBeLessThan(0);
+  expect(derived!.heights![5]).toBeGreaterThan(0);
+  // The derived-surface clip sees the unsnapped coast value, whereas old colour
+  // and landscape classification intentionally retain their display snapping.
+  expect(derived!.heights![6] + derived!.heights![7]).toBeLessThan(0);
+  expect(derived!.land[3]).toBe(255);
+});
+
 it("keeps outside-world samples transparent and absent from the land mask", async () => {
   const result = await projectHeightPixels(
     {

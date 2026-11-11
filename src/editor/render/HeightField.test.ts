@@ -19,6 +19,7 @@ import type {
 import { prepareHeightGrid } from "../model/height-grid";
 import { rasterize } from "./raster";
 import type { LandscapeFrame } from "./LandscapeView";
+import type { SurfaceData, SurfaceFrame } from "./DerivedSurfaceView";
 
 interface Uploader {
   id: string;
@@ -198,6 +199,9 @@ function setup(override?: HeightProjectionService) {
         promise: Promise.resolve().then(() => {
           if (cancelled) return null;
           const land = new Uint8Array(input.size * input.size);
+          const heights = input.includeHeights
+            ? new Float32Array(input.size * input.size * 2)
+            : undefined;
           const pixels = rasterize(
             prepareHeightGrid(input.sources)(input.bounds, input.size, [
               0,
@@ -210,8 +214,9 @@ function setup(override?: HeightProjectionService) {
             [0, 0, input.size, input.size],
             input.overview,
             land,
+            heights,
           );
-          return { pixels, land };
+          return { pixels, land, ...(heights ? { heights } : {}) };
         }),
       };
     },
@@ -233,6 +238,226 @@ function setup(override?: HeightProjectionService) {
   field.init(gpu.renderer);
   return { field, gpu };
 }
+
+function surfaceFrame(data: SurfaceData): SurfaceFrame {
+  const arrays = [data.lake, data.rivers, data.foundations].filter(
+    (value): value is Float32Array => value !== null,
+  );
+  return {
+    bytes: arrays.reduce((sum, values) => sum + values.byteLength, 0),
+    buffers: new Set(arrays.map((values) => values.buffer)),
+    *prepare() {
+      yield;
+      return data;
+    },
+  };
+}
+
+it.each([false, true])(
+  "accounts and restores layered surface textures and optional absolute fallback pairs (CPU fallback: %s)",
+  async (fallback) => {
+    const { field, gpu } = setup();
+    field.numericSupported = !fallback;
+    const tile = field.createTile([0, 0, 512, 512], 2);
+    await drain(field, gpu);
+    compose(tile, gpu);
+    const before = field.metrics();
+    const lake = new Float32Array(128 * 128 * 4 * 2);
+    lake.set([32, 0.0000001, 1, 0]);
+    lake.set([40, -0.0000002, 1, 0], 128 * 128 * 4);
+    const data: SurfaceData = {
+      lake,
+      lakeLayers: 2,
+      rivers: new Float32Array([0, 0, 100, 100, 20, 30, 32, 0, 30, 0, 0, 0]),
+      foundations: new Float32Array([
+        60, 60, 20, 10, 1, 0, 10, 35, 0, 36, 0, 0,
+      ]),
+    };
+    const frame = surfaceFrame(data);
+    tile.setSurface(frame);
+    tile.update();
+    expect(tile.nextPreparationBytes.cpuBytes).toBeGreaterThan(frame.bytes);
+    await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+    compose(tile, gpu);
+    const colourCall = gpu.render.mock.calls
+      .filter(
+        ([request]) => "uSurfaceLake" in request.container.shader.resources,
+      )
+      .at(-1)!;
+    const resources = colourCall[0].container.shader.resources as Record<
+      string,
+      BufferImageSource
+    > & { heightUniforms: { uniforms: Record<string, number> } };
+    expect(resources.heightUniforms.uniforms).toMatchObject({
+      uHasSurface: 1,
+      uLakeLayers: 2,
+      uRiverCount: 1,
+      uFoundationCount: 1,
+    });
+    expect(resources.uSurfaceLake.height).toBe(256);
+    expect(resources.uSurfaceRivers.width).toBe(3);
+    for (const name of [
+      "uSurfaceLake",
+      "uSurfaceRivers",
+      "uSurfaceFoundations",
+    ])
+      expectUploaded(gpu, resources[name]);
+    if (fallback) {
+      expect(resources.uFallbackHeights.resource.byteLength).toBe(
+        128 * 128 * 8,
+      );
+      expect(
+        Array.from(
+          (resources.uFallbackHeights.resource as Float32Array).slice(0, 4),
+        ),
+      ).toEqual([-100, 0, -100, 0]);
+      expectUploaded(gpu, resources.uFallbackHeights);
+    } else expect(resources.uFallbackHeights.resource.byteLength).toBe(8);
+    expect(field.metrics().cpuBytes - before.cpuBytes).toBeGreaterThanOrEqual(
+      frame.bytes - 48,
+    );
+    expect(field.metrics().gpuBytes - before.gpuBytes).toBeGreaterThanOrEqual(
+      frame.bytes - 48,
+    );
+    for (const buffer of frame.buffers)
+      expect(field.retainedSourceBuffers()).toContain(buffer);
+    gpu.loseContext();
+    field.rebuildAfterContextRestore();
+    await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+    compose(tile, gpu);
+    for (const name of [
+      "uSurfaceLake",
+      "uSurfaceRivers",
+      "uSurfaceFoundations",
+    ])
+      expectUploaded(gpu, resources[name]);
+    tile.setSurface(null);
+    tile.update();
+    await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+    compose(tile, gpu);
+    expect(resources.heightUniforms.uniforms).toMatchObject({
+      uHasSurface: 0,
+      uLakeLayers: 0,
+      uRiverCount: 0,
+      uFoundationCount: 0,
+    });
+    for (const name of [
+      "uSurfaceLake",
+      "uSurfaceRivers",
+      "uSurfaceFoundations",
+    ])
+      expect(resources[name].resource.byteLength).toBe(16);
+    expect(resources.uFallbackHeights.resource.byteLength).toBe(8);
+    expect(field.retainedSourceBuffers()).not.toContain(lake.buffer);
+    if (fallback) {
+      // The same immutable geometry may return after a null frame, but its
+      // numeric terrain must be projected from the subsequently edited authors.
+      field.updateSources([author(0, 450)]);
+      tile.setSurface(frame);
+      tile.update();
+      await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+      compose(tile, gpu);
+      const values = resources.uFallbackHeights.resource as Float32Array;
+      const expected = -100 + 450 * (1 - 0.6 ** 3 / 6) ** 2;
+      expect(Math.abs(values[0] + values[1] - expected)).toBeLessThan(1e-9);
+      expectUploaded(gpu, resources.uFallbackHeights);
+    }
+    field.destroy();
+    expect(gpu.sources.size).toBe(0);
+  },
+);
+
+it("does not lose a changed surface after encoding is cancelled before the warm colour pass", async () => {
+  const { field, gpu } = setup();
+  field.updateSources([author(0, 100), author(1, 10)]);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  field.setToolLevel(1);
+  const frame = surfaceFrame({
+    lake: new Float32Array(128 * 128 * 4),
+    lakeLayers: 1,
+    rivers: new Float32Array(),
+    foundations: new Float32Array(),
+  });
+  tile.setSurface(frame);
+  tile.update(undefined, [0, 0, 1, 1]);
+  await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+  tile.cancelPreparation();
+  tile.update(undefined, [0, 0, 1, 1]);
+  await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+  compose(tile, gpu);
+  expect(tile.compositionStats).toMatchObject({
+    colourSamples: 128 ** 2,
+    basisCaptureSamples: 0,
+  });
+  field.setToolLevel(0);
+  tile.update();
+  await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+  compose(tile, gpu);
+  expect(tile.compositionStats).toMatchObject({
+    colourSamples: 0,
+    basisCaptureSamples: 128 ** 2,
+  });
+});
+
+it("rejects oversized surface geometry before it can upload or certify a truncated colour target", () => {
+  const { field } = setup();
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  tile.setSurface(
+    surfaceFrame({
+      lake: null,
+      lakeLayers: 0,
+      rivers: new Float32Array(513 * 12),
+      foundations: new Float32Array(),
+    }),
+  );
+  tile.update();
+  expect(() => {
+    for (let i = 0; i < 10; i++) tile.prepareStep();
+  }).toThrow(/zu große/);
+  expect(tile.uploadReady).toBe(false);
+});
+
+it("rejects a surface payload larger than its advertised reservation", () => {
+  const { field } = setup();
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  const frame = surfaceFrame({
+    lake: new Float32Array(128 * 128 * 4),
+    lakeLayers: 1,
+    rivers: new Float32Array(),
+    foundations: new Float32Array(),
+  });
+  tile.setSurface({ ...frame, bytes: frame.bytes - 1 });
+  tile.update();
+  expect(() => {
+    for (let i = 0; i < 10; i++) tile.prepareStep();
+  }).toThrow(/reserviertes Speicherbudget/);
+  expect(tile.uploadReady).toBe(false);
+});
+
+it("charges every lake layer in colour composition admission", async () => {
+  const { field, gpu } = setup();
+  field.numericSupported = false;
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  const work: number[] = [];
+  for (const lakeLayers of [1, 8]) {
+    tile.setSurface(
+      surfaceFrame({
+        lake: new Float32Array(128 * 128 * 4 * lakeLayers),
+        lakeLayers,
+        rivers: new Float32Array(),
+        foundations: new Float32Array(),
+      }),
+    );
+    tile.update();
+    await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+    work.push(tile.compositionWork);
+    compose(tile, gpu);
+  }
+  expect(work[1]).toBeGreaterThan(work[0]);
+  expect(work[1]).toBeLessThanOrEqual(editorBudgets.compositionWorkPerFrame);
+});
 
 async function drain(
   field: HeightField,

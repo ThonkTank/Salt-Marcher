@@ -50,6 +50,11 @@ import {
   type FrozenRenderReceipt,
 } from "./render/WorldRenderer";
 import type { BrushEffectReceipt } from "./model/BrushReservations";
+import {
+  DerivedSurfaceView,
+  type SurfaceReadNeed,
+  type SurfaceState,
+} from "./render/DerivedSurfaceView";
 
 export interface EditorState {
   mode: "raise" | "lower" | "pan" | "forest" | "clearing" | "house" | "select";
@@ -81,6 +86,7 @@ export interface EditorState {
   level: number;
   sequence: number;
   background: boolean;
+  surfaces: SurfaceState | null;
 }
 interface LocalReadiness {
   ready: boolean;
@@ -102,6 +108,7 @@ interface SourceDemand {
   toolLevel: number;
   toolKind: "height" | "landscape" | "house";
   houseBounds: Bounds;
+  derived: SurfaceReadNeed | null;
   key: string;
 }
 
@@ -237,6 +244,7 @@ export class EditorController {
     level: 0,
     sequence: 0,
     background: false,
+    surfaces: null,
   };
   onChange: (state: EditorState) => void = () => {};
 
@@ -368,6 +376,7 @@ export class EditorController {
       empty: info.sourceTiles === 0,
       landscapeEmpty: info.landscapeTiles === 0,
       housesEmpty: info.houses === 0,
+      watersEmpty: info.waters === 0,
       maxSourceBytes: editorBudgets.sourceBytes,
       maxPendingBytes: editorBudgets.pendingWriteBytes,
       maxHistoryBytes: editorBudgets.historyBytes,
@@ -473,6 +482,7 @@ export class EditorController {
       saved: this.session.saved,
       loading: readiness.reason === "sources" || readiness.reason === "terrain",
       needsPress: this.brushState.kind === "blocked",
+      surfaces: this.world.surfaceState(),
     };
     this.state.message = this.session.recovering
       ? "Speicherstand wird geprüft …"
@@ -640,10 +650,16 @@ export class EditorController {
       : this.pickedHouse(point);
     this.selectHouse(header?.id ?? null);
     if (!header) return;
+    const foundation = this.world.captureFoundation();
+    if (!this.world.acceptFoundation(houseBounds(header), foundation))
+      throw new Error(
+        "Der Hausbereich besitzt keine passende sichtbare Grundlage.",
+      );
     this.doc.beginHouseGesture(
       placement ? header : header.id,
       placement ? "Haus platzieren" : "Haus verschieben",
     );
+    this.foundation = foundation;
     this.brushState = {
       kind: "house",
       pointerId,
@@ -705,7 +721,11 @@ export class EditorController {
     const drag = this.houseDrag;
     if (!drag) return false;
     const readiness = this.houseReadiness(point);
-    if (!readiness.ready) {
+    if (
+      !readiness.ready ||
+      !this.foundation ||
+      !this.world.acceptFoundation(readiness.bounds, this.foundation)
+    ) {
       this.scheduleLoad();
       this.publish({}, readiness);
       return false;
@@ -842,6 +862,7 @@ export class EditorController {
     const viewGeneration = this.world.state().viewGeneration;
     const power = this.world.presentationPower();
     const bounds = this.world.sourceBounds();
+    const derived = this.world.surfaceReadNeed();
     const key = [
       this.doc.sessionId,
       this.landscapeDemandVersion,
@@ -853,6 +874,10 @@ export class EditorController {
       local.brush.level,
       ...local.bounds,
       ...(this.landscapeStroke?.retainedBounds ?? []),
+      derived?.key ?? "",
+      derived?.kind ?? "",
+      derived?.version ?? "",
+      ...(derived?.bounds ?? []),
     ].join(":");
     if (this.desiredNeed?.key === key) return;
     this.desiredNeed = {
@@ -871,8 +896,12 @@ export class EditorController {
             : "height",
       houseBounds:
         this.houseMode || this.houseDrag
-          ? unionBounds(bounds, local.bounds)
-          : bounds,
+          ? unionBounds(
+              DerivedSurfaceView.houseReadBounds(bounds),
+              local.bounds,
+            )
+          : DerivedSurfaceView.houseReadBounds(bounds),
+      derived,
       key,
     };
     this.retainViewSources();
@@ -885,12 +914,22 @@ export class EditorController {
     try {
       if (!this.pollCompletedFeedback()) return;
       this.syncBrushContext();
+      const derived = this.world.surfaceReadNeed();
+      const previousDerived = this.desiredNeed?.derived;
+      if (
+        derived?.key !== previousDerived?.key ||
+        derived?.kind !== previousDerived?.kind ||
+        derived?.version !== previousDerived?.version ||
+        derived?.bounds.join(":") !== previousDerived?.bounds.join(":")
+      )
+        this.scheduleLoad();
       const read = this.pumpRead();
       if (read) void read.catch(this.fail);
       this.advanceHeldBrush(performance.now());
       this.advanceLandscape();
       this.advanceAction();
       if (this.world.prepareFrame()) this.checkLocalReady();
+      if (this.state.surfaces !== this.world.surfaceState()) this.publish();
       this.freezeBrushRender();
       const submission = this.world.renderFrame(now);
       if (submission) {
@@ -1103,11 +1142,19 @@ export class EditorController {
               HEIGHT_LEVELS.slice(need.toolLevel),
             );
     const houses = !document.isHouseRegionReady(need.houseBounds);
-    if (!presentation && !landscapePresentation && !tool && !houses) {
+    const waters = !document.isWaterRegionReady(bounds);
+    if (
+      !presentation &&
+      !landscapePresentation &&
+      !tool &&
+      !houses &&
+      !waters &&
+      !need.derived
+    ) {
       this.readState = { kind: "ready", key: need.key };
       return null;
     }
-    const key = `${need.key}:${presentation ? "presentation" : landscapePresentation ? "landscape-presentation" : tool ? "tool" : "houses"}`;
+    const key = `${need.key}:${presentation ? "presentation" : landscapePresentation ? "landscape-presentation" : tool ? "tool" : houses ? "houses" : waters ? "waters" : "derived"}`;
     if (this.readState.kind === "failed" && this.readState.key === key)
       return null;
     this.checkLocalReady();
@@ -1229,6 +1276,23 @@ export class EditorController {
           },
           viewGeneration,
         );
+      } else if (waters) {
+        await this.readWaterRegion(document, bounds, viewGeneration);
+      } else if (need.derived) {
+        const derived = need.derived;
+        try {
+          if (derived.kind === "water")
+            await this.readWaterRegion(
+              document,
+              derived.bounds,
+              viewGeneration,
+            );
+          else
+            await this.readRegion(document, derived.bounds, 0, viewGeneration);
+        } catch (error) {
+          if (this.currentView(document, viewGeneration))
+            this.world.surfaceReadFailed(derived, error);
+        }
       }
       if (document === this.doc && !this.disposed) {
         this.retainViewSources();
@@ -1238,6 +1302,33 @@ export class EditorController {
         this.scheduleLoad();
       }
     });
+  }
+
+  private readWaterRegion(
+    document: EditorDocument,
+    bounds: Bounds,
+    viewGeneration: number,
+  ): Promise<boolean> {
+    return this.readCurrent(
+      document,
+      () =>
+        this.bridge.readWaterRegion({ sessionId: document.sessionId, bounds }),
+      (reply) => {
+        document.acceptWaterCoverage(
+          bounds,
+          reply.sources,
+          reply.sequence,
+          reply.sessionId,
+        );
+        this.world.redraw();
+        this.observation.event("water-sources", {
+          sessionId: reply.sessionId,
+          bounds,
+          sources: reply.sources.length,
+        });
+      },
+      viewGeneration,
+    );
   }
 
   /** Initial/project loading waits on the same single read state used by RAF. */
@@ -1256,11 +1347,24 @@ export class EditorController {
   private retainViewSources(): void {
     const need = this.desiredNeed;
     if (!need || need.document !== this.doc) return;
+    const derivedBounds = this.world.surfaceRetainHeight();
+    const fineBounds = derivedBounds
+      ? need.toolKind === "height"
+        ? unionBounds(derivedBounds, need.toolBounds)
+        : derivedBounds
+      : need.toolKind === "height"
+        ? need.toolBounds
+        : null;
     this.world.forgetSources(
       this.doc.retainSources([
         { bounds: need.bounds, minLevel: need.minLevel },
-        ...(need.toolKind === "height"
-          ? [{ bounds: need.toolBounds, minLevel: need.toolLevel }]
+        ...(fineBounds
+          ? [
+              {
+                bounds: fineBounds,
+                minLevel: derivedBounds ? 0 : need.toolLevel,
+              },
+            ]
           : []),
       ]),
     );
@@ -1279,6 +1383,8 @@ export class EditorController {
         : []),
     ]);
     this.doc.retainHouseSources([need.houseBounds]);
+    const retainedWater = this.world.surfaceRetainWater();
+    this.doc.retainWaterSources([need.bounds, ...retainedWater.slice(1)]);
   }
 
   /** The optional diagnostic sampler shares the same bounded read slot. */
@@ -1408,7 +1514,13 @@ export class EditorController {
       Math.min(bounds[2], view[2]),
       Math.min(bounds[3], view[3]),
     ];
-    const display = this.world.inspectRegion(valid ? visibleBounds : bounds);
+    const displayBounds = valid ? visibleBounds : bounds;
+    // A house's own pending foundation colour does not revoke the completed
+    // surface on which its gesture was admitted. Source/view guards stay shared.
+    const display =
+      this.houseDrag && this.foundation
+        ? this.world.inspectFoundation(displayBounds, this.foundation)
+        : this.world.inspectRegion(displayBounds);
     const reason = !valid
       ? "outside"
       : !this.session.editable
@@ -2150,6 +2262,7 @@ export class EditorController {
       this.brushState = released
         ? { kind: "idle" }
         : { kind: "blocked", pointerId: house.pointerId };
+      this.foundation = null;
       if (cancelled && house.placement) this.selectHouse(house.selectedBefore);
       this.world.redraw();
       if (!cancelled) this.persist();
@@ -2279,7 +2392,11 @@ export class EditorController {
       const landscape = change.patches.some(
         (patch) => patch.kind === "landscape",
       );
-      if (change.patches.some((patch) => patch.kind === "house")) {
+      if (
+        change.patches.some(
+          (patch) => patch.kind === "house" || patch.kind === "water",
+        )
+      ) {
         this.world.redraw();
         this.scheduleLoad();
       }
@@ -2308,11 +2425,22 @@ export class EditorController {
   async newProject(): Promise<void> {
     await this.changeProject(true);
   }
-  private async changeProject(empty: boolean): Promise<void> {
+  async openWaterScene(): Promise<void> {
+    await this.changeProject(true, "water");
+  }
+  retrySurfaces(): void {
+    this.world.retryPreparation();
+    this.scheduleLoad();
+    this.publish();
+  }
+  private async changeProject(
+    empty: boolean,
+    template?: "water",
+  ): Promise<void> {
     if (this.session.changingProject) return;
     try {
       await this.prepareFileAction();
-      const next = await this.session.changeProject(empty);
+      const next = await this.session.changeProject(empty, template);
       if (next) {
         this.setProject(next);
         await this.loadView();
@@ -2531,6 +2659,12 @@ export class EditorController {
           }
         : null,
       renderer: this.world.state(),
+      surfaces: {
+        ...this.world.surfaceState(),
+        points: points.map((point, i) =>
+          this.world.surfaceSample(point, samples[i]),
+        ),
+      },
       houses: {
         ready: this.doc?.isHouseRegionReady(this.world.bounds()) ?? false,
         selectedId: this.selectedHouseId,

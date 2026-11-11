@@ -277,8 +277,8 @@ function Atlas() {
               />
             ))}
             <p className="hint">
-              Die Fundamenteinstellungen werden gespeichert. Das Fundament wird
-              in dieser Version noch nicht im Gelände dargestellt.
+              Die Fundamentbasis folgt dem höchsten Gelände unter dem Haus. Die
+              Fundamenthöhe bestimmt die Oberkante über dieser Basis.
             </p>
           </>
         ) : (
@@ -417,6 +417,105 @@ function Atlas() {
             ↷ Wiederholen
           </button>
         </div>
+        <hr />
+        <section className="surface-panel" aria-label="Gewässer und Fundamente">
+          <p className="eyebrow">GEWÄSSER UND FUNDAMENTE</p>
+          <button
+            disabled={state?.fileAction || state?.recovering}
+            onClick={() => action((editor) => editor.openWaterScene())}
+          >
+            Gewässerszene öffnen
+          </button>
+          <p className="hint">
+            Neue Karte mit See, Fluss und einem Haus am Ufer.
+          </p>
+          {state?.surfaces?.water.map((source) => (
+            <div
+              className="surface-item"
+              key={source.id}
+              role="group"
+              aria-label={`Gewässer: ${source.name || source.id}`}
+            >
+              <strong>
+                {source.name || (source.kind === "lake" ? "See" : "Fluss")}
+              </strong>
+              <span className={`surface-status ${source.status}`}>
+                {source.status === "current"
+                  ? "Aktuell"
+                  : source.status === "stale"
+                    ? "Veraltet"
+                    : source.reason
+                      ? "Nicht geprüft"
+                      : "Wird geprüft"}
+              </span>
+              {source.status === "stale" && (
+                <p>
+                  Das Gelände hat sich geändert. Bestätigte Maske und Pegel
+                  bleiben erhalten.
+                </p>
+              )}
+              {source.reason && <p>{source.reason}</p>}
+            </div>
+          ))}
+          {Boolean(state?.surfaces?.water.length) && (
+            <>
+              <button disabled aria-describedby="adapt-water-explanation">
+                Gewässer an Gelände anpassen
+              </button>
+              <p className="hint" id="adapt-water-explanation">
+                Die automatische Anpassung folgt in einer späteren Version.
+                Sichtbares Wasser wird bereits am aktuellen Gelände
+                abgeschnitten.
+              </p>
+            </>
+          )}
+          {state?.surfaces?.foundations
+            .filter((foundation, i) =>
+              selectedHouse ? foundation.id === selectedHouse.id : i < 4,
+            )
+            .map((foundation, i) => (
+              <div className="surface-item" key={foundation.id}>
+                <strong>
+                  {selectedHouse ? "Ausgewähltes Haus" : `Haus ${i + 1}`}
+                </strong>
+                <span
+                  className={`surface-status ${foundation.ready ? "current" : "unknown"}`}
+                >
+                  {foundation.ready
+                    ? "Aktuell"
+                    : foundation.reason
+                      ? "Nicht berechnet"
+                      : "Wird geprüft"}
+                </span>
+                <dl>
+                  <dt>Fundamentbasis</dt>
+                  <dd>
+                    {foundation.base === null
+                      ? "—"
+                      : `${(foundation.base * 0.3048).toLocaleString("de-DE", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} m`}
+                  </dd>
+                  <dt>Fundamentoberkante</dt>
+                  <dd>
+                    {foundation.top === null
+                      ? "—"
+                      : `${(foundation.top * 0.3048).toLocaleString("de-DE", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} m`}
+                  </dd>
+                </dl>
+                {foundation.reason && <p>{foundation.reason}</p>}
+              </div>
+            ))}
+          {state?.surfaces?.message && (
+            <p className="hint">{state.surfaces.message}</p>
+          )}
+          {(state?.surfaces?.water.some((source) => source.reason) ||
+            state?.surfaces?.foundations.some(
+              (foundation) => foundation.reason,
+            )) && (
+            <button onClick={() => action((editor) => editor.retrySurfaces())}>
+              Erneut prüfen
+            </button>
+          )}
+        </section>
         <hr />
         <p className="eyebrow">ANSICHT</p>
         <div className="view-buttons">

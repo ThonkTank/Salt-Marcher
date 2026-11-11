@@ -28,9 +28,15 @@ const option = (name, fallback) => {
 const executablePath = option("--executable", undefined);
 const selection = option("--only", "all");
 if (
-  !["all", "normal", "stall", "lifecycle", "landscape", "house"].includes(
-    selection,
-  )
+  ![
+    "all",
+    "normal",
+    "stall",
+    "lifecycle",
+    "landscape",
+    "house",
+    "water",
+  ].includes(selection)
 )
   throw new Error("Unknown smoke selection");
 const out = resolve(
@@ -470,6 +476,12 @@ try {
     const { runHouseScenario } = await import("./atlas-p3-house.mjs");
     await scenario("house", () =>
       runHouseScenario({ launch, out, recordCheck }),
+    );
+  }
+  if (["all", "normal", "water"].includes(selection)) {
+    const { runWaterScenario } = await import("./atlas-p3-water.mjs");
+    await scenario("water", () =>
+      runWaterScenario({ launch, out, recordCheck }),
     );
   }
   if (selection === "all" || selection === "stall") {

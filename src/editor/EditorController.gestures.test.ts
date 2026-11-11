@@ -94,6 +94,21 @@ vi.mock("./render/WorldRenderer", () => ({
     redrawCursor() {}
     redraw() {}
     selectHouse() {}
+    surfaceReadNeed() {
+      return null;
+    }
+    surfaceRetainHeight() {
+      return null;
+    }
+    surfaceRetainWater() {
+      return [this.bounds()];
+    }
+    surfaceState() {
+      return null;
+    }
+    surfaceSample() {
+      return null;
+    }
     forgetSources() {}
     updateLandscape() {}
     finishFrame() {}
@@ -153,7 +168,7 @@ async function readyController(houses: HouseHeader[] = []) {
   const info: ProjectInfo = {
     sessionId: "landscape-controller",
     projectId: "landscape-controller",
-    format: 26,
+    format: 27,
     title: "Controller test",
     sequence: 0,
     savedSequence: 0,
@@ -162,6 +177,7 @@ async function readyController(houses: HouseHeader[] = []) {
     sourceTiles: 0,
     landscapeTiles: 0,
     houses: houses.length,
+    waters: 0,
     activeLandscapeLevels: [],
   };
   const unexpectedRead = async () => {
@@ -187,6 +203,7 @@ async function readyController(houses: HouseHeader[] = []) {
         ),
       }),
     ),
+    readWaterRegion: vi.fn(unexpectedRead),
     commit: vi.fn(async (request: CommitRequest) => {
       info.sequence = request.sequence;
       return {
@@ -286,13 +303,64 @@ const FOREST = [0, 0, 255, 0];
 const CLEAR = [0, 0, 0, 0];
 
 describe("house gestures through the shared controller and writer", () => {
+  it.each([false, true])(
+    "keeps the captured surface through its own pending foundation colour (drag=%s)",
+    async (drag) => {
+      const test = await readyController();
+      test.controller.setMode("house");
+      const capture = vi.spyOn(test.world, "captureFoundation");
+      const begin = vi.spyOn(test.doc, "beginHouseGesture");
+      vi.spyOn(test.world, "inspectFoundation").mockImplementation(() => ({
+        ...test.world.inspectRegion([-100, -100, 100, 100]),
+        status: "current",
+      }));
+      const accept = vi
+        .spyOn(test.world, "acceptFoundation")
+        .mockImplementation(
+          (bounds, receipt) =>
+            test.world.inspectFoundation(bounds as Bounds, receipt).status ===
+            "current",
+        );
+      test.pointer("pointerdown");
+      expect(test.doc.active).toBe(true);
+      expect(capture).toHaveBeenCalledOnce();
+      expect(capture.mock.invocationCallOrder[0]).toBeLessThan(
+        begin.mock.invocationCallOrder[0],
+      );
+      // The preview invalidates the colour pass before immediate Up or movement.
+      test.world.inspectionStatus = "stale";
+      if (drag) {
+        test.pointer("pointermove", 40, 20);
+        expect(
+          test.doc.housesInBounds([-100, -100, 100, 100])[0],
+        ).toMatchObject({
+          x: 40,
+          y: 20,
+        });
+      }
+      test.pointer("pointerup", drag ? 80 : 0, drag ? 40 : 0);
+      await test.drain();
+      expect(test.doc.housesInBounds([-100, -100, 150, 100])[0]).toMatchObject({
+        x: drag ? 80 : 0,
+        y: drag ? 40 : 0,
+      });
+      expect(accept).toHaveBeenCalledTimes(drag ? 3 : 2);
+      expect(test.doc.sequence).toBe(1);
+      expect(test.doc.metrics.historyActions).toBe(1);
+      expect(test.bridge.commit).toHaveBeenCalledOnce();
+      expect(test.controller.state.error).toBeNull();
+      expect(test.controller["foundation"]).toBeNull();
+    },
+  );
+
   it("loads the offscreen part of a selected header and a rotated property edit through the shared read slot", async () => {
     const header: HouseHeader = {
       id: "wide-cold-house",
       revision: 0,
       x: 0,
       y: 0,
-      width: 2000,
+      // Remain partly cold beyond the 500ft foundation-transition halo.
+      width: 4000,
       depth: 100,
       rotation: 0,
       foundationHeight: 1,
@@ -317,7 +385,7 @@ describe("house gestures through the shared controller and writer", () => {
     expect(test.doc.house(header.id)).toMatchObject({ rotation: 90 });
     expect(
       test.bridge.readHouseRegion.mock.calls.some(
-        ([request]) => request.bounds[1] <= -1000 && request.bounds[3] >= 1000,
+        ([request]) => request.bounds[1] <= -2000 && request.bounds[3] >= 2000,
       ),
     ).toBe(true);
     expect(test.doc.sequence).toBe(1);

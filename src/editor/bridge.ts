@@ -3,6 +3,7 @@ import type {
   HeightTile,
   LandscapeTile,
   HouseHeader,
+  WaterSource,
   SourcePatch,
 } from "./model";
 import type {
@@ -22,7 +23,7 @@ import type {
 export interface ProjectInfo {
   sessionId: string;
   projectId: string;
-  format: 26;
+  format: 27;
   title: string;
   sequence: number;
   savedSequence: number | null;
@@ -31,6 +32,7 @@ export interface ProjectInfo {
   sourceTiles: number;
   landscapeTiles: number;
   houses: number;
+  waters: number;
   activeLandscapeLevels: number[];
 }
 
@@ -92,10 +94,23 @@ export interface HouseRegionRead extends SourceBoundary {
   headers: HouseHeader[];
 }
 
+export interface ReadWaterRegionRequest {
+  sessionId: string;
+  bounds: Bounds;
+}
+
+export interface WaterRegionRead extends SourceBoundary {
+  bounds: Bounds;
+  sources: WaterSource[];
+}
+
+export type NewProjectRequest = PreparedDocument & { template?: "water" };
+
 export type CommitPatch =
   | Omit<Extract<SourcePatch, { kind: "height" }>, "before">
   | Omit<Extract<SourcePatch, { kind: "landscape" }>, "before">
-  | Omit<Extract<SourcePatch, { kind: "house" }>, "before">;
+  | Omit<Extract<SourcePatch, { kind: "house" }>, "before">
+  | Omit<Extract<SourcePatch, { kind: "water" }>, "before">;
 
 export interface CommitRequest extends SourceBoundary {
   transactionId: string;
@@ -139,9 +154,10 @@ export interface AtlasDesktop {
     request: LandscapePresentationRequest,
   ): Promise<LandscapePresentationRead>;
   readHouseRegion(request: ReadHouseRegionRequest): Promise<HouseRegionRead>;
+  readWaterRegion(request: ReadWaterRegionRequest): Promise<WaterRegionRead>;
   commit(request: CommitRequest): Promise<CommitReceipt>;
   /** Null means the user cancelled the native file/unsaved-changes dialog. */
-  newProject(prepared: PreparedDocument): Promise<ProjectInfo | null>;
+  newProject(prepared: NewProjectRequest): Promise<ProjectInfo | null>;
   openProject(prepared: PreparedDocument): Promise<ProjectInfo | null>;
   saveProject(request: SaveRequest): Promise<SaveResult | null>;
   /** Observation only; it neither waits for nor changes document readiness. */

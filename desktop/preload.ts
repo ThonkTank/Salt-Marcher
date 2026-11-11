@@ -33,6 +33,7 @@ const api: AtlasDesktop = {
   readLandscapePresentation: (request) =>
     call("readLandscapePresentation", request),
   readHouseRegion: (request) => call("readHouseRegion", request),
+  readWaterRegion: (request) => call("readWaterRegion", request),
   commit: (request) =>
     call("commit", {
       sessionId: request.sessionId,

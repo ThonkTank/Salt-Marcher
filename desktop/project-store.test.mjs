@@ -25,6 +25,9 @@ const {
   heightTileKey,
   heightFromScaledSum,
   prepareScaledHeightSum,
+  encodeHeightDependency,
+  HEIGHT_LEVELS,
+  waterBounds,
 } = require("../desktop-dist/model.cjs");
 
 const stores = [];
@@ -176,11 +179,422 @@ function terrainAuthorDigest(store) {
   return digest.digest("hex");
 }
 
+const lakeSource = (id = "test-lake", fields = {}) => {
+  const source = {
+    kind: "lake",
+    id,
+    revision: 1,
+    name: "Testsee",
+    rings: [
+      [
+        [-80, -80],
+        [80, -80],
+        [80, 80],
+        [-80, 80],
+      ],
+      [
+        [-20, -20],
+        [20, -20],
+        [20, 20],
+        [-20, 20],
+      ],
+    ],
+    level: 32,
+    terrain: {
+      kind: "height",
+      bounds: [-100, -100, 100, 100],
+      identity: `height-controls-v1:${"0".repeat(64)}`,
+    },
+    ...fields,
+  };
+  if (!fields.terrain) source.terrain.bounds = waterBounds(source);
+  return source;
+};
+const riverSource = (id = "test-river", fields = {}) => {
+  const source = {
+    kind: "river",
+    id,
+    revision: 1,
+    name: "Testfluss",
+    samples: [
+      { point: [0, 0], width: 10, level: 20 },
+      { point: [20, 0], width: 10, level: 18 },
+    ],
+    terrain: {
+      kind: "height",
+      bounds: [-100, -100, 100, 100],
+      identity: `height-controls-v1:${"1".repeat(64)}`,
+    },
+    ...fields,
+  };
+  if (!fields.terrain) source.terrain.bounds = waterBounds(source);
+  return source;
+};
+const waterPatch = (after) => ({
+  kind: "water",
+  key: `water:${after.id}`,
+  after,
+});
+const watersRead = (store, bounds = [-1000, -1000, 1000, 1000]) =>
+  store.readWaterRegion({ sessionId: store.status().sessionId, bounds });
+function waterAuthors(store) {
+  return store.current.database
+    .prepare(
+      "SELECT water_id,kind,revision,source_json FROM water_sources ORDER BY water_id",
+    )
+    .all();
+}
+
+test("water masks and profiles share atomic validation, rollback and replay receipts with all author kinds", async () => {
+  const { store } = await fresh();
+  const initial = store.status();
+  assert.equal(initial.waters, 0);
+  const lake = lakeSource(),
+    river = riverSource();
+  const height = heightTilesFromControls(0, [[0, 0, 140]])[0];
+  const landscape = landscapeFill(0, 0, 0, [100, 0, 0, 0]);
+  const request = {
+    sessionId: initial.sessionId,
+    sequence: 1,
+    transactionId: "mixed-water-action",
+    patches: [
+      { kind: "height", key: height.key, after: height },
+      landscapePatch(landscape),
+      housePatch(houseHeader()),
+      waterPatch(lake),
+      waterPatch(river),
+    ],
+  };
+  for (const invalid of [
+    { level: NaN },
+    { revision: -1 },
+    { id: "wrong-id" },
+    { name: "x".repeat(161) },
+    {
+      rings: [
+        [
+          [0, 0],
+          [1, 1],
+          [2, 2],
+        ],
+      ],
+    },
+    { terrain: { ...lake.terrain, identity: "runtime-revision:1" } },
+    {
+      rings: [
+        Array.from({ length: 513 }, (_, i) => [Math.cos(i), Math.sin(i)]),
+      ],
+    },
+  ])
+    assert.throws(() =>
+      store.commit({
+        ...request,
+        patches: [
+          ...request.patches.slice(0, 3),
+          { ...waterPatch(lake), after: { ...lake, ...invalid } },
+        ],
+      }),
+    );
+  assert.throws(() =>
+    store.commit({
+      ...request,
+      patches: [
+        waterPatch({
+          ...river,
+          samples: [river.samples[0], { ...river.samples[1], level: 21 }],
+        }),
+      ],
+    }),
+  );
+  assert.throws(() =>
+    store.commit({
+      ...request,
+      patches: [
+        waterPatch({
+          ...river,
+          samples: [river.samples[0], { ...river.samples[1], width: 0 }],
+        }),
+      ],
+    }),
+  );
+  assert.equal(store.status().sequence, 0);
+  store.current.database.exec(
+    "CREATE TRIGGER reject_water BEFORE INSERT ON water_sources BEGIN SELECT RAISE(ABORT,'isolated water failure'); END",
+  );
+  assert.throws(() => store.commit(request), /isolated water failure/);
+  for (const table of [
+    "height_tiles",
+    "landscape_tiles",
+    "house_headers",
+    "water_sources",
+    "water_spatial",
+    "height_overviews",
+    "landscape_overviews",
+    "transaction_receipts",
+  ])
+    assert.equal(
+      store.current.database.prepare(`SELECT count(*) AS n FROM ${table}`).get()
+        .n,
+      0,
+    );
+  assert.equal(store.status().waters, 0);
+  assert.equal(store.status().sequence, 0);
+  store.current.database.exec("DROP TRIGGER reject_water");
+  const receipt = store.commit(request);
+  assert.deepEqual(store.commit(request), receipt);
+  assert.equal(store.status().waters, 2);
+  assert.deepEqual(watersRead(store).sources, [lake, river]);
+  const reordered = {
+    ...request,
+    patches: request.patches.map((patch) =>
+      patch.kind !== "water"
+        ? patch
+        : {
+            ...patch,
+            after: Object.fromEntries(
+              Object.entries({
+                ...patch.after,
+                ignored: "not an author field",
+              }).reverse(),
+            ),
+          },
+    ),
+  };
+  assert.deepEqual(store.commit(reordered), receipt);
+  assert.throws(
+    () =>
+      store.commit({
+        ...request,
+        patches: [waterPatch({ ...lake, level: 33 })],
+      }),
+    /Widersprüchliche/,
+  );
+  assert.throws(
+    () => writeSources(store, [waterPatch(lake), waterPatch(lake)]),
+    /Doppelter/,
+  );
+});
+
+test("water moves, snapshots and reopening preserve exact masks, profiles and dependencies across terrain edits", async () => {
+  const { store, directory } = await fresh();
+  const lake = lakeSource(),
+    river = riverSource();
+  writeSources(store, [
+    waterPatch(lake),
+    waterPatch(river),
+    housePatch(houseHeader()),
+    landscapePatch(landscapeFill(0, 0, 0, [80, 20, 0, 0])),
+  ]);
+  const authorTerrain = terrainAuthorDigest(store);
+  const originalHouses = housesRead(store, [-1000, -1000, 1000, 1000]).headers;
+  const snapshot = await store.prepareSave(store.status());
+  const moved = {
+    ...lake,
+    revision: 2,
+    rings: lake.rings.map((ring) => ring.map(([x, y]) => [x + 4000, y + 6000])),
+    terrain: { ...lake.terrain, bounds: [3920, 5920, 4080, 6080] },
+  };
+  writeSources(store, [waterPatch(moved)]);
+  assert.equal(terrainAuthorDigest(store), authorTerrain);
+  assert.deepEqual(
+    housesRead(store, [-1000, -1000, 1000, 1000]).headers,
+    originalHouses,
+  );
+  assert.deepEqual(watersRead(store).sources, [river]);
+  assert.deepEqual(watersRead(store, [3900, 5900, 4100, 6100]).sources, [
+    moved,
+  ]);
+  const authorsBeforeTerrain = waterAuthors(store);
+  // A trigger on every water author write proves ordinary terrain never rewrites
+  // or eagerly marks derived sources. Their content dependency stays historical.
+  store.current.database.exec(
+    "CREATE TRIGGER preserve_water BEFORE UPDATE ON water_sources BEGIN SELECT RAISE(ABORT,'terrain touched water'); END",
+  );
+  write(store, heightTilesFromControls(0, [[0, 0, 170]]));
+  assert.deepEqual(waterAuthors(store), authorsBeforeTerrain);
+  store.current.database.exec("DROP TRIGGER preserve_water");
+  const target = join(directory, "water-snapshot.saltatlas");
+  await store.publishSave(snapshot.token, target);
+  const { store: reopened } = await fresh();
+  const saved = await reopened.openProject(target);
+  assert.equal(saved.sequence, 1);
+  assert.equal(saved.waters, 2);
+  assert.deepEqual(watersRead(reopened).sources, [lake, river]);
+  assert.equal(terrainAuthorDigest(reopened), authorTerrain);
+  assert.equal(read(reopened, [-1, -1, 1, 1]).tiles.length, 0);
+  await store.saveProject(store.status(), target);
+  await reopened.openProject(target);
+  assert.deepEqual(watersRead(reopened).sources, [river]);
+  assert.deepEqual(watersRead(reopened, [3900, 5900, 4100, 6100]).sources, [
+    moved,
+  ]);
+  writeSources(reopened, [
+    { kind: "water", key: `water:${moved.id}`, after: null },
+  ]);
+  assert.equal(reopened.status().waters, 1);
+  assert.deepEqual(watersRead(reopened, [3900, 5900, 4100, 6100]).sources, []);
+});
+
+test("water Open validates bounded payloads and rebuilds exact spatial bounds without modifying the source file", async () => {
+  const { store, directory } = await fresh();
+  const edge = lakeSource("edge-lake", {
+    rings: [
+      [
+        [99_999_995.2, -0.2],
+        [99_999_996.8, -0.2],
+        [99_999_996.8, 0.2],
+        [99_999_995.2, 0.2],
+      ],
+    ],
+  });
+  writeSources(store, [waterPatch(edge)]);
+  const target = join(directory, "cold-water.saltatlas");
+  await store.saveProject(store.status(), target);
+  let damaged = new Database(target);
+  damaged.exec(
+    "DELETE FROM water_spatial; UPDATE water_sources SET min_x=0,max_x=1,min_y=0,max_y=1",
+  );
+  damaged.close();
+  const diskBytes = await readFile(target);
+  await store.openProject(target);
+  assert.deepEqual(await readFile(target), diskBytes);
+  assert.deepEqual(watersRead(store, [99_999_995, -1, 99_999_997, 1]).sources, [
+    edge,
+  ]);
+  assert.deepEqual(
+    watersRead(store, [99_999_996.9, -1, 99_999_997.1, 1]).sources,
+    [],
+  );
+  const accepted = store.status();
+  damaged = new Database(target);
+  damaged.prepare("UPDATE water_sources SET source_json=?").run(
+    JSON.stringify({
+      ...edge,
+      terrain: { ...edge.terrain, identity: "height-controls-v1:bad" },
+    }),
+  );
+  damaged.close();
+  await assert.rejects(store.openProject(target), /Inhaltsidentität/);
+  assert.equal(store.status().sessionId, accepted.sessionId);
+  assert.deepEqual(watersRead(store, [99_999_995, -1, 99_999_997, 1]).sources, [
+    edge,
+  ]);
+  damaged = new Database(target);
+  damaged.pragma("ignore_check_constraints = ON");
+  damaged
+    .prepare("UPDATE water_sources SET source_json=?")
+    .run(" ".repeat(128 * 1024 + 1));
+  damaged.close();
+  await assert.rejects(store.openProject(target), /Quellengröße|SQLite/);
+  assert.equal(store.status().sessionId, accepted.sessionId);
+  const previous = join(directory, "format26.saltatlas");
+  await store.saveProject(store.status(), previous);
+  damaged = new Database(previous);
+  damaged.pragma("user_version = 26");
+  damaged.close();
+  await assert.rejects(store.openProject(previous), /Format 27/);
+});
+
+test("water reads include the river-bank influence and reject dense truncated regions", async () => {
+  const { store } = await fresh();
+  const river = riverSource();
+  writeSources(store, [waterPatch(river)]);
+  assert.deepEqual(watersRead(store, [5, 18, 6, 19]).sources, [river]);
+  assert.deepEqual(watersRead(store, [5, 23, 6, 24]).sources, []);
+  const lakes = Array.from({ length: 129 }, (_, i) =>
+    lakeSource(`dense-${i}`, {
+      rings: [
+        [
+          [1000 + i * 4, 0],
+          [1001 + i * 4, 0],
+          [1001 + i * 4, 1],
+          [1000 + i * 4, 1],
+        ],
+      ],
+    }),
+  );
+  writeSources(store, lakes.map(waterPatch));
+  assert.equal(store.status().waters, 130);
+  assert.throws(
+    () => watersRead(store, [999, -1, 1520, 2]),
+    /zu viele Gewässer/,
+  );
+  assert.deepEqual(watersRead(store, [1000, -1, 1001, 2]).sources, [lakes[0]]);
+  const stale = store.status().sessionId;
+  store.newProject();
+  assert.throws(
+    () => store.readWaterRegion({ sessionId: stale, bounds: [0, 0, 1, 1] }),
+    /Veraltete/,
+  );
+});
+
+test("the ordinary water template is one saved author state with true slope, masks and complete height identities", async () => {
+  const { store, directory } = await fresh();
+  const empty = store.status();
+  assert.throws(() => store.newProject(empty, "unknown"), /Projektvorlage/);
+  assert.equal(store.status().sessionId, empty.sessionId);
+  const info = store.newProject(empty, "water");
+  assert.equal(info.format, 27);
+  assert.equal(info.sequence, 1);
+  assert.equal(info.savedSequence, null);
+  assert.equal(info.waters, 2);
+  assert.equal(info.houses, 1);
+  assert.equal(info.sourceTiles, 4);
+  assert.deepEqual(info.activeLevels, [3]);
+  const waters = watersRead(store).sources;
+  const heights = read(store, [-500, -500, 500, 500]).tiles;
+  const natural = prepareScaledHeightSum(heights);
+  for (const [x, y] of [
+    [-240, 40],
+    [-40, 80],
+    [100, 60],
+    [132, 55],
+  ])
+    assert.ok(
+      Math.abs(
+        heightFromScaledSum(natural(x, y)) - (34 + 0.025 * x + 0.01 * y),
+      ) < 1e-9,
+    );
+  const lake = waters.find((source) => source.kind === "lake"),
+    river = waters.find((source) => source.kind === "river");
+  assert.equal(lake.level, 32);
+  assert.equal(lake.rings.length, 2);
+  assert.deepEqual(
+    river.samples.map((sample) => sample.level),
+    [38, 35, 32, 29],
+  );
+  for (const water of waters) {
+    assert.deepEqual(water.terrain.bounds, waterBounds(water));
+    const hash = createHash("sha256");
+    for (const chunk of encodeHeightDependency({
+      bounds: water.terrain.bounds,
+      levels: HEIGHT_LEVELS,
+      tiles: heights,
+    }))
+      hash.update(chunk);
+    assert.equal(
+      water.terrain.identity,
+      `height-controls-v1:${hash.digest("hex")}`,
+    );
+  }
+  const authors = waterAuthors(store),
+    terrain = terrainAuthorDigest(store);
+  const target = join(directory, "normal-water-scene.saltatlas");
+  await store.saveProject(info, target);
+  store.newProject(store.status());
+  assert.equal(store.status().waters, 0);
+  await store.openProject(target);
+  assert.deepEqual(waterAuthors(store), authors);
+  assert.equal(terrainAuthorDigest(store), terrain);
+  assert.deepEqual(watersRead(store).sources, waters);
+  assert.equal(store.status().savedSequence, 1);
+});
+
 test("house headers share the atomic commit, validation and replay boundary with terrain", async () => {
   const { store } = await fresh();
   const initial = store.status();
   assert.equal(initial.houses, 0);
-  assert.equal(initial.format, 26);
+  assert.equal(initial.format, 27);
   assert.deepEqual(housesRead(store, [-200, -200, 200, 200]).headers, []);
   const header = houseHeader();
   const height = heightTilesFromControls(0, [[20, 20, 40]])[0];
@@ -358,7 +772,7 @@ test("house cold loads rebuild spatial bounds, reject corrupt headers and remove
   const unsupported = new Database(old);
   unsupported.pragma("user_version = 25");
   unsupported.close();
-  await assert.rejects(store.openProject(old), /Format 26/);
+  await assert.rejects(store.openProject(old), /Format 27/);
 });
 
 test("bounded house region reads never certify a truncated dense view as empty or complete", async () => {
@@ -399,7 +813,7 @@ test("bounded house region reads never certify a truncated dense view as empty o
 test("landscape starts sparse and shares atomic validation, receipt identity and session boundaries with height", async () => {
   const { store } = await fresh();
   const info = store.status();
-  assert.equal(info.format, 26);
+  assert.equal(info.format, 27);
   assert.equal(info.landscapeTiles, 0);
   assert.deepEqual(info.activeLandscapeLevels, []);
   assert.deepEqual(landscapeRead(store, [-100, -100, 100, 100]).tiles, []);
@@ -862,10 +1276,12 @@ test("the utility dispatcher answers local reads during a real snapshot and orde
   const height = heightTilesFromControls(0, [[0, 0, 40]])[0];
   const landscape = landscapeFill(0, 0, 0, [80, 20, 0, 0]);
   const header = houseHeader("save-overlap-house", { x: 0, y: 0 });
+  const water = lakeSource("save-overlap-lake");
   writeSources(store, [
     { kind: "height", key: height.key, after: height },
     landscapePatch(landscape),
     housePatch(header),
+    waterPatch(water),
   ]);
   const fixture = join(directory, "fixture.saltatlas");
   await store.saveProject(store.status(), fixture);
@@ -998,6 +1414,7 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
             landscapeRegion,
             landscapePresentation,
             houseRegion,
+            waterRegion,
             stale,
           ] = await Promise.all([
             request("readRegion", query),
@@ -1005,6 +1422,7 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
             request("readLandscapeRegion", { ...query, minLevel: 0 }),
             request("readLandscapePresentation", { ...query, power: 1 }),
             request("readHouseRegion", query),
+            request("readWaterRegion", query),
             request("readRegion", {
               ...query,
               sessionId: "stale-session",
@@ -1058,6 +1476,7 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
               fineTiles: landscapePresentation.tiles.length,
             },
             houseRegion,
+            waterRegion,
             stale,
             saved,
             live: { sequence: live.sequence, height: live.tiles[0].values[0] },
@@ -1091,6 +1510,9 @@ require(${JSON.stringify(require.resolve("../desktop-dist/store-process.cjs"))})
     assert.ok(result.beforeRelease.includes("readHouseRegion"));
     assert.equal(result.houseRegion.sequence, 1);
     assert.deepEqual(result.houseRegion.headers, [header]);
+    assert.ok(result.beforeRelease.includes("readWaterRegion"));
+    assert.equal(result.waterRegion.sequence, 1);
+    assert.deepEqual(result.waterRegion.sources, [water]);
     assert.match(result.stale, /Veraltete/);
     const snapshotEnd = result.events.indexOf("snapshot:end");
     assert.ok(
@@ -1147,7 +1569,7 @@ test("cancel and invalid opens keep the current document and source file intact"
   const database = new Database(legacy);
   database.pragma("user_version = 22");
   database.close();
-  await assert.rejects(store.openProject(legacy), /Format 26/);
+  await assert.rejects(store.openProject(legacy), /Format 27/);
   await assert.rejects(store.openProject(join(directory, "missing.saltatlas")));
   assert.deepEqual(store.status(), prior);
   assert.deepEqual(await readFile(valid), before);
