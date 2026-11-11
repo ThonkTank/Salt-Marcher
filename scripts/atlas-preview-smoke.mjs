@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect } from "@playwright/test";
 import { launchAtlasDesktop } from "./atlas-p0-desktop.mjs";
 import { assetName, CHANNEL, REPOSITORY } from "./atlas-preview-release.mjs";
 
@@ -260,9 +261,8 @@ try {
     assert.equal(rejected.downloadedBytes, 0);
     assert.match(rejected.message, /Prüfsumme/);
   });
-  assert.ok(
-    (await dialog.getByRole("status").innerText()).includes("Prüfsumme"),
-  );
+  // The main-process result can arrive before React renders its status event.
+  await expect(dialog.getByRole("status")).toContainText("Prüfsumme");
   report.checks.push({
     name: "checksum failure is visible in the real dialog",
     passed: true,
