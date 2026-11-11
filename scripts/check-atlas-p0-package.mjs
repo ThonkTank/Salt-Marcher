@@ -110,3 +110,21 @@ const result = spawnSync(
 );
 if (result.error) throw result.error;
 process.exitCode = result.status ?? 1;
+
+// The shell must also work in the actual package. Keep the existing product
+// smoke intact and require both checks before publishing a preview.
+if (process.exitCode === 0) {
+  const ui = spawnSync(
+    process.execPath,
+    [
+      "scripts/atlas-editor-ui-smoke.mjs",
+      "--executable",
+      executable,
+      "--out",
+      join(out, "ui"),
+    ],
+    { stdio: "inherit", env: process.env },
+  );
+  if (ui.error) throw ui.error;
+  process.exitCode = ui.status ?? 1;
+}
