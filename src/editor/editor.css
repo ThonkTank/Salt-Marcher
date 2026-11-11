@@ -125,6 +125,10 @@ canvas:focus-visible {
 }
 .project-label {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 600;
 }
@@ -141,6 +145,116 @@ canvas:focus-visible {
 .atlas-header nav {
   display: flex;
   gap: 6px;
+}
+.atlas-header nav,
+.preview-update-button {
+  flex-shrink: 0;
+}
+.preview-update-button {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.preview-update-button.has-update {
+  border-color: #d2b574;
+  color: #f1e2b9;
+}
+.preview-update-button > span {
+  color: #d2b574;
+  margin-right: 7px;
+}
+.preview-update-dialog {
+  width: min(540px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  border: 1px solid #62766c;
+  border-radius: 10px;
+  padding: 24px;
+  background: #1a2e34;
+  color: #e5e9e6;
+  box-shadow: 0 16px 80px #07131988;
+}
+.preview-update-dialog::backdrop {
+  background: #09171dbc;
+}
+.preview-update-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.preview-update-heading h2 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: #f1e6cd;
+}
+.preview-update-heading > button {
+  font-size: 12px;
+}
+.preview-update-builds {
+  margin: 24px 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.preview-update-builds dt {
+  color: #a9bcb5;
+  margin-top: 16px;
+}
+.preview-update-builds dd {
+  margin: 6px 0 0;
+}
+.preview-update-builds code {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #b7c7bb;
+}
+.preview-update-message,
+.preview-update-hint,
+.preview-update-error {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.preview-update-hint {
+  color: #a9bcb5;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+.preview-update-error {
+  color: #ffc3b0;
+}
+.preview-update-progress {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.preview-update-progress progress {
+  width: 100%;
+  accent-color: #d2b574;
+}
+.preview-update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.preview-update-actions button {
+  font-size: 12px;
+}
+@media (max-width: 1100px) {
+  .atlas-header {
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .atlas-brand {
+    min-width: 160px;
+  }
+  .atlas-header nav button {
+    font-size: 12px;
+  }
 }
 .primary {
   background: #d2b574;

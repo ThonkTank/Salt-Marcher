@@ -6,10 +6,15 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { rebuild } from "@electron/rebuild";
+import { previewMetadata } from "./atlas-preview-release.mjs";
 
 const root = new URL("../", import.meta.url);
 process.chdir(fileURLToPath(root));
 const require = createRequire(import.meta.url);
+const preview = previewMetadata(
+  require("../package.json").version,
+  process.env.ATLAS_PREVIEW_BUILD,
+);
 const electronPath = require("electron");
 const probeSqlite = () =>
   spawnSync(
@@ -94,6 +99,7 @@ const sources = [
   ),
   ...(await sourceFiles("desktop")).filter((file) => !/\.test\./.test(file)),
   "scripts/build-atlas-p0.mjs",
+  "scripts/atlas-preview-release.mjs",
   "vite.editor.config.ts",
   "tsconfig.json",
   "tsconfig.editor.json",
@@ -122,6 +128,7 @@ await writeFile(
         .digest("hex"),
       builtAt: new Date().toISOString(),
       node: process.version,
+      ...(preview ? { preview } : {}),
     },
     null,
     2,

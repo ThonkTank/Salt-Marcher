@@ -1086,6 +1086,42 @@ abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-histo
 
 ## Optionaler Atlas-P0-Versuch
 
+### Vorschauupdates unter Fedora
+
+Die gepackte Linux-x86_64-Vorschau prüft einmal nach dem Start den festen
+GitHub-Kanal **Atlas-Vorschau** für Draft-PR #1469. **Updates** zeigt aktuellen
+Build und Commit und bietet eine erneute Prüfung an. Ein verfügbarer neuer
+Stand wird auch am Knopf angezeigt. Entwicklungsläufe führen keine automatische
+Netzanfrage aus. Ein Fehler beim Prüfen oder Herunterladen verändert keine Karte
+und beendet die App nicht.
+
+**Herunterladen** lädt erst nach dem Klick das passende RPM mit Fortschritt.
+Falsche Größe, Prüfsumme, Plattform oder Kanal werden abgewiesen; ein
+fehlgeschlagener Download ist nicht installierbar. **Installieren und neu starten**
+ist nur in einer vom passenden RPM installierten App mit DNF und Polkit verfügbar.
+Die Aktion beendet angenommene Bearbeitungen und ausstehende Writes und bietet bei
+ungespeicherten Karten **Speichern / Verwerfen / Abbrechen** an. Abbrechen oder
+fehlgeschlagenes Speichern startet keine Installation und erhält die Bearbeitung.
+Danach bestätigt der Nutzer die Installation im Systemdialog. Der Renderer kann
+keine fremden Pakete, Installationsziele oder Befehle übergeben.
+
+Die App installiert keine ältere oder bereits vorhandene Paketversion. Nach der
+Systeminstallation muss die tatsächliche RPM-Identität dem angeforderten Build
+entsprechen. Erst dann erfolgt der Neustart. Zwischen erfolgreicher Installation
+und Neustart bleibt die Bearbeitung gesperrt; alte und neue Programmdateien werden
+nicht in einer weiterlaufenden Editorsitzung gemischt. Falls der Neustart nicht
+abgeschlossen werden kann, bleibt **Jetzt neu starten** verfügbar. Auch ein
+nicht eindeutig bestätigter Paketvorgang verlangt einen Neustart, ohne als
+erfolgreiches Update ausgewiesen zu werden.
+
+Die Release-Seite bietet RPM und ZIP auch direkt zum Download. Die ZIP-Ausgabe
+ersetzt keine RPM-Installation und bietet ohne diese keinen System-Updateknopf.
+Prüfsummen und HTTPS sichern den Downloadpfad; unabhängige Paketsignaturen sind
+kein Bestandteil dieses Testkanals. Vorschauupdates sind keine Aussage über
+vollständige Leistungsabnahme oder Kompatibilität früherer Versuchsdateien.
+
+### Editorumfang
+
 P0 ist ein eigener, ausdrücklich gewählter Höhen-, Landschafts- und Hauseditor.
 Er bietet Verschieben und Zoom vom Nahbereich bis zur Welt, Raster ein/aus,
 Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel, rechteckige

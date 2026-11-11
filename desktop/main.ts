@@ -5,6 +5,7 @@ import {
   ipcMain,
   Menu,
   screen,
+  shell,
   utilityProcess,
   type IpcMainInvokeEvent,
   type UtilityProcess,
@@ -24,9 +25,18 @@ import type {
 } from "../src/editor/bridge";
 import type { PreparedSave, StoreActivity } from "./project-store";
 import { HEIGHT_MAX_ACTION_TILES } from "../src/editor/model/types";
+import type { PreviewBuild } from "../src/editor/preview-updates";
+import {
+  canInstallRpm,
+  installPreviewRpm,
+  PREVIEW_RELEASE_URL,
+  PreviewUpdater,
+} from "./updates";
+import { fetchElectronUpdate } from "./update-network";
 
 const CHANNEL = "atlas:p0";
 const FILE_ACTION_CHANNEL = "atlas:p0:file-action";
+const UPDATE_CHANNEL = "atlas:p0:updates";
 const MAX_PENDING = 64;
 const diagnostics = process.env.ATLAS_P0_DIAGNOSTICS === "1";
 const indexPath = resolve(__dirname, "../dist-editor/index.html");
@@ -190,6 +200,10 @@ let pendingFileAction: {
 } | null = null;
 let diagnosticCommitAttempts = 0;
 let releaseDiagnosticCommit: (() => void) | null = null;
+let updates: PreviewUpdater;
+let updateTimer: ReturnType<typeof setTimeout> | undefined;
+let closing = false;
+let updateClosePermit: { boundary: SourceBoundary | null } | null = null;
 
 function trustedSender(
   event: Pick<IpcMainInvokeEvent, "sender" | "senderFrame">,
@@ -377,6 +391,150 @@ async function replaceUnavailableStore(): Promise<void> {
   workingDirectory = mkdtempSync(join(app.getPath("temp"), "atlas-p0-"));
   store = new StoreProcess(workingDirectory);
   await store.ready;
+}
+
+async function finishClose(
+  permit: { boundary: SourceBoundary | null },
+  restart: boolean,
+) {
+  if (permit.boundary) await store.request("close", permit.boundary);
+  else store.terminate();
+  if (restart)
+    app.relaunch({ execPath: "/usr/bin/saltmarcher-atlas-p0", args: [] });
+  allowClose = true;
+  window.close();
+}
+
+/** Restart uses the same accepted-edit, writer and unsaved-document boundary as Close. */
+async function closeEditor(restart = false) {
+  if (closing) return;
+  closing = true;
+  try {
+    await oneFileAction(async () => {
+      let error: string | undefined;
+      try {
+        // After a successful installation the old editor must not load workers
+        // from the replaced application files. Its already accepted close boundary
+        // remains frozen until restart/close, including a failed relaunch attempt.
+        if (updateClosePermit) {
+          await finishClose(updateClosePermit, restart);
+          return;
+        }
+        const prepared = await requestFileAction({ kind: "prepare" });
+        if (!prepared) throw new Error("Der lokale Editorstand fehlt.");
+        const permit = await mayReplace(prepared);
+        if (!permit) return;
+        await finishClose(permit, restart);
+      } catch (failure) {
+        error = failure instanceof Error ? failure.message : String(failure);
+        if (restart || updateClosePermit) throw failure;
+      } finally {
+        if (!allowClose && !updateClosePermit)
+          await requestFileAction({ kind: "resume", error });
+      }
+    });
+  } finally {
+    closing = false;
+  }
+}
+
+async function registerUpdates() {
+  let current: PreviewBuild = {
+    version: app.getVersion(),
+    revision: null,
+    commit: "unbekannt",
+  };
+  let identified = false;
+  try {
+    const build = JSON.parse(
+      readFileSync(join(__dirname, "build.json"), "utf8"),
+    );
+    if (/^[a-f0-9]{40}$/.test(build.commit)) {
+      current.commit = build.commit;
+      identified = true;
+    }
+    if (build.preview !== undefined) {
+      if (
+        build.preview?.channel !== "atlas-preview" ||
+        build.preview.version !== app.getVersion() ||
+        typeof build.preview.revision !== "string" ||
+        !/^[1-9][0-9]*\.[1-9][0-9]*$/.test(build.preview.revision)
+      )
+        identified = false;
+      else current = { ...current, revision: build.preview.revision };
+    }
+  } catch {
+    // An unidentified local build can link to releases but cannot select updates.
+  }
+  updates = new PreviewUpdater({
+    current,
+    supported:
+      identified &&
+      app.isPackaged &&
+      process.platform === "linux" &&
+      process.arch === "x64",
+    canInstall: app.isPackaged && (await canInstallRpm(process.execPath)),
+    cacheDirectory: join(app.getPath("userData"), "preview-updates"),
+    fetch: fetchElectronUpdate,
+    install: installPreviewRpm,
+    changed: (state) => {
+      if (!window.isDestroyed()) window.webContents.send(UPDATE_CHANNEL, state);
+    },
+  });
+  ipcMain.handle(UPDATE_CHANNEL, async (event, method: unknown) => {
+    trustedSender(event);
+    switch (method) {
+      case "status":
+        return updates.snapshot();
+      case "check":
+        return updates.check();
+      case "download":
+        return updates.download();
+      case "install": {
+        const state = updates.snapshot();
+        if (
+          !state.canInstall ||
+          !state.downloaded ||
+          !["ready", "error"].includes(state.status)
+        )
+          return state;
+        return oneFileAction(async () => {
+          let error: string | undefined;
+          try {
+            const prepared = await requestFileAction({ kind: "prepare" });
+            if (!prepared) throw new Error("Der lokale Editorstand fehlt.");
+            const permit = await mayReplace(prepared);
+            if (!permit) return updates.snapshot();
+            const result = await updates.install();
+            if (["installed", "restart-required"].includes(result.status)) {
+              updateClosePermit = permit;
+              if (result.status === "installed")
+                await finishClose(permit, true);
+            }
+            return result;
+          } catch (failure) {
+            error =
+              failure instanceof Error ? failure.message : String(failure);
+            throw failure;
+          } finally {
+            if (!allowClose && !updateClosePermit)
+              await requestFileAction({ kind: "resume", error });
+          }
+        });
+      }
+      case "restart":
+        if (
+          !updateClosePermit ||
+          !["installed", "restart-required"].includes(updates.snapshot().status)
+        )
+          throw new Error("Es wurde kein Update erfolgreich installiert.");
+        return closeEditor(true);
+      case "openRelease":
+        return shell.openExternal(PREVIEW_RELEASE_URL);
+      default:
+        throw new Error("Unbekannte Update-Anfrage.");
+    }
+  });
 }
 
 function registerBridge() {
@@ -736,46 +894,32 @@ async function start() {
     (_webContents, _permission, callback) => callback(false),
   );
   registerBridge();
+  await registerUpdates();
   registerDiagnostics();
-  let closing = false;
   window.on("close", (event) => {
     if (allowClose) return;
     event.preventDefault();
-    if (closing) return;
-    closing = true;
-    void oneFileAction(async () => {
-      let error: string | undefined;
-      let prepared: PreparedDocument | null = null;
-      try {
-        prepared = await requestFileAction({ kind: "prepare" });
-        if (!prepared) throw new Error("Der lokale Editorstand fehlt.");
-        const permit = await mayReplace(prepared);
-        if (!permit) return;
-        if (permit.boundary) await store.request("close", permit.boundary);
-        else store.terminate();
-        allowClose = true;
-        window.close();
-      } catch (failure) {
-        error = failure instanceof Error ? failure.message : String(failure);
-      } finally {
-        if (!allowClose) await requestFileAction({ kind: "resume", error });
-      }
-    })
-      .catch((error) =>
-        dialog.showErrorBox(
-          "Atlas konnte nicht geschlossen werden",
-          error instanceof Error ? error.message : String(error),
-        ),
-      )
-      .finally(() => {
-        closing = false;
-      });
+    void closeEditor().catch((error: unknown) =>
+      dialog.showErrorBox(
+        "Atlas konnte nicht geschlossen werden",
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
   });
   await window.loadFile(indexPath, fault ? { query: { fault } } : undefined);
+  // Checking is cheap and asynchronous; downloading and installation always need a click.
+  if (updates.snapshot().status !== "unsupported")
+    updateTimer = setTimeout(() => {
+      void updates.check();
+    }, 5_000);
 }
 
 app.on("window-all-closed", () => app.quit());
-app.on("will-quit", () => store?.terminate());
+app.on("will-quit", () => {
+  clearTimeout(updateTimer);
+  void updates?.dispose();
+  store?.terminate();
+});
 
 void start().catch((error) => {
   console.error("Atlas-Desktopstart fehlgeschlagen:", error);

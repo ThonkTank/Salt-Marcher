@@ -5,6 +5,14 @@ const { readdir, rm } = require("node:fs/promises");
 const { join } = require("node:path");
 const runtimeModules = new Set(["better-sqlite3", "node-addon-api"]);
 const executableName = "saltmarcher-atlas-p0";
+const previewRevision = process.env.ATLAS_PREVIEW_BUILD;
+if (
+  previewRevision !== undefined &&
+  !/^[1-9][0-9]*\.[1-9][0-9]*$/.test(previewRevision)
+)
+  throw new Error(
+    "ATLAS_PREVIEW_BUILD must be the workflow run ID and attempt.",
+  );
 const desktopFiles = new Set([
   "main.cjs",
   "preload.cjs",
@@ -69,6 +77,12 @@ module.exports = {
           description: "Atlas terrain feasibility study",
           homepage: "https://github.com/ThonkTank/Salt-Marcher",
           license: "UNLICENSED",
+          ...(previewRevision
+            ? {
+                version: require("./package.json").version,
+                revision: previewRevision,
+              }
+            : {}),
         },
       },
     },

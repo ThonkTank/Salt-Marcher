@@ -520,6 +520,45 @@ Main und Preload besitzen Fenster, native Dialoge und die typisierte IPC-Brücke
 Der SQLite-Store liegt im Utility-Prozess. Context Isolation und Sandbox bleiben
 aktiv; der Renderer hat weder Node-Integration noch SQL-Zugriff.
 
+### Vorschauveröffentlichung und Desktopupdates
+
+`desktop/updates.ts` besitzt einen einzelnen Updatevorgang: geprüfte Releaseidentität,
+begrenzten Download, Dateiprüfung und RPM-Installation. Der Renderer erhält über
+`atlasUpdates` ausschließlich Status und feste Aktionen, keine beliebigen URLs,
+Dateipfade oder Kommandos. Main prüft den Absender wie bei Projektaktionen.
+`desktop/update-network.ts` verwendet Electrons `net.request`; manuelle
+Weiterleitungen gehen als Antwort an die gemeinsame HTTPS-/GitHub-Zielprüfung.
+`net.fetch` kann in der gepinnten Electron-Version solche Weiterleitungen nicht
+liefern. Der Download bleibt ein Datenstrom mit Rückstau und Zeit-/Größenlimit.
+
+Der Updater akzeptiert ausschließlich den Kanal `atlas-preview` des festen
+Repositories. Releaseversion, numerische RPM-Revision, Commit, Plattform,
+Größe und SHA-256 werden geprüft. Vor dem privilegierten DNF-Aufruf werden die
+lokale Datei erneut gehasht, die tatsächlichen RPM-Metadaten gelesen und ein
+Downgrade gegenüber dem installierten Paket ausgeschlossen. Der Aufruf verwendet
+feste ausführbare Pfade und ein Argumentarray ohne Shell. Die Systemfreigabe
+läuft über Polkit. Erfolgreicher Prozessabschluss genügt nicht: Die installierte
+RPM-Identität muss danach dem Download entsprechen. Die Prüfsumme belegt
+Übertragungsintegrität innerhalb des HTTPS-Kanals, keine unabhängige Paketsignatur.
+
+Main verwendet für die Installation dieselbe Aktions-/Writerbarriere und
+Speichern-/Verwerfen-/Abbrechen-Entscheidung wie beim Schließen. Danach bleibt der
+Editor bis zum Neustart gesperrt, damit alte Prozesse keine Worker oder Module
+aus den gerade ersetzten Programmdateien laden. Eine abgebrochene Systemfreigabe oder ein Fehler vor dem Paketvorgang gibt
+den bestehenden Editor wieder frei. Kann ein bereits gestarteter Paketvorgang
+nicht eindeutig bestätigt werden, bleibt der Editor mit einem ausdrücklichen
+Neustarthinweis gesperrt, ohne einen Updateerfolg zu behaupten. Ein bestätigtes Update
+startet unmittelbar die installierte Anwendung neu; ein fehlgeschlagener
+Neustart erhält die bereits bestätigte Schließgrenze.
+
+`.github/workflows/atlas-preview.yml` trennt Paketbau mit Leserechten und
+Veröffentlichung mit `contents: write`. `scripts/atlas-preview-release.mjs`
+prüft den sauberen exakten Build, das reale ASAR, RPM-Metadaten und übertragene
+Artefaktbytes. Nur der weiterhin aktuelle Kopf des ausdrücklich festgelegten
+Vorschauzweigs darf den rollenden Prerelease-Tag aktualisieren. Eindeutige
+Binärdateien werden vor dem Manifest veröffentlicht; alte Downloadziele bleiben
+erhalten. V7, stabile Releases und andere Branches sind kein Ziel dieses Pfads.
+
 ### Integrierter C1-Eingabe- und Wirkungspfad
 
 `beginTimedBrush`/`planTimedBrushWindow` in `brush.ts` verwenden die gemeinsame

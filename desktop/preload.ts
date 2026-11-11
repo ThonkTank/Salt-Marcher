@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { AtlasDesktop, FileActionRequest } from "../src/editor/bridge";
+import type {
+  AtlasUpdates,
+  PreviewUpdateState,
+} from "../src/editor/preview-updates";
 
 const call = (method: string, argument?: unknown) =>
   ipcRenderer.invoke("atlas:p0", { method, argument });
@@ -53,3 +57,23 @@ const api: AtlasDesktop = {
 };
 
 contextBridge.exposeInMainWorld("atlasDesktop", api);
+
+const updateCall = (method: string) =>
+  ipcRenderer.invoke("atlas:p0:updates", method);
+const updates: AtlasUpdates = {
+  status: () => updateCall("status"),
+  check: () => updateCall("check"),
+  download: () => updateCall("download"),
+  install: () => updateCall("install"),
+  restart: () => updateCall("restart"),
+  openRelease: () => updateCall("openRelease"),
+  onStatus: (handler) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      state: PreviewUpdateState,
+    ) => handler(state);
+    ipcRenderer.on("atlas:p0:updates", listener);
+    return () => ipcRenderer.removeListener("atlas:p0:updates", listener);
+  },
+};
+contextBridge.exposeInMainWorld("atlasUpdates", updates);

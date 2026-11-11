@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { EditorController, type EditorState } from "./EditorController";
+import { PreviewUpdates } from "./PreviewUpdates";
 import type { HouseHeader, Point } from "./model";
 import type { ObservationOptions } from "./observation";
 import "./editor.css";
@@ -181,6 +182,7 @@ function Atlas() {
             …
           </button>
         </nav>
+        <PreviewUpdates />
       </header>
       <aside className="atlas-panel">
         <p className="eyebrow">WERKZEUGE</p>

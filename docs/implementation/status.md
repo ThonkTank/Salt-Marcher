@@ -1,9 +1,9 @@
 # Aktueller Stand
 
-Stand: 11. November 2026. **P3.3 „Vorbereitete Gewässer und Ableitungen“ ist
-umgesetzt. Editor-, Store- und gezielte Grafikprüfungen bestehen; die
-übergreifende Höhen-GPU-Abnahme bleibt am zuletzt vollständig geprüften
-P3.2-Stand FAIL.** Die finalen Paketnachweise sind unten separat ausgewiesen.
+Stand: 11. November 2026. **Vorschau-Release und Fedora-Updates für den aktuellen
+Draft sind umgesetzt; die Abschlussprüfungen laufen.** P3.3 „Vorbereitete
+Gewässer und Ableitungen“ bleibt der enthaltene Fachstand. Die übergreifende
+Höhen-GPU-Abnahme bleibt am zuletzt vollständig geprüften P3.2-Stand FAIL.
 Der [Neubauplan](atlas-rebuild-plan.md) bleibt der einzige Ausführungsplan;
 [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
 Atlas V7 ist der reguläre Einstieg mit Format 22; der optionale
@@ -12,11 +12,36 @@ Frühere P0-Dateien werden nicht migriert.
 
 ## Arbeitsentscheidung
 
+Der aktuelle Auftrag ergänzt einen gut erreichbaren GitHub-Testrelease und
+einen Updatepfad in der App. Er aktiviert keinen weiteren Neubau-Planschritt
+und ist keine Freigabe offener Leistungsnachweise. Der Vorschauworkflow darf
+den expliziten Draft-Zweig nach erfolgreichen Paket-/Updaterprüfungen
+veröffentlichen; reguläre Releases bleiben getrennt.
+
 Der Auftrag zum nächsten Planschritt setzt die freigegebene begrenzte
 R5-Fortsetzung nach P3.2 mit P3.3 fort. Nur dessen benötigte P1/P2-Erweiterungen
 sind enthalten. Die formale R4-Auswertung bleibt bestehen; ihre offene
 Leistungsabnahme widerruft diese Nutzerentscheidung nicht. Vollständige
 P0-Abnahme und bestandener gemeinsamer P3-Fall bleiben Voraussetzungen für P4–P9.
+
+## Vorschau-Release und Updates
+
+| Kriterium                                         | Umsetzung                                                                                                                  | Nachweis                                                                                                                           | Status               |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| Einfacher Download des aktuellen Drafts           | Rollendes GitHub-Prerelease `atlas-preview` mit RPM, ZIP, Manifest und eindeutigen Buildnummern                            | Veröffentlichung und zurückgelesene Release-Assets ausstehend                                                                      | umgesetzt, ungeprüft |
+| Neue Builds direkt in der App erhalten            | Startup-/manuelle Prüfung, Fortschritt, Größen-/Hashprüfung, Fedora-DNF/Polkit und verifizierte Paketidentität             | 35 Updaterfälle, 7 echte Electron-Netzfälle und 11 Prüfungen im gepackten Programm bestanden; endgültiger Release-Build ausstehend | umgesetzt, ungeprüft |
+| Offene Karten sicher behandeln                    | Gemeinsame Datei-/Writerbarriere, Speichern/Verwerfen/Abbrechen und unmittelbarer Neustart nach erfolgreicher Installation | Typprüfung, 25 Sessionfälle und 88 echte Datei-/Schließprüfungen bestanden; Fedora-Systeminstallation nicht ausgeführt             | umgesetzt, ungeprüft |
+| Nur geprüfte, aktuelle Vorschauen veröffentlichen | Paketgate, exakter Commit, saubere Buildidentität, beschränkte Schreibrechte und Schutz vor veralteter Veröffentlichung    | 6 Releasefälle einschließlich fehlschlagendem CLI bei schmutzigem Build bestanden; CI ausstehend                                   | umgesetzt, ungeprüft |
+
+In der Prüfung wurde ein realer Transportfehler erkannt: Electrons `net.fetch`
+lehnt die für GitHub nötige manuelle 302-Weiterleitung ab. Der neue
+`net.request`-Adapter erhält Weiterleitungen und prüft jedes Ziel vor dem
+nächsten Zugriff. Die frühere reine Fetch-Nachbildung wäre hierfür kein
+ausreichender Nachweis gewesen.
+
+Die DNF-/Polkit-Systeminstallation auf Fedora benötigt eine entsprechende
+Umgebung. Prozess-, Versions- und Fehlerprüfungen mit kontrolliertem
+Paketmanager sind davon getrennte Nachweise.
 
 ## P3.3 und Abschlusskriterien
 
@@ -56,9 +81,10 @@ Slot. Die alte Dokumentreferenz wird gelöst; die einzelne noch gehaltene
 Wasserquelle erhält konservativ weitere 128 KiB Metadatengebühr. Es entsteht
 keine Warteschlange alter Ableitungsjobs.
 
-## Nachweise am aktuellen Stand
+## Vorherige P3.3-Nachweise
 
-Geprüfter Produktquellhash (`product-inputs-v1`):
+Diese Fachnachweise gehören zum vorausgehenden Commit `0feacd1`; sie werden nicht
+als neue Prüfung des Updaters ausgegeben. Damaliger Produktquellhash (`product-inputs-v1`):
 
 `6661b53ab544e52d6518efac2bbfd9f6217358554e213d5cbc58c3d36350d56f`
 

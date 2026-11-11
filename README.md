@@ -87,6 +87,42 @@ Kandidaten tatsächlich bestanden haben, steht im [Status](docs/implementation/s
 
 ## Optionaler Atlas-P0-Versuch
 
+### Desktopvorschau herunterladen und aktualisieren
+
+Der aktuelle Teststand von [Draft-PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469)
+steht im [GitHub-Prerelease **Atlas-Vorschau**](https://github.com/ThonkTank/Salt-Marcher/releases/tag/atlas-preview).
+Unter Fedora/Linux x86_64 die dort im Beschreibungstext verlinkte aktuelle
+`.rpm`-Datei einmal herunterladen und installieren. Eine ältere manuell erzeugte
+Installation benötigt dieses erste Update ebenfalls, damit der Updateknopf erscheint.
+Der Paketname bleibt `saltmarcher-atlas-p0`; der Vorschaukanal gehört zum
+Electron-Editor und ist unabhängig vom regulären V7-/Tauri-Paket.
+
+Die installierte Vorschau prüft nach dem Start auf neue veröffentlichte Builds.
+**Updates → Herunterladen → Installieren und neu starten** lädt das Paket,
+kontrolliert Größe und SHA-256 und startet die Fedora-Paketverwaltung.
+Vor der Installation werden offene Kartenänderungen über den vorhandenen
+**Speichern / Verwerfen / Abbrechen**-Dialog behandelt; DNF benötigt anschließend
+die Freigabe im Systemdialog. Die neue RPM-Version wird nach der Installation
+kontrolliert, bevor die App neu startet. Downloads und Installationen beginnen
+erst nach einem Klick. Der Dialog nennt den laufenden und verfügbaren Commit.
+
+Der automatische Workflow **Atlas preview release** baut Änderungen am Vorschauprogramm
+auf `work/atlas-p0-feasibility` als RPM und ZIP, prüft Updater und gepackte Anwendung
+und veröffentlicht erst danach den Vorschaukanal. Jeder Build erhält eine höhere
+RPM-Revision aus Workflowlauf und Wiederholungsnummer. Ein fehlgeschlagener oder
+inzwischen überholter Build ersetzt den veröffentlichten Stand nicht.
+Die Release-Seite enthält direkte Links zum jeweils aktuellen RPM und ZIP;
+ältere Dateien bleiben für bereits laufende Downloads verfügbar.
+
+Die ZIP-Ausgabe startet ohne Systeminstallation. Updates finden und herunterladen
+kann auch sie; die Installation in der App benötigt jedoch das tatsächlich
+installierte Fedora-RPM sowie `/usr/bin/dnf`, `/usr/bin/rpm` und Polkit.
+Entwicklungsstarts prüfen nicht im Netz auf Updates. Das Prerelease ist ein
+Testkanal, keine Freigabe der im [Status](docs/implementation/status.md) offenen
+Höhen-/GPU- und Hardwareabnahmen.
+
+### Entwicklung des Versuchs
+
 P0 startet einen eigenen Electron-44-Desktop mit PixiJS-8-Darstellung und SQLite
 im Utility-Prozess. Numerische Höhenquellen werden auf der GPU zusammengesetzt.
 Gleichstufige Striche und Undo verwenden eine feste numerische Basis mit dem
