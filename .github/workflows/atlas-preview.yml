@@ -59,6 +59,13 @@ jobs:
         run: npm ci
       - name: Install desktop test dependencies
         run: npx playwright install --with-deps chromium
+      - name: Prepare Electron's Linux sandbox helper
+        run: |
+          node -e 'require("electron")'
+          electron_sandbox_helper="$(node -e 'process.stdout.write(require("node:path").join(require("node:path").dirname(require("electron")), "chrome-sandbox"))')"
+          test -f "$electron_sandbox_helper"
+          sudo chown root:root "$electron_sandbox_helper"
+          sudo chmod 4755 "$electron_sandbox_helper"
       - name: Check types and update/release failure handling
         run: |
           npm run typecheck
