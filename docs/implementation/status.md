@@ -1,10 +1,11 @@
 # Aktueller Stand
 
-Stand: 11. November 2026. **Der Vorschaukanal ist veröffentlicht. Paketbau und
-kontrollierte Prüfungen von Updatepfad und Oberfläche sind bestanden.**
-Der zusätzliche Abruf des veröffentlichten Kanals aus der App scheiterte in der
-verwalteten Prüfumgebung; seine Ursache ist offen. Die tatsächliche Installation
-über Fedora-DNF/Polkit bleibt ebenfalls ungeprüft. P3.3 „Vorbereitete Gewässer
+Stand: 11. November 2026. **Vorschauversion 0.3.2 ist als Update für die bereits
+installierte 0.3.1 veröffentlicht. Paketbau und kontrollierte Prüfungen von
+Updatepfad und Oberfläche sind bestanden.** Der Nutzer hat die manuelle
+Erstinstallation von 0.3.1 bestätigt. Die anschließende tatsächliche
+Aktualisierung über den Fedora-DNF-/Polkit-Pfad in der App ist noch ungeprüft.
+P3.3 „Vorbereitete Gewässer
 und Ableitungen“ bleibt der enthaltene Fachstand. Die übergreifende
 Höhen-GPU-Abnahme bleibt am zuletzt vollständig geprüften P3.2-Stand FAIL.
 Der [Neubauplan](atlas-rebuild-plan.md) bleibt der einzige Ausführungsplan;
@@ -30,33 +31,41 @@ P0-Abnahme und bestandener gemeinsamer P3-Fall bleiben Voraussetzungen für P4�
 ## Vorschau-Release und Updates
 
 Das rollende [GitHub-Prerelease `atlas-preview`](https://github.com/ThonkTank/Salt-Marcher/releases/tag/atlas-preview)
-ist mit Revision **43022087971.1** veröffentlicht. Geprüfter und veröffentlichter
-Programmstand ist Commit
-[`d589afc4739891af7863202084b93f081e7cd1e9`](https://github.com/ThonkTank/Salt-Marcher/commit/d589afc4739891af7863202084b93f081e7cd1e9).
+ist mit Version **0.3.2**, Revision **43101913532.1** veröffentlicht.
+Geprüfter und veröffentlichter Programmstand ist Commit
+[`66f11cb5046182283569941d18bca7b93d7b3a56`](https://github.com/ThonkTank/Salt-Marcher/commit/66f11cb5046182283569941d18bca7b93d7b3a56).
+Für diesen Updateversuch wurden die Electron-Paketversion und die beiden
+Root-Versionsfelder der Lockdatei von 0.3.1 auf 0.3.2 erhöht. Der
+Funktionscode ist gleich geblieben. Eine anschließende Korrektur betrifft nur
+die Synchronisation des gepackten Oberflächentests. Die bisherige Version
+**0.3.1-43022087971.1** ist laut Nutzerrückmeldung installiert; der neue Feed
+wird von derselben Manifestprüfung als neuerer Build akzeptiert.
+
 Sein Produktquellhash (`product-inputs-v1`) lautet:
 
-`d4083828ab310d28f47af6f8ea8913bc28d3028513811c1a9e336967915b0ce2`
+`faba5c44e5b953ddb4b420b42e136b60c350fab4e96a840c322d417219accecd`
 
-Der [Vorschau-CI-Lauf 43022087971](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43022087971)
+Der [Vorschau-CI-Lauf 43101913532](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43101913532)
 ist vollständig **SUCCESS**: sowohl
-[Paketbau und Prüfungen](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43022087971/job/130527507105)
+[Paketbau und Prüfungen](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43101913532/job/130795286576)
 als auch
-[Veröffentlichung](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43022087971/job/130531697643)
+[Veröffentlichung](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43101913532/job/130799977995)
 gehören exakt zu diesem Commit. Nachfolgende reine Statuspflege ist kein neuer
 Programm- oder Leistungsnachweis.
 
-| Kriterium                                              | Umsetzung                                                                                                                | Nachweis am genannten Stand                                                                                                                                     | Status                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Einfacher Download des aktuellen Drafts                | Rollendes GitHub-Prerelease mit RPM, ZIP, Manifest und eindeutigen Buildnummern                                          | Erfolgreicher Veröffentlichungsjob; Rückprüfung der veröffentlichten Assets siehe unten                                                                         | verifiziert                                             |
-| Neue Builds direkt in der App finden und herunterladen | Startup-/manuelle Prüfung, Fortschritt, Größen-/Hashprüfung und passender Vorschaukanal                                  | **35/35** Updaterfälle, **7/7** echte Electron-Netzfälle gegen kontrollierte Prüfserver und **11/11** gepackte Dialog-/IPC-Prüfungen in derselben CI            | verifiziert gegen Prüfserver; Liveabruf unten getrennt  |
-| Offene Karten vor Installation und Neustart sichern    | Gemeinsame Datei-/Writerbarriere, Speichern/Verwerfen/Abbrechen und unmittelbarer Neustart nach bestätigter Installation | Typprüfung, **25/25** Sessionfälle am unveränderten Sessioncode sowie **35/35** Updaterfälle und **11/11** gepackte UI-/IPC-Prüfungen am veröffentlichten Stand | verifiziert für die geprüften Datei- und Prozessabläufe |
-| Nur geprüfte, aktuelle Vorschauen veröffentlichen      | Paketgate, exakter Commit, saubere Buildidentität, beschränkte Schreibrechte und Schutz vor veralteter Veröffentlichung  | **6/6** Releasefälle einschließlich fehlschlagendem CLI bei schmutzigem Build; erfolgreicher Build- und Veröffentlichungsjob                                    | verifiziert                                             |
-| Tatsächliches auslieferbares Linux-Paket               | Forge baut das RPM und die ZIP; Paketinhalt und native SQLite-Bindung werden geprüft                                     | Lokal tatsächliches RPM mit benutzereigenem RPM 4.18 gebaut; CI-RPM und **2/2** RPM-Prüfungen sowie normaler Paket-Smoke **95/95 PASS**                         | verifiziert für Bau und Paketstart                      |
-| Systeminstallation auf Fedora                          | DNF/Polkit mit geprüfter Paketidentität, anschließend unmittelbarer Neustart                                             | Echte Fedora-Authentifizierung und Pakettransaktion wurden in dieser Umgebung nicht ausgeführt                                                                  | umgesetzt, Nachweis offen                               |
-| Veröffentlichten Build aus der App abrufen             | Unveränderter Produktionsadapter und normale Updateoberfläche                                                            | Zusätzlicher Liveversuch: `net::ERR_EMPTY_RESPONSE`; danach derselbe Feed mit `curl` erfolgreich                                                                | in dieser Prüfumgebung blockiert; Ursache offen         |
+| Kriterium                                              | Umsetzung                                                                                                                | Nachweis am genannten Stand                                                                                                                                                             | Status                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Einfacher Download des aktuellen Drafts                | Rollendes GitHub-Prerelease mit RPM, ZIP, Manifest und eindeutigen Buildnummern                                          | Erfolgreicher Veröffentlichungsjob; Rückprüfung der veröffentlichten Assets siehe unten                                                                                                 | verifiziert                                             |
+| Neue Builds direkt in der App finden und herunterladen | Startup-/manuelle Prüfung, Fortschritt, Größen-/Hashprüfung und passender Vorschaukanal                                  | **35/35** Updaterfälle, **7/7** echte Electron-Netzfälle gegen kontrollierte Prüfserver und **11/11** gepackte Dialog-/IPC-Prüfungen in derselben CI                                    | verifiziert gegen Prüfserver; Liveabruf unten getrennt  |
+| Offene Karten vor Installation und Neustart sichern    | Gemeinsame Datei-/Writerbarriere, Speichern/Verwerfen/Abbrechen und unmittelbarer Neustart nach bestätigter Installation | Typprüfung, **25/25** Sessionfälle aus der vorigen Prüfung am unveränderten Sessioncode sowie **35/35** Updaterfälle und **11/11** gepackte UI-/IPC-Prüfungen am veröffentlichten Stand | verifiziert für die geprüften Datei- und Prozessabläufe |
+| Nur geprüfte, aktuelle Vorschauen veröffentlichen      | Paketgate, exakter Commit, saubere Buildidentität, beschränkte Schreibrechte und Schutz vor veralteter Veröffentlichung  | **6/6** Releasefälle einschließlich fehlschlagendem CLI bei schmutzigem Build; erfolgreicher Build- und Veröffentlichungsjob                                                            | verifiziert                                             |
+| Tatsächliches auslieferbares Linux-Paket               | Forge baut das RPM und die ZIP; Paketinhalt und native SQLite-Bindung werden geprüft                                     | Tatsächliches CI-RPM und **2/2** RPM-Prüfungen sowie normaler Paket-Smoke **95/95 PASS**                                                                                                | verifiziert für Bau und Paketstart                      |
+| Systeminstallation auf Fedora                          | DNF/Polkit mit geprüfter Paketidentität, anschließend unmittelbarer Neustart                                             | Echte Fedora-Authentifizierung und Pakettransaktion wurden in dieser Umgebung nicht ausgeführt                                                                                          | umgesetzt, Nachweis offen                               |
+| Veröffentlichten Build aus der App abrufen             | Unveränderter Produktionsadapter und normale Updateoberfläche                                                            | Liveversuch am Erstpaket 0.3.1: `net::ERR_EMPTY_RESPONSE`; danach derselbe Feed mit `curl` erfolgreich                                                                                  | in dieser Prüfumgebung blockiert; Ursache offen         |
 
-Die veröffentlichte Release-Metadatenabfrage bestätigt `draft=false`,
-`prerelease=true` und den genannten Zielcommit. Das
+Die veröffentlichte Release-Metadatenabfrage bestätigt `draft=false` und
+`prerelease=true`. Die tatsächliche Git-Referenz des Tags `atlas-preview`
+zeigt auf den genannten Programmcommit. Das
 [öffentliche Update-Manifest](https://github.com/ThonkTank/Salt-Marcher/releases/download/atlas-preview/atlas-preview.json)
 wurde einschließlich der GitHub-Weiterleitung erfolgreich heruntergeladen und
 zurückgelesen: Revision und Commit stimmen mit dem geprüften Build überein.
@@ -65,8 +74,9 @@ Manifest und den tatsächlich veröffentlichten GitHub-Assets überein.
 Die beiden direkten Binärdownload-URLs antworten einschließlich der
 GitHub-Weiterleitungen auf einen HTTP-HEAD-Abruf mit Status 200.
 
-Ein zusätzlicher Liveversuch startete das gepackte Programm mit isolierten
-Einstellungen und Cache und bediente die normale Updateoberfläche. Er verwendete
+Der zusätzliche Liveversuch am Erstpaket **0.3.1-43022087971.1** startete das
+gepackte Programm mit isolierten Einstellungen und Cache und bediente die
+normale Updateoberfläche. Er verwendete
 den unveränderten Produktionsadapter und die bereits konfigurierte Netzwerkroute.
 Die Feedprüfung scheiterte mit `net::ERR_EMPTY_RESPONSE`; eine Renderer-Exception
 trat nicht auf. Anschließend ließ sich derselbe öffentliche Feed mit `curl`
@@ -83,6 +93,28 @@ nicht. Der Bericht und Screenshot liegen unter
 `src-tauri/target/diagnostics/preview-live-20261111/`
 (`live-summary.json`, `report.json`, `check.png`, `curl-manifest.json`,
 `native-controls.json`).
+
+Der erste 0.3.2-[Vorschau-Lauf 43100313542](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43100313542)
+blieb **FAIL** und veröffentlichte kein Paket. Typprüfung, 35 Updaterfälle,
+6 Releasefälle, 7 native Netzfälle, 2 RPM-Fälle und der normale Paket-Smoke
+mit **95/95** Prüfungen bestanden. Der Update-Smoke bestand neun Prüfungen
+bis einschließlich der korrekten Ablehnung beschädigter Bytes. Der anschließende
+einmalige DOM-Read fand den Prüfsummenfehler noch nicht.
+Bis dahin hatte der Prüfer auf den Main-Zustand, nicht auf dessen Darstellung
+in React gewartet.
+Commit `66f11cb` wartet stattdessen mit derselben inhaltlichen Anforderung und
+Playwrights Standard-Timeout auf den sichtbaren Prüfsummenfehler.
+
+Die lokale Kontrolle am sauberen Paket von `66f11cb`, Version 0.3.2,
+Testrevision 1.2 und demselben Produktquellhash bestand **11/11**, erkannte
+dann einen isolierten Darstellungsfehler und bestand anschließend erneut
+**11/11**. Die Negativkontrolle blendete ausschließlich das echte
+Statusfeld per CSS aus: Neun vorherige Prüfungen bestanden, die unveränderte
+Prüfsummen-Assertion scheiterte nach fünf Sekunden mit Exit 1. Das Paket und
+der originale Prüfer blieben über die drei Läufe bytegleich. Diese
+kontrollierten Netz-/Oberflächenläufe sind keine Fedora-Systeminstallation.
+Die Belege liegen ignoriert unter
+`src-tauri/target/diagnostics/preview-update-test/`.
 
 ### Grenzen und erkannte Fehler
 
@@ -105,19 +137,19 @@ Der erste [Vorschau-CI-Lauf 43021421958](https://github.com/ThonkTank/Salt-March
 blieb **FAIL**: Electron beendete sich wegen falschem Eigentümer beziehungsweise
 Modus des `chrome-sandbox`-Helfers, bevor die native Netzwerkprüfung anlief.
 Commit `d589afc` richtet den Helfer auf dem CI-Runner mit Eigentümer `root:root`
-und Modus `4755` ein. Die Testkriterien wurden beibehalten; der danach erfolgreich
-ausgeführte Lauf ist oben separat belegt.
+und Modus `4755` ein. Die Testkriterien wurden beibehalten; der darauf folgende
+Lauf 43022087971 bestand am Erstpaket 0.3.1.
 
-Der erste lokale Paket-Smoke des neuen Stands scheiterte nach **17** bestandenen
+Der erste lokale Paket-Smoke des Erstpakets 0.3.1 scheiterte nach **17** bestandenen
 Prüfungen an einem **30-Sekunden-Bereitschaftstimeout** im Landschaftsfall.
 Ein kontrollierter Vergleich mit demselben unveränderten Landschaftsprüfer
 reproduzierte denselben Timeout auch am vorausgehenden P3.3-Programm mit
-Produktquellhash `6661b53a…`, dort nach **4** Prüfungen. Der aktuelle gepackte
+Produktquellhash `6661b53a…`, dort nach **4** Prüfungen. Der damalige gepackte
 Stand `d4083828…` bestand den getrennten Landschaftslauf mit **27/27** Prüfungen.
 Dieser gezielte Erfolg macht den ersten lokalen Paketlauf nicht nachträglich
 erfolgreich und belegt keine behobene Ursache des Timeouts. Der normale
-Paket-Smoke **95/95 PASS** in GitHub CI ist ein eigenständiger Nachweis am
-veröffentlichten Commit.
+Paket-Smoke **95/95 PASS** im damaligen GitHub-CI-Lauf 43022087971 ist ein
+eigenständiger Nachweis am Erstrelease-Commit `d589afc`.
 
 Die DNF-/Polkit-Systeminstallation auf Fedora benötigt eine entsprechende
 Umgebung. Kontrollierte Prozess-, Versions- und Fehlerprüfungen sowie der
