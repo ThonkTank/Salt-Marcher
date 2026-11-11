@@ -1,8 +1,11 @@
 # Aktueller Stand
 
-Stand: 11. November 2026. **Vorschau-Release und Fedora-Updates für den aktuellen
-Draft sind umgesetzt; die Abschlussprüfungen laufen.** P3.3 „Vorbereitete
-Gewässer und Ableitungen“ bleibt der enthaltene Fachstand. Die übergreifende
+Stand: 11. November 2026. **Der Vorschaukanal ist veröffentlicht. Paketbau und
+kontrollierte Prüfungen von Updatepfad und Oberfläche sind bestanden.**
+Der zusätzliche Abruf des veröffentlichten Kanals aus der App scheiterte in der
+verwalteten Prüfumgebung; seine Ursache ist offen. Die tatsächliche Installation
+über Fedora-DNF/Polkit bleibt ebenfalls ungeprüft. P3.3 „Vorbereitete Gewässer
+und Ableitungen“ bleibt der enthaltene Fachstand. Die übergreifende
 Höhen-GPU-Abnahme bleibt am zuletzt vollständig geprüften P3.2-Stand FAIL.
 Der [Neubauplan](atlas-rebuild-plan.md) bleibt der einzige Ausführungsplan;
 [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
@@ -26,22 +29,105 @@ P0-Abnahme und bestandener gemeinsamer P3-Fall bleiben Voraussetzungen für P4�
 
 ## Vorschau-Release und Updates
 
-| Kriterium                                         | Umsetzung                                                                                                                  | Nachweis                                                                                                                           | Status               |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| Einfacher Download des aktuellen Drafts           | Rollendes GitHub-Prerelease `atlas-preview` mit RPM, ZIP, Manifest und eindeutigen Buildnummern                            | Veröffentlichung und zurückgelesene Release-Assets ausstehend                                                                      | umgesetzt, ungeprüft |
-| Neue Builds direkt in der App erhalten            | Startup-/manuelle Prüfung, Fortschritt, Größen-/Hashprüfung, Fedora-DNF/Polkit und verifizierte Paketidentität             | 35 Updaterfälle, 7 echte Electron-Netzfälle und 11 Prüfungen im gepackten Programm bestanden; endgültiger Release-Build ausstehend | umgesetzt, ungeprüft |
-| Offene Karten sicher behandeln                    | Gemeinsame Datei-/Writerbarriere, Speichern/Verwerfen/Abbrechen und unmittelbarer Neustart nach erfolgreicher Installation | Typprüfung, 25 Sessionfälle und 88 echte Datei-/Schließprüfungen bestanden; Fedora-Systeminstallation nicht ausgeführt             | umgesetzt, ungeprüft |
-| Nur geprüfte, aktuelle Vorschauen veröffentlichen | Paketgate, exakter Commit, saubere Buildidentität, beschränkte Schreibrechte und Schutz vor veralteter Veröffentlichung    | 6 Releasefälle einschließlich fehlschlagendem CLI bei schmutzigem Build bestanden; CI ausstehend                                   | umgesetzt, ungeprüft |
+Das rollende [GitHub-Prerelease `atlas-preview`](https://github.com/ThonkTank/Salt-Marcher/releases/tag/atlas-preview)
+ist mit Revision **43022087971.1** veröffentlicht. Geprüfter und veröffentlichter
+Programmstand ist Commit
+[`d589afc4739891af7863202084b93f081e7cd1e9`](https://github.com/ThonkTank/Salt-Marcher/commit/d589afc4739891af7863202084b93f081e7cd1e9).
+Sein Produktquellhash (`product-inputs-v1`) lautet:
+
+`d4083828ab310d28f47af6f8ea8913bc28d3028513811c1a9e336967915b0ce2`
+
+Der [Vorschau-CI-Lauf 43022087971](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43022087971)
+ist vollständig **SUCCESS**: sowohl
+[Paketbau und Prüfungen](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43022087971/job/130527507105)
+als auch
+[Veröffentlichung](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43022087971/job/130531697643)
+gehören exakt zu diesem Commit. Nachfolgende reine Statuspflege ist kein neuer
+Programm- oder Leistungsnachweis.
+
+| Kriterium                                              | Umsetzung                                                                                                                | Nachweis am genannten Stand                                                                                                                                     | Status                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Einfacher Download des aktuellen Drafts                | Rollendes GitHub-Prerelease mit RPM, ZIP, Manifest und eindeutigen Buildnummern                                          | Erfolgreicher Veröffentlichungsjob; Rückprüfung der veröffentlichten Assets siehe unten                                                                         | verifiziert                                             |
+| Neue Builds direkt in der App finden und herunterladen | Startup-/manuelle Prüfung, Fortschritt, Größen-/Hashprüfung und passender Vorschaukanal                                  | **35/35** Updaterfälle, **7/7** echte Electron-Netzfälle gegen kontrollierte Prüfserver und **11/11** gepackte Dialog-/IPC-Prüfungen in derselben CI            | verifiziert gegen Prüfserver; Liveabruf unten getrennt  |
+| Offene Karten vor Installation und Neustart sichern    | Gemeinsame Datei-/Writerbarriere, Speichern/Verwerfen/Abbrechen und unmittelbarer Neustart nach bestätigter Installation | Typprüfung, **25/25** Sessionfälle am unveränderten Sessioncode sowie **35/35** Updaterfälle und **11/11** gepackte UI-/IPC-Prüfungen am veröffentlichten Stand | verifiziert für die geprüften Datei- und Prozessabläufe |
+| Nur geprüfte, aktuelle Vorschauen veröffentlichen      | Paketgate, exakter Commit, saubere Buildidentität, beschränkte Schreibrechte und Schutz vor veralteter Veröffentlichung  | **6/6** Releasefälle einschließlich fehlschlagendem CLI bei schmutzigem Build; erfolgreicher Build- und Veröffentlichungsjob                                    | verifiziert                                             |
+| Tatsächliches auslieferbares Linux-Paket               | Forge baut das RPM und die ZIP; Paketinhalt und native SQLite-Bindung werden geprüft                                     | Lokal tatsächliches RPM mit benutzereigenem RPM 4.18 gebaut; CI-RPM und **2/2** RPM-Prüfungen sowie normaler Paket-Smoke **95/95 PASS**                         | verifiziert für Bau und Paketstart                      |
+| Systeminstallation auf Fedora                          | DNF/Polkit mit geprüfter Paketidentität, anschließend unmittelbarer Neustart                                             | Echte Fedora-Authentifizierung und Pakettransaktion wurden in dieser Umgebung nicht ausgeführt                                                                  | umgesetzt, Nachweis offen                               |
+| Veröffentlichten Build aus der App abrufen             | Unveränderter Produktionsadapter und normale Updateoberfläche                                                            | Zusätzlicher Liveversuch: `net::ERR_EMPTY_RESPONSE`; danach derselbe Feed mit `curl` erfolgreich                                                                | in dieser Prüfumgebung blockiert; Ursache offen         |
+
+Die veröffentlichte Release-Metadatenabfrage bestätigt `draft=false`,
+`prerelease=true` und den genannten Zielcommit. Das
+[öffentliche Update-Manifest](https://github.com/ThonkTank/Salt-Marcher/releases/download/atlas-preview/atlas-preview.json)
+wurde einschließlich der GitHub-Weiterleitung erfolgreich heruntergeladen und
+zurückgelesen: Revision und Commit stimmen mit dem geprüften Build überein.
+Dateinamen, Download-URLs, Größen und SHA-256-Werte beider Pakete stimmen zwischen
+Manifest und den tatsächlich veröffentlichten GitHub-Assets überein.
+Die beiden direkten Binärdownload-URLs antworten einschließlich der
+GitHub-Weiterleitungen auf einen HTTP-HEAD-Abruf mit Status 200.
+
+Ein zusätzlicher Liveversuch startete das gepackte Programm mit isolierten
+Einstellungen und Cache und bediente die normale Updateoberfläche. Er verwendete
+den unveränderten Produktionsadapter und die bereits konfigurierte Netzwerkroute.
+Die Feedprüfung scheiterte mit `net::ERR_EMPTY_RESPONSE`; eine Renderer-Exception
+trat nicht auf. Anschließend ließ sich derselbe öffentliche Feed mit `curl`
+erfolgreich abrufen. Im selben Electron-44.10.2-Prozess scheiterten auch ein
+unabhängiger nativer `net.request`-Aufruf vor jeder ersten Antwort oder
+Weiterleitung und `net.fetch` mit Standardverhalten mit demselben Fehler.
+Dieser konkrete Fehler tritt damit bereits ohne unseren Adapter und dessen
+Weiterleitungsabbruch auf. Seine genauere Ursache wurde nicht festgestellt.
+Damit sind die Erkennung des tatsächlich veröffentlichten Builds und dessen
+RPM-Download aus der App in dieser Umgebung **nicht nachgewiesen**. Ein
+Download- oder Installationsversuch fand in diesem Liveablauf nicht statt.
+Die kontrollierten Netzwerk- und UI-Prüfungen ersetzen diesen offenen Nachweis
+nicht. Der Bericht und Screenshot liegen unter
+`src-tauri/target/diagnostics/preview-live-20261111/`
+(`live-summary.json`, `report.json`, `check.png`, `curl-manifest.json`,
+`native-controls.json`).
+
+### Grenzen und erkannte Fehler
+
+Ergänzend bestanden lokal **88/88** echte Datei-/Schließprüfungen in einem
+früheren, noch uncommitteten Implementierungslauf mit Produktquellhash
+`dfbba0ee56cf2162573b9bfb016ebecba24de02a8685702f1e4d0bfcd38a6d1d`.
+Dieser Lauf erfolgte vor den letzten Änderungen am Updateneustart. Die regulären
+Datei-/Schließpfade blieben anschließend unverändert; der Lauf ist trotzdem
+kein Nachweis einer erneuten Ausführung aller 88 Fälle am veröffentlichten
+Commit `d589afc`. Der Bericht erhält die damalige Buildidentität und
+`dirty=true` unter `src-tauri/target/diagnostics/preview-lifecycle/report.json`.
 
 In der Prüfung wurde ein realer Transportfehler erkannt: Electrons `net.fetch`
 lehnt die für GitHub nötige manuelle 302-Weiterleitung ab. Der neue
 `net.request`-Adapter erhält Weiterleitungen und prüft jedes Ziel vor dem
-nächsten Zugriff. Die frühere reine Fetch-Nachbildung wäre hierfür kein
-ausreichender Nachweis gewesen.
+nächsten Zugriff. Die sieben echten Electron-Netzfälle prüfen diesen Adapter;
+die frühere reine Fetch-Nachbildung hätte den Fehler nicht erkannt.
+
+Der erste [Vorschau-CI-Lauf 43021421958](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43021421958)
+blieb **FAIL**: Electron beendete sich wegen falschem Eigentümer beziehungsweise
+Modus des `chrome-sandbox`-Helfers, bevor die native Netzwerkprüfung anlief.
+Commit `d589afc` richtet den Helfer auf dem CI-Runner mit Eigentümer `root:root`
+und Modus `4755` ein. Die Testkriterien wurden beibehalten; der danach erfolgreich
+ausgeführte Lauf ist oben separat belegt.
+
+Der erste lokale Paket-Smoke des neuen Stands scheiterte nach **17** bestandenen
+Prüfungen an einem **30-Sekunden-Bereitschaftstimeout** im Landschaftsfall.
+Ein kontrollierter Vergleich mit demselben unveränderten Landschaftsprüfer
+reproduzierte denselben Timeout auch am vorausgehenden P3.3-Programm mit
+Produktquellhash `6661b53a…`, dort nach **4** Prüfungen. Der aktuelle gepackte
+Stand `d4083828…` bestand den getrennten Landschaftslauf mit **27/27** Prüfungen.
+Dieser gezielte Erfolg macht den ersten lokalen Paketlauf nicht nachträglich
+erfolgreich und belegt keine behobene Ursache des Timeouts. Der normale
+Paket-Smoke **95/95 PASS** in GitHub CI ist ein eigenständiger Nachweis am
+veröffentlichten Commit.
 
 Die DNF-/Polkit-Systeminstallation auf Fedora benötigt eine entsprechende
-Umgebung. Prozess-, Versions- und Fehlerprüfungen mit kontrolliertem
-Paketmanager sind davon getrennte Nachweise.
+Umgebung. Kontrollierte Prozess-, Versions- und Fehlerprüfungen sowie der
+Paketstart belegen keine tatsächlich ausgeführte Fedora-Pakettransaktion.
+Die bestehenden offenen Höhen- und Leistungsnachweise bleiben davon unberührt.
+
+Rohbelege liegen ignoriert unter `artifacts/atlas-rebuild/ci-package/`
+(einschließlich `updater/`), `src-tauri/target/diagnostics/preview-lifecycle/`
+und `src-tauri/target/diagnostics/preview-landscape-comparison-20261111/`.
+Der letzte Pfad erhält beide Vergleichsläufe und ihre getrennten Ergebnisse.
 
 ## P3.3 und Abschlusskriterien
 
@@ -102,9 +188,12 @@ als neue Prüfung des Updaters ausgegeben. Damaliger Produktquellhash (`product-
 | Formatierung und Diffprüfung                          | **44** geänderte/neue Dateien sowie `git diff --check` bestanden.                                                                                                                                                  |
 | Negativkontrolle am identischen Produktquellhash      | **Erwarteter FAIL, Exit 1:** der dritte Check erkennt fälschlich gezeichnetes Wasser auf trockenem Gelände. Autoren- und Hashprüfungen davor bestehen; der Originalbuild bleibt bytegleich.                        |
 
-Der normale vollständige `make`-Pfad bleibt lokal durch das fehlende `rpmbuild`
-blockiert. ZIP/App und die beiden RPM-Metadatenregressionen belegen daher keine
-lokal erzeugte und abgenommene RPM-Datei.
+Der normale vollständige `make`-Pfad war am damaligen P3.3-Stand lokal durch
+das fehlende `rpmbuild` blockiert. Die damaligen ZIP-/App- und
+RPM-Metadatennachweise belegten deshalb keine lokal erzeugte RPM-Datei. Für den
+neuen Vorschau-Stand wurde inzwischen ein tatsächliches RPM mit benutzereigenem
+RPM 4.18 gebaut; auch der aktuelle CI-Paketbau besteht. Eine Installation auf
+Fedora ist damit weiterhin nicht nachgewiesen.
 
 Der erste gepackte Gesamtlauf scheiterte nach 41 Prüfungen beim ersten
 Hausplatzieren mit „Zielbereich noch nicht bereit“. Die eigene Vorschau
@@ -142,7 +231,7 @@ Freigabe dieses alten CI-Laufs. Die CI wird für den veröffentlichten PR-Head s
 ihr aktueller Zustand wird im verlinkten PR festgehalten. Ein Ergebnis des
 Ausgangscommits wird nicht auf den neuen Head übertragen.
 
-Aktuelle Rohbelege liegen ignoriert unter
+Die damaligen P3.3-Rohbelege liegen ignoriert unter
 `src-tauri/target/diagnostics/p33-*`, die Negativkontrolle insbesondere unter
 `src-tauri/target/diagnostics/p33-water-negative-6661b53a/`.
 Es gibt keinen zusätzlichen dauerhaften Abschlussbericht.
