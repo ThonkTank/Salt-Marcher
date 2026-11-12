@@ -23,6 +23,11 @@ import {
   clipBounds,
   EditorDocument,
   HEIGHT_LEVELS,
+  HEIGHT_TILE_SIZE,
+  COAST_BATCH_CELL_LIMIT,
+  COAST_BATCH_POINT_LIMIT,
+  coastBrushReadBounds,
+  coastSegmentCellCost,
   heightBrushReadBounds,
   heightSpacing,
   LANDSCAPE_TILE_SIZE,
@@ -34,6 +39,7 @@ import {
   validateHouseHeader,
   unionBounds,
   type Bounds,
+  type CoastBrush,
   type HeightBrush,
   type HeightSegment,
   type HouseHeader,
@@ -62,8 +68,18 @@ import {
 } from "./render/DerivedSurfaceView";
 
 export interface EditorState {
-  mode: "raise" | "lower" | "pan" | "forest" | "clearing" | "house" | "select";
-  heightMode: "raise" | "lower";
+  mode:
+    | "raise"
+    | "lower"
+    | "land"
+    | "sea"
+    | "pan"
+    | "forest"
+    | "clearing"
+    | "house"
+    | "select";
+  heightMode: "raise" | "lower" | "land" | "sea";
+  coastRoughness: number;
   houseWidth: number;
   houseDepth: number;
   houseRotation: number;
@@ -135,11 +151,9 @@ interface BrushAdmission {
   cause: "press" | "move" | "hold" | "terminal";
 }
 
-interface LandscapeStroke {
-  kind: "landscape";
+interface SpatialStrokeState {
   pointerId: number;
   input: number;
-  brush: LandscapeBrush;
   point: Point;
   /** Eligible geometry awaiting atomic materialization, not document changes. */
   path: Point[];
@@ -147,6 +161,12 @@ interface LandscapeStroke {
   sealed: boolean;
   released: boolean;
 }
+
+type SpatialStroke = SpatialStrokeState &
+  (
+    | { kind: "landscape"; brush: LandscapeBrush }
+    | { kind: "coast"; brush: CoastBrush }
+  );
 
 interface HouseDrag {
   kind: "house";
@@ -182,7 +202,7 @@ export class EditorController {
   readonly world: WorldRenderer;
   private doc!: EditorDocument;
   private readonly session: ProjectSession;
-  private brushState: BrushState | LandscapeStroke | HouseDrag = {
+  private brushState: BrushState | SpatialStroke | HouseDrag = {
     kind: "idle",
   };
   private selectedHouseId: string | null = null;
@@ -225,6 +245,7 @@ export class EditorController {
   state: EditorState = {
     mode: "raise",
     heightMode: "raise",
+    coastRoughness: 0,
     houseWidth: 40,
     houseDepth: 30,
     houseRotation: 0,
@@ -421,8 +442,30 @@ export class EditorController {
     });
   }
 
-  private get landscapeStroke(): LandscapeStroke | null {
+  private get landscapeStroke(): Extract<
+    SpatialStroke,
+    { kind: "landscape" }
+  > | null {
     return this.brushState.kind === "landscape" ? this.brushState : null;
+  }
+
+  private get coastStroke(): Extract<SpatialStroke, { kind: "coast" }> | null {
+    return this.brushState.kind === "coast" ? this.brushState : null;
+  }
+
+  private get spatialStroke(): SpatialStroke | null {
+    return this.brushState.kind === "landscape" ||
+      this.brushState.kind === "coast"
+      ? this.brushState
+      : null;
+  }
+
+  private get coastMode(): boolean {
+    return this.mode === "land" || this.mode === "sea";
+  }
+
+  private get heightTool(): boolean {
+    return this.coastMode || this.mode === "raise" || this.mode === "lower";
   }
 
   private get landscapeMode(): boolean {
@@ -454,6 +497,7 @@ export class EditorController {
         EditorState,
         | "mode"
         | "heightMode"
+        | "coastRoughness"
         | "diameter"
         | "amount"
         | "landscapeKind"
@@ -552,7 +596,12 @@ export class EditorController {
     this.publish({
       mode,
       heightMode:
-        mode === "raise" || mode === "lower" ? mode : this.state.heightMode,
+        mode === "raise" ||
+        mode === "lower" ||
+        mode === "land" ||
+        mode === "sea"
+          ? mode
+          : this.state.heightMode,
       diameter:
         mode === "forest" || mode === "clearing"
           ? Math.min(128, this.diameter)
@@ -757,14 +806,53 @@ export class EditorController {
 
   currentBrush(): HeightBrush {
     const radius = this.diameter / (2 * this.world.camera.scale);
-    const level = Math.max(0, Math.min(21, Math.floor(Math.log2(radius / 40))));
+    const level = Math.max(
+      0,
+      Math.min(
+        21,
+        Math.floor(
+          Math.log2(
+            this.coastMode ? 2 / (5 * this.world.camera.scale) : radius / 40,
+          ),
+        ),
+      ),
+    );
     return {
       radius,
       level,
-      amount:
-        this.mode === "lower" ? -Math.abs(this.amount) : Math.abs(this.amount),
-      label: this.mode === "lower" ? "Gelände absenken" : "Gelände anheben",
+      amount: this.coastMode
+        ? 0
+        : this.mode === "lower"
+          ? -Math.abs(this.amount)
+          : Math.abs(this.amount),
+      label: this.coastMode
+        ? this.mode === "sea"
+          ? "Meer malen"
+          : "Land malen"
+        : this.mode === "lower"
+          ? "Gelände absenken"
+          : "Gelände anheben",
     };
+  }
+
+  currentCoastBrush(): CoastBrush {
+    const { radius, level } = this.currentBrush();
+    return {
+      radius,
+      level,
+      mode: this.mode === "sea" ? "sea" : "land",
+      roughness: this.state.coastRoughness,
+      label: this.mode === "sea" ? "Meer malen" : "Land malen",
+    };
+  }
+
+  setCoastRoughness(value: number): void {
+    if (!Number.isFinite(value) || value < 0 || value > 1)
+      throw new Error(
+        "Die Küstenrauheit muss zwischen 0 und 100 Prozent liegen.",
+      );
+    this.publish({ coastRoughness: value });
+    this.updateToolNeed();
   }
 
   currentLandscapeBrush(): LandscapeBrush {
@@ -869,13 +957,16 @@ export class EditorController {
   }
 
   goTo(event: Event, x: number, y: number, scale: number): void {
-    if (this.stroke || this.landscapeStroke || this.houseDrag) return;
+    if (this.stroke || this.spatialStroke || this.houseDrag) return;
     this.navigate({ x, y, scale }, this.input(event, "navigation"));
   }
 
   /** Keep a small tile-aligned author neighborhood warm ahead of the pointer. */
-  private landscapeReadBounds(local: LocalReadiness): Bounds {
-    const span = LANDSCAPE_TILE_SIZE * 2 ** local.brush.level;
+  private spatialPrefetchBounds(local: LocalReadiness): Bounds {
+    const coast = this.coastStroke || (!this.spatialStroke && this.coastMode);
+    const span = coast
+      ? HEIGHT_TILE_SIZE * heightSpacing(local.brush.level)
+      : LANDSCAPE_TILE_SIZE * 2 ** local.brush.level;
     const x = Math.floor(local.point[0] / span),
       y = Math.floor(local.point[1] / span);
     const dx = Math.sign(this.landscapeMotion[0]),
@@ -898,9 +989,20 @@ export class EditorController {
     const power = this.world.presentationPower();
     const bounds = this.world.sourceBounds();
     const derived = this.world.surfaceReadNeed();
-    const landscape = this.landscapeStroke || this.landscapeMode;
-    const toolBounds = landscape
-      ? this.landscapeReadBounds(local)
+    const landscape =
+      this.landscapeStroke || (!this.spatialStroke && this.landscapeMode);
+    const spatial = this.spatialStroke || this.landscapeMode || this.coastMode;
+    const toolKind = this.spatialStroke
+      ? this.spatialStroke.kind === "coast"
+        ? "height"
+        : "landscape"
+      : this.houseDrag || this.houseMode
+        ? "house"
+        : landscape
+          ? "landscape"
+          : "height";
+    const toolBounds = spatial
+      ? this.spatialPrefetchBounds(local)
       : local.bounds;
     const key = [
       this.doc.sessionId,
@@ -912,7 +1014,7 @@ export class EditorController {
       ...bounds,
       local.brush.level,
       ...toolBounds,
-      ...(this.landscapeStroke?.retainedBounds ?? []),
+      ...(this.spatialStroke?.retainedBounds ?? []),
       derived?.key ?? "",
       derived?.kind ?? "",
       derived?.version ?? "",
@@ -927,12 +1029,7 @@ export class EditorController {
       minLevel: minimumCoarseHeightLevel(power),
       toolBounds,
       toolLevel: local.brush.level,
-      toolKind:
-        this.houseDrag || this.houseMode
-          ? "house"
-          : landscape
-            ? "landscape"
-            : "height",
+      toolKind,
       houseBounds:
         this.houseMode || this.houseDrag
           ? unionBounds(
@@ -965,7 +1062,7 @@ export class EditorController {
       const read = this.pumpRead();
       if (read) void read.catch(this.fail);
       this.advanceHeldBrush(performance.now());
-      this.advanceLandscape();
+      this.advanceSpatial();
       this.advanceAction();
       if (this.world.prepareFrame()) this.checkLocalReady();
       if (this.state.surfaces !== this.world.surfaceState()) this.publish();
@@ -1002,7 +1099,7 @@ export class EditorController {
     } catch (error) {
       // A permanently failed fence must not keep an already painted landscape
       // behind its action/Save barrier. Reset retains the GPU's in-flight field.
-      if (this.landscapeStroke) this.gestureFailure(error);
+      if (this.spatialStroke) this.gestureFailure(error);
       else this.fail(error);
       return false;
     }
@@ -1390,12 +1487,15 @@ export class EditorController {
     const need = this.desiredNeed;
     if (!need || need.document !== this.doc) return;
     const derivedBounds = this.world.surfaceRetainHeight();
+    const toolBounds = this.coastStroke
+      ? unionBounds(need.toolBounds, this.coastStroke.retainedBounds)
+      : need.toolBounds;
     const fineBounds = derivedBounds
       ? need.toolKind === "height"
-        ? unionBounds(derivedBounds, need.toolBounds)
+        ? unionBounds(derivedBounds, toolBounds)
         : derivedBounds
       : need.toolKind === "height"
-        ? need.toolBounds
+        ? toolBounds
         : null;
     this.world.forgetSources(
       this.doc.retainSources([
@@ -1467,9 +1567,12 @@ export class EditorController {
     point = this.toolPoint(),
     brush = this.stroke?.brush ?? this.currentBrush(),
   ): LocalReadiness {
+    if (
+      this.spatialStroke ||
+      (!this.stroke && (this.landscapeMode || this.coastMode))
+    )
+      return this.spatialReadiness(point);
     if (this.houseDrag || this.houseMode) return this.houseReadiness(point);
-    if (this.landscapeStroke || (!this.stroke && this.landscapeMode))
-      return this.landscapeReadiness(point);
     const points = this.stroke
       ? [
           this.stroke.point,
@@ -1589,33 +1692,49 @@ export class EditorController {
     };
   }
 
-  private landscapeReadiness(
+  private spatialReadiness(
     point = this.toolPoint(),
-    from = this.landscapeStroke?.point ?? point,
+    from = this.spatialStroke?.point ?? point,
   ): LocalReadiness {
-    const brush = this.landscapeStroke?.brush ?? this.currentLandscapeBrush();
-    const bounds = clipBounds([
-      Math.min(from[0], point[0]) - brush.radius,
-      Math.min(from[1], point[1]) - brush.radius,
-      Math.max(from[0], point[0]) + brush.radius,
-      Math.max(from[1], point[1]) + brush.radius,
-    ]);
-    const view = this.world.bounds();
-    const visible = [from, point].every(
-      (candidate) =>
-        candidate.every(
-          (v) => Number.isFinite(v) && Math.abs(v) <= 100_000_000,
-        ) &&
-        Math.hypot(
-          Math.max(view[0] - candidate[0], 0, candidate[0] - view[2]),
-          Math.max(view[1] - candidate[1], 0, candidate[1] - view[3]),
-        ) < brush.radius,
+    const stroke = this.spatialStroke;
+    const coast = stroke ? stroke.kind === "coast" : this.coastMode;
+    const brush =
+      stroke?.brush ??
+      (coast ? this.currentCoastBrush() : this.currentLandscapeBrush());
+    const inWorld = [from, point].every((candidate) =>
+      candidate.every((v) => Number.isFinite(v) && Math.abs(v) <= 100_000_000),
     );
+    const bounds =
+      coast && inWorld
+        ? coastBrushReadBounds(brush, from, point)
+        : clipBounds([
+            Math.min(from[0], point[0]) - brush.radius,
+            Math.min(from[1], point[1]) - brush.radius,
+            Math.max(from[0], point[0]) + brush.radius,
+            Math.max(from[1], point[1]) + brush.radius,
+          ]);
+    const view = this.world.bounds();
+    const visible =
+      inWorld &&
+      [from, point].every(
+        (candidate) =>
+          candidate.every(
+            (v) => Number.isFinite(v) && Math.abs(v) <= 100_000_000,
+          ) &&
+          Math.hypot(
+            Math.max(view[0] - candidate[0], 0, candidate[0] - view[2]),
+            Math.max(view[1] - candidate[1], 0, candidate[1] - view[3]),
+          ) < brush.radius,
+      );
     const sourcesReady = Boolean(
-      this.doc?.isLandscapeReady(bounds, brush.level),
+      inWorld &&
+      this.doc &&
+      (coast
+        ? this.doc.isReady(bounds, HEIGHT_LEVELS.slice(brush.level))
+        : this.doc.isLandscapeReady(bounds, brush.level)),
     );
     const display =
-      this.landscapeStroke && this.foundation
+      stroke && this.foundation
         ? this.world.inspectFoundation(bounds, this.foundation)
         : this.world.inspectRegion(bounds);
     const reason = !visible
@@ -1623,9 +1742,9 @@ export class EditorController {
       : !sourcesReady
         ? "sources"
         : display.status !== "current" ||
-            !this.world.isLandscapePresentationReady(bounds)
+            (!coast && !this.world.isLandscapePresentationReady(bounds))
           ? "terrain"
-          : !this.session.editable || this.landscapeStroke?.sealed
+          : !this.session.editable || stroke?.sealed
             ? "busy"
             : null;
     return {
@@ -1664,7 +1783,7 @@ export class EditorController {
   }
 
   private updateToolNeed(): void {
-    if (this.world.cursor && !this.actionStroke && !this.landscapeStroke)
+    if (this.world.cursor && !this.actionStroke && !this.spatialStroke)
       this.world.cursor.radius = this.houseMode ? 4 : this.diameter / 2;
     this.checkLocalReady();
     this.scheduleLoad();
@@ -1674,7 +1793,9 @@ export class EditorController {
   /** Imperative product demand; observation's localReadiness getter stays pure. */
   private prepareToolLevel(): void {
     this.world.setToolLevel(
-      this.actionStroke?.brush.level ?? this.currentBrush().level,
+      this.actionStroke?.brush.level ??
+        this.coastStroke?.brush.level ??
+        this.currentBrush().level,
     );
   }
 
@@ -1723,26 +1844,35 @@ export class EditorController {
       if (readiness.reason === "sources") this.scheduleLoad();
       return;
     }
-    if (this.landscapeMode) {
+    if (this.landscapeMode || this.coastMode) {
       try {
-        const landscapeBrush = this.currentLandscapeBrush();
         this.foundation = this.world.captureFoundation();
         if (!this.world.acceptFoundation(readiness.bounds, this.foundation))
           throw new Error(
-            "Der Landschaftsbereich besitzt keine passende sichtbare Grundlage.",
+            "Der Pinselbereich besitzt keine passende sichtbare Grundlage.",
           );
-        this.doc.beginLandscapeGesture(landscapeBrush);
-        this.brushState = {
-          kind: "landscape",
+        const state: SpatialStrokeState = {
           pointerId: event.pointerId,
           input,
-          brush: landscapeBrush,
           point,
           path: [point],
           retainedBounds: [...readiness.bounds],
           sealed: false,
           released: false,
         };
+        if (this.coastMode) {
+          const coastBrush = this.currentCoastBrush();
+          this.doc.beginCoastGesture(coastBrush);
+          this.brushState = { ...state, kind: "coast", brush: coastBrush };
+        } else {
+          const landscapeBrush = this.currentLandscapeBrush();
+          this.doc.beginLandscapeGesture(landscapeBrush);
+          this.brushState = {
+            ...state,
+            kind: "landscape",
+            brush: landscapeBrush,
+          };
+        }
         this.publish({ error: null });
         this.scheduleLoad();
       } catch (error) {
@@ -1834,8 +1964,8 @@ export class EditorController {
       y: event.clientY - rect.top,
       radius: this.stroke
         ? this.stroke.brush.radius * this.world.camera.scale
-        : this.landscapeStroke
-          ? this.landscapeStroke.brush.radius * this.world.camera.scale
+        : this.spatialStroke
+          ? this.spatialStroke.brush.radius * this.world.camera.scale
           : this.houseMode
             ? 4
             : this.diameter / 2,
@@ -1864,15 +1994,15 @@ export class EditorController {
       } catch (error) {
         this.gestureFailure(error);
       }
-    } else if (this.landscapeStroke) {
-      const stroke = this.landscapeStroke;
+    } else if (this.spatialStroke) {
+      const stroke = this.spatialStroke;
       if (stroke.sealed || event.pointerId !== stroke.pointerId) return;
       try {
         const coalesced = event.getCoalescedEvents?.() ?? [];
         const samples = [...coalesced, event];
         const rect = this.canvas.getBoundingClientRect();
         for (const sample of samples)
-          if (!this.acceptLandscapePoint(this.worldPoint(sample, rect))) break;
+          if (!this.acceptSpatialPoint(this.worldPoint(sample, rect))) break;
         this.scheduleLoad();
       } catch (error) {
         this.gestureFailure(error);
@@ -1932,6 +2062,7 @@ export class EditorController {
     if (
       state.kind === "active" ||
       state.kind === "landscape" ||
+      state.kind === "coast" ||
       state.kind === "house"
     ) {
       this.updatePointer(event);
@@ -1945,11 +2076,11 @@ export class EditorController {
 
   private wheel = (event: WheelEvent): void => {
     event.preventDefault();
-    if (event.altKey && (this.mode === "raise" || this.mode === "lower")) {
+    if (event.altKey && this.heightTool) {
       this.resizeHeightBrush(event.deltaY < 0 ? 1.1 : 1 / 1.1);
       return;
     }
-    if (this.stroke || this.landscapeStroke || this.houseDrag) return;
+    if (this.stroke || this.spatialStroke || this.houseDrag) return;
     const input = this.input(event, "navigation");
     if (this.world.fault === "ignore-zoom") {
       this.observation.event("fault", { fault: "ignore-zoom", input });
@@ -2223,30 +2354,35 @@ export class EditorController {
     this.scheduleLoad();
   }
 
+  private sealSpatialGesture(stroke: SpatialStroke): void {
+    if (stroke.kind === "coast") this.doc.sealCoastGesture();
+    else this.doc.sealLandscapeGesture();
+  }
+
   /** Stop before an unavailable point; only eligible geometry may still drain. */
-  private stopLandscapeInput(message: string): void {
-    const stroke = this.landscapeStroke;
+  private stopSpatialInput(message: string): void {
+    const stroke = this.spatialStroke;
     if (!stroke || stroke.sealed) return;
     stroke.sealed = true;
-    this.doc.sealLandscapeGesture();
+    this.sealSpatialGesture(stroke);
     this.publish({ error: message });
     this.scheduleLoad();
   }
 
   /** Queue eligible geometry while its displayed foundation and sources are current. */
-  private acceptLandscapePoint(point: Point, terminal = false): boolean {
-    const stroke = this.landscapeStroke;
+  private acceptSpatialPoint(point: Point, terminal = false): boolean {
+    const stroke = this.spatialStroke;
     if (!stroke || stroke.sealed) return false;
     const from = stroke.path.at(-1) ?? stroke.point;
     if (point[0] === from[0] && point[1] === from[1]) return true;
-    const ready = this.landscapeReadiness(point, from);
+    const ready = this.spatialReadiness(point, from);
     if (
       !ready.ready ||
       !this.foundation ||
       !this.world.acceptFoundation(ready.bounds, this.foundation)
     ) {
-      this.stopLandscapeInput(
-        "Der nächste Landschaftsbereich ist noch nicht bereit. Der bisherige Strich bleibt erhalten; nach dem Laden neu ansetzen.",
+      this.stopSpatialInput(
+        "Der nächste Kartenbereich ist noch nicht bereit. Der bisherige Strich bleibt erhalten; nach dem Laden neu ansetzen.",
       );
       return false;
     }
@@ -2263,19 +2399,24 @@ export class EditorController {
       ax * bx + ay * by >= 0 &&
       // A merged diagonal has a wider rectangular source requirement than its
       // short pieces. Keep those pieces when only their local corridor is ready.
-      this.doc.isLandscapeReady(
-        clipBounds([
-          Math.min(previous[0], point[0]) - stroke.brush.radius,
-          Math.min(previous[1], point[1]) - stroke.brush.radius,
-          Math.max(previous[0], point[0]) + stroke.brush.radius,
-          Math.max(previous[1], point[1]) + stroke.brush.radius,
-        ]),
-        stroke.brush.level,
-      );
+      (stroke.kind === "coast"
+        ? this.doc.isReady(
+            coastBrushReadBounds(stroke.brush, previous, point),
+            HEIGHT_LEVELS.slice(stroke.brush.level),
+          )
+        : this.doc.isLandscapeReady(
+            clipBounds([
+              Math.min(previous[0], point[0]) - stroke.brush.radius,
+              Math.min(previous[1], point[1]) - stroke.brush.radius,
+              Math.max(previous[0], point[0]) + stroke.brush.radius,
+              Math.max(previous[1], point[1]) + stroke.brush.radius,
+            ]),
+            stroke.brush.level,
+          ));
     if (extendsLine) stroke.path[stroke.path.length - 1] = point;
     else {
       if (stroke.path.length >= MAX_BRUSH_POINTS - (terminal ? 0 : 1)) {
-        this.stopLandscapeInput(
+        this.stopSpatialInput(
           "Der Pinsel hat seine Arbeitsgrenze erreicht. Der bisherige Strich bleibt erhalten; bitte loslassen und neu ansetzen.",
         );
         return false;
@@ -2292,22 +2433,31 @@ export class EditorController {
   }
 
   /** One bounded atomic batch per RAF, independent of the pointer event rate. */
-  private advanceLandscape(): void {
-    const stroke = this.landscapeStroke;
+  private advanceSpatial(): void {
+    const stroke = this.spatialStroke;
     if (!stroke) return;
+    const cellLimit =
+      stroke.kind === "coast"
+        ? COAST_BATCH_CELL_LIMIT
+        : LANDSCAPE_BATCH_CELL_LIMIT;
+    const pointLimit =
+      stroke.kind === "coast"
+        ? COAST_BATCH_POINT_LIMIT
+        : LANDSCAPE_BATCH_POINT_LIMIT;
+    const costOf = (from: Point, to: Point) =>
+      stroke.kind === "coast"
+        ? coastSegmentCellCost(stroke.brush, from, to)
+        : landscapeSegmentCellCost(stroke.brush, from, to);
     try {
       if (stroke.path.length) {
         const points: Point[] = [stroke.point];
         let consumed = 0,
           cells = 0;
-        while (
-          consumed < stroke.path.length &&
-          points.length <= LANDSCAPE_BATCH_POINT_LIMIT
-        ) {
+        while (consumed < stroke.path.length && points.length <= pointLimit) {
           const from = points.at(-1)!;
           const target = stroke.path[consumed];
-          const cost = landscapeSegmentCellCost(stroke.brush, from, target);
-          if (cells + cost > LANDSCAPE_BATCH_CELL_LIMIT) {
+          const cost = costOf(from, target);
+          if (cells + cost > cellLimit) {
             if (points.length > 1) break;
             // A long jump remains the same straight segment, spread across
             // bounded materializations; its true endpoint stays in the path.
@@ -2321,17 +2471,13 @@ export class EditorController {
               fraction /= 2;
             } while (
               fraction > Number.EPSILON &&
-              landscapeSegmentCellCost(stroke.brush, from, part) >
-                LANDSCAPE_BATCH_CELL_LIMIT
+              costOf(from, part) > cellLimit
             );
             if (
               (part[0] === from[0] && part[1] === from[1]) ||
-              landscapeSegmentCellCost(stroke.brush, from, part) >
-                LANDSCAPE_BATCH_CELL_LIMIT
+              costOf(from, part) > cellLimit
             )
-              throw new Error(
-                "Der Landschaftspinsel überschreitet die Arbeitsgrenze.",
-              );
+              throw new Error("Der Pinsel überschreitet die Arbeitsgrenze.");
             points.push(part);
             break;
           }
@@ -2339,29 +2485,40 @@ export class EditorController {
           cells += cost;
           consumed++;
         }
-        const update = this.doc.applyLandscapeSegments(points);
+        if (stroke.kind === "coast") {
+          const update = this.doc.applyCoastSegments(points);
+          if (update) {
+            this.world.updateSourcePatches(update.patches);
+            this.world.invalidate(update.bounds);
+          }
+        } else {
+          const update = this.doc.applyLandscapeSegments(points);
+          if (update)
+            this.landscapeChanged(update.bounds, undefined, update.patches);
+        }
         stroke.point = points.at(-1)!;
         stroke.path.splice(0, consumed);
-        if (update)
-          this.landscapeChanged(update.bounds, undefined, update.patches);
       }
-      if (stroke.sealed && !stroke.path.length) this.completeLandscape();
+      if (stroke.sealed && !stroke.path.length) this.completeSpatial();
     } catch (error) {
       this.gestureFailure(error);
     }
   }
 
   /** Document acceptance precedes projection and persistence; neither may undo it. */
-  private completeLandscape(): void {
-    const stroke = this.landscapeStroke;
+  private completeSpatial(): void {
+    const stroke = this.spatialStroke;
     if (!stroke) return;
-    const change = this.doc.finishLandscapeGesture();
+    const change =
+      stroke.kind === "coast"
+        ? this.doc.finishCoastGesture()
+        : this.doc.finishLandscapeGesture();
     this.brushState = stroke.released
       ? { kind: "idle" }
       : { kind: "blocked", pointerId: stroke.pointerId };
     this.foundation = null;
     try {
-      if (change)
+      if (change && stroke.kind === "landscape")
         for (const bounds of change.dirtyBounds)
           this.landscapeChanged(bounds, change.sequence, []);
     } finally {
@@ -2371,16 +2528,17 @@ export class EditorController {
   }
 
   private gestureFailure(error: unknown): void {
-    if (this.landscapeStroke) {
+    const stroke = this.spatialStroke;
+    if (stroke) {
       // A failed atomic batch changed nothing. Earlier materialized batches
       // remain canonical; unmaterialized geometry must never replay later.
-      this.landscapeStroke.path = [];
-      this.landscapeStroke.sealed = true;
-      this.doc.sealLandscapeGesture();
+      stroke.path = [];
+      stroke.sealed = true;
+      this.sealSpatialGesture(stroke);
       try {
-        this.completeLandscape();
+        this.completeSpatial();
       } catch {
-        // completeLandscape persists in finally even if projection failed.
+        // completeSpatial persists in finally even if projection failed.
       }
       this.world.reset(this.doc, !this.landscapeEnabled);
       this.world.refresh();
@@ -2437,28 +2595,32 @@ export class EditorController {
       this.updateToolNeed();
       return;
     }
-    const landscape = this.landscapeStroke;
-    if (landscape) {
-      if (released) landscape.released = true;
-      if (reason === "escape" && !landscape.sealed) {
+    const spatial = this.spatialStroke;
+    if (spatial) {
+      if (released) spatial.released = true;
+      if (
+        spatial.kind === "landscape" &&
+        reason === "escape" &&
+        !spatial.sealed
+      ) {
         const update = this.doc.cancelLandscapeGesture();
         this.brushState = released
           ? { kind: "idle" }
-          : { kind: "blocked", pointerId: landscape.pointerId };
+          : { kind: "blocked", pointerId: spatial.pointerId };
         this.foundation = null;
         if (update)
           this.landscapeChanged(update.bounds, undefined, update.patches);
       } else if (reason === "destroy" || reason === "error") {
         // Destruction has no future RAF. Keep its materialized document prefix;
         // native close/project replacement normally use the full action barrier.
-        landscape.path = [];
-        landscape.sealed = true;
-        this.doc.sealLandscapeGesture();
-        this.completeLandscape();
-      } else if (!landscape.sealed) {
+        spatial.path = [];
+        spatial.sealed = true;
+        this.sealSpatialGesture(spatial);
+        this.completeSpatial();
+      } else if (!spatial.sealed) {
         if (reason === "pointerup" && event) {
           try {
-            this.acceptLandscapePoint(
+            this.acceptSpatialPoint(
               this.worldPoint(event as PointerEvent),
               true,
             );
@@ -2467,8 +2629,8 @@ export class EditorController {
             return;
           }
         }
-        landscape.sealed = true;
-        this.doc.sealLandscapeGesture();
+        spatial.sealed = true;
+        this.sealSpatialGesture(spatial);
         this.scheduleLoad();
       }
       this.publish();
@@ -2774,7 +2936,11 @@ export class EditorController {
       throw new RangeError("Beobachteter Pinselweg benötigt 1 bis 512 Punkte.");
     const pathBrush = path ? this.currentBrush() : null;
     const pathRegions = path?.map((point, index) =>
-      heightBrushReadBounds(pathBrush!, path[Math.max(0, index - 1)], point),
+      (this.coastMode ? coastBrushReadBounds : heightBrushReadBounds)(
+        pathBrush!,
+        path[Math.max(0, index - 1)],
+        point,
+      ),
     );
     const pathReadiness = pathRegions?.map((bounds) => ({
       sourcesReady: this.doc.isReady(
@@ -2810,7 +2976,14 @@ export class EditorController {
             pendingInput: (this.doc.brushWork?.pendingPoints ?? 0) > 0,
             brush: { ...this.actionStroke.brush },
           }
-        : null,
+        : this.spatialStroke
+          ? {
+              kind: this.spatialStroke.kind,
+              active: this.doc.active,
+              pendingInput: this.spatialStroke.path.length > 0,
+              brush: { ...this.spatialStroke.brush },
+            }
+          : null,
       readiness: this.localReadiness(),
       pathReadiness: pathReadiness
         ? {
@@ -2884,7 +3057,7 @@ export class EditorController {
     )
       return;
     if (
-      (this.mode === "raise" || this.mode === "lower") &&
+      this.heightTool &&
       !(event.ctrlKey && !event.getModifierState("AltGraph")) &&
       !event.metaKey &&
       (event.key === "[" || event.key === "]")
@@ -2910,7 +3083,7 @@ export class EditorController {
     this.finishGesture(undefined, reason, event, true);
     if (this.brushState.kind === "finishing")
       this.brushState.blockedPointerId = null;
-    else if (this.landscapeStroke) this.landscapeStroke.released = true;
+    else if (this.spatialStroke) this.spatialStroke.released = true;
     else this.brushState = { kind: "idle" };
     this.pan = null;
     this.checkLocalReady();

@@ -110,6 +110,8 @@ try {
 
   for (const [name, mode] of [
     ["Haus auswählen", "select"],
+    ["Höhen", "land"],
+    ["Höhen", "sea"],
     ["Höhen", "raise"],
     ["Höhen", "lower"],
     ["Wald", "forest"],
@@ -174,8 +176,8 @@ try {
       })),
     );
   assert.deepEqual(heightOptions, [
-    { value: "land", label: "Land", disabled: true },
-    { value: "sea", label: "Meer", disabled: true },
+    { value: "land", label: "Land", disabled: false },
+    { value: "sea", label: "Meer", disabled: false },
     { value: "mountains", label: "Bergkette", disabled: true },
     { value: "hills", label: "Hügel", disabled: true },
     { value: "canyon", label: "Schlucht", disabled: true },
@@ -185,6 +187,44 @@ try {
     { value: "flatten", label: "Einebnen", disabled: true },
   ]);
   check("height mode choices preserve the available engine scope", true);
+  await heightMode("land");
+  check(
+    "Land exposes its coast shape without an ineffective height rate",
+    (await page.getByLabel("Küstenform", { exact: true }).inputValue()) ===
+      "round" &&
+      (await page
+        .getByLabel("Höhenänderung (m/s)", { exact: true })
+        .count()) === 0 &&
+      (await state()).state.coastRoughness === 0,
+  );
+  await page.getByLabel("Küstenform", { exact: true }).selectOption("crinkled");
+  check(
+    "crinkled coast selects the previous default roughness",
+    Math.abs((await state()).state.coastRoughness - 0.65) < 1e-9,
+  );
+  const roughness = page.getByLabel("Küstenrauheit (%)", { exact: true });
+  await roughness.press("Home");
+  for (let step = 0; step < 7; step++) await roughness.press("ArrowRight");
+  await heightMode("sea");
+  await click("Wald");
+  await click("Höhen");
+  check(
+    "Meer and coast roughness survive a tool change",
+    (await state()).state.mode === "sea" &&
+      (await state()).state.heightMode === "sea" &&
+      Math.abs((await state()).state.coastRoughness - 0.4) < 1e-9 &&
+      (await page.getByLabel("Pinselmodus", { exact: true }).inputValue()) ===
+        "sea" &&
+      (await page
+        .getByLabel("Höhenänderung (m/s)", { exact: true })
+        .count()) === 0,
+  );
+  await page.screenshot({ path: join(out, "coast-settings.png") });
+  await page.getByLabel("Küstenform", { exact: true }).selectOption("round");
+  check(
+    "round coast disables roughness through the real controller",
+    (await state()).state.coastRoughness === 0,
+  );
   check(
     "unavailable contours are visibly disabled",
     (await page.getByLabel("Höhenlinien", { exact: true }).isVisible()) &&

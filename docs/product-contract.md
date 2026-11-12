@@ -1124,8 +1124,8 @@ vollständige Leistungsabnahme oder Kompatibilität früherer Versuchsdateien.
 
 P0 ist ein eigener, ausdrücklich gewählter Höhen-, Landschafts- und Hauseditor.
 Er bietet Verschieben und Zoom vom Nahbereich bis zur Welt, Raster ein/aus,
-Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel, rechteckige
-Häuser mit Auswahl, Drehung und Bewegung, eine vorbereitete Gewässerszene mit
+Land, Meer, Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel,
+rechteckige Häuser mit Auswahl, Drehung und Bewegung, eine vorbereitete Gewässerszene mit
 aktuellen Fundamenten, Undo/Redo sowie
 Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
 in Bildschirmpixeln, die Höhenänderungsrate in Metern pro Sekunde eingestellt;
@@ -1135,8 +1135,11 @@ gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht verfügbar.
 
 Das Werkzeug **Höhen** verwendet die V7-Anordnung: **Pinselmodus**,
 **Pinselgröße (Pixel)**, Weltdurchmesser und Höhenraster, anschließend
-**Höhenänderung (m/s)**. Anheben und Absenken sind aktiv; die übrigen
-V7-Modi und Höhenlinien sind sichtbar deaktiviert. Der zuletzt gewählte
+bei Anheben/Absenken **Höhenänderung (m/s)**. Land/Meer bietet stattdessen
+**Küstenform → Rund/Kräuselig** und bei Kräuselig **Küstenrauheit (%)**
+von 5 bis 100 Prozent in Fünferschritten. Rund ist die Vorgabe; der Wechsel
+auf Kräuselig beginnt bei 65 Prozent. Die übrigen V7-Modi und Höhenlinien
+sind sichtbar deaktiviert. Der zuletzt gewählte
 Höhenmodus bleibt beim Wechsel zu anderen Werkzeugen erhalten. Die
 Größenangaben folgen der aktuellen Kamera und Autorenstufe, metrisch mit
 höchstens drei signifikanten Stellen und ab einem Kilometer in Kilometern.
@@ -1149,7 +1152,9 @@ aktiven oder noch abzuschließenden Pointergeste bleiben sie ohne Wirkung.
 Fokussierte Zahlenfelder behalten ihre eigene Tastaturbedienung. Die
 Größenkurzbefehle berücksichtigen AltGraph-Tastaturen. Eine zusätzliche
 Leertaste-Ziehen-Geste wird nicht angeboten. Die zeitabhängige Wirkung beim
-Halten und langsamen Ziehen bleibt die unten beschriebene P0-Wirkung.
+Halten und langsamen Ziehen gilt für Anheben/Absenken. Land/Meer folgt dem
+räumlichen Zielprofil; Halten und wiederholtes Übermalen derselben Geometrie
+verstärken den Auftrag nicht.
 
 Numerische Einstellungen müssen endlich sein. Pinselgröße und Stärke werden
 auf ihre wirksamen Grenzen begrenzt: 8–512 Bildschirmpixel für Höhe,
@@ -1170,6 +1175,27 @@ endlich und innerhalb ±100.000.000 Fuß sein. Grobes Anheben oder Absenken läs
 die feineren Restwerte unverändert; an den Höhenlimits kann die abschließende
 Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
 sie besitzen keine getrennten Höhenautoren.
+
+**Land/Meer** übernimmt den räumlichen Küstenauftrag aus V7: Land hebt im
+Pinselinneren auf mindestens +10 Fuß, Meer senkt auf höchstens −10 Fuß.
+Höheres Land beziehungsweise tieferes Meer bleibt erhalten. Am Rand entsteht
+ein weicher Übergang über den Meeresspiegel. Die vollständige angenommene
+Polylinie einschließlich Ecken und Endpunkt bestimmt die Wirkung, unabhängig
+von Ereignisanzahl oder Geschwindigkeit. Kräuselig verwendet ein ortsfestes
+stetiges Rauschfeld innerhalb des Pinselkreises; die Rauheit ändert die Küstenform.
+
+Die Küsten-Autorenstufe wird beim Druck mit höchstens zwei Bildschirmpixeln
+Rasterabstand gewählt, soweit das feinste 5-Fuß-Raster es erlaubt. Radius,
+Stufe, Modus und Rauheit bleiben während des Strichs fest. Der Zielwert gilt
+für Grundhöhe plus gröbere Beiträge und den eigenen Kontrollwert der gewählten
+Stufe. Feinere additive Beiträge werden nicht umgeschrieben und bleiben als
+Relief erhalten; sie können das endgültige lokale Vorzeichen weiterhin bestimmen.
+Feindetails folgen damit weiterhin dem additiven Höhenmodell.
+Land/Meer verwendet dieselben Höhenpatches, Undo/Redo und Dateisicherung wie
+Anheben/Absenken. Loslassen beendet die Eingabe; der gemeinsame Aktionsabschluss
+wartet auf den vollständigen angenommenen Weg. Escape und Fokusverlust erhalten
+die angenommenen Höhenänderungen. Quellen-, Arbeits- oder Darstellungsfehler
+nehmen bereits materialisierte Teile des Strichs nicht zurück.
 
 Für die Farbdarstellung werden Höhen höchstens `0,000001` Fuß von den
 Klassengrenzen 0 oder 12 Fuß entfernt auf die jeweilige Grenze gesetzt. Dieses
@@ -1215,7 +1241,7 @@ Laden gehalten wird, beginnt kein Strich automatisch. Der Nutzer muss loslassen
 und erneut drücken; bei gehaltener Taste erklärt ein Hinweis diesen Zustand.
 Wartezeit und Wege vor der Freigabe werden nicht nachgeholt.
 
-Die folgenden Zeit- und Wirkungsregeln gelten für den Höhenpinsel.
+Die folgenden Zeit- und Wirkungsregeln gelten für Anheben/Absenken.
 Ein Strich hält Autorenstufe und Pinselparameter bis zum Abschluss fest.
 **Gedrücktes Halten vertieft die Stelle. Langsame Züge wirken stärker als
 schnelle, weil mehr Zeit auf die betroffenen Stellen entfällt.** C1 verwendet

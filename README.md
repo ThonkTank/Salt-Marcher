@@ -142,6 +142,11 @@ ist sichtbar deaktiviert, bis die vollständigen Werkzeuge aus P7 umgesetzt sind
 P0 speichert diese Autoren in Format 27 (`atlas-p3-derived-water-1`), getrennt vom
 V7-Format und ohne Migration früherer P0-Dateien.
 
+Im Werkzeug **Höhen** sind **Land** und **Meer** verfügbar. Sie legen Küsten
+mit sofortiger Zielwirkung an; die Formauswahl **Rund/Kräuselig** und die
+Küstenrauheit entsprechen V7. Anheben/Absenken behalten ihre Höhenrate und
+Haltewirkung. Alle vier Modi teilen Größen-Gesten, History und Dateisicherung.
+
 Lokale Ableitungen teilen einen begrenzten Arbeitsslot. Dazu zählen neben dem
 4-MiB-Höhensnapshot auch die begrenzten Kontrollwert- und Suchstrukturen;
 überholte Leseantworten dürfen einen neueren Bedarf nicht blockieren. Ein bereits
@@ -160,7 +165,7 @@ in der gepinnten Electron-Laufzeit und führt bei unpassender ABI
 | `npm run desktop:atlas-p0`                                                                   | P0 bauen und im eigenen Electron-Fenster starten.                                                                                                                  |
 | `npm run test:atlas-p0`                                                                      | Modell-, Raster-, Renderer-, Auswerter- und native Vorprüfungstests ausführen.                                                                                     |
 | `npm run typecheck:p0-tools`                                                                 | Ausführbaren Auswerter anhand seiner eigenen JSDoc-Verträge prüfen.                                                                                                |
-| `npm run test:atlas-p0:smoke`                                                                | Gebauten Electron-Start mit echter Prozess-/SQLite-Anbindung prüfen; `--only normal`, `stall`, `lifecycle`, `landscape`, `house` oder `water` begrenzt den Umfang. |
+| `npm run test:atlas-p0:smoke`                                                                | Gebauten Electron-Start mit echter Prozess-/SQLite-Anbindung prüfen; `--only normal`, `stall`, `lifecycle`, `coast`, `landscape`, `house` oder `water` begrenzt den Umfang. |
 | `npm run check:atlas-p0`                                                                     | Tool-Typen, Build, Store-/Fixturetests, echten Electron-Smoke und GPU-Pixelreferenz einschließlich Kontextwiederherstellung prüfen.                                |
 | `npm run p0:lab`                                                                             | Den zuvor gebauten Stand als kurze softwaregerenderte Architekturprobe prüfen.                                                                                     |
 | `npm run p0:native`                                                                          | Native Vorprüfung ausführen und nur bei erfüllten Voraussetzungen Szenarien sammeln.                                                                               |
@@ -172,6 +177,12 @@ in der gepinnten Electron-Laufzeit und führt bei unpassender ABI
 | `npm run package:atlas-p0`                                                                   | Mit Forge ein startbares Anwendungsverzeichnis erzeugen.                                                                                                           |
 | `npm run make:atlas-p0`                                                                      | RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Paketbauwerkzeuge.                                                                                                   |
 | `npm run check:atlas-p0:package`                                                             | Paket bauen, ASAR-Inhalt prüfen und den ausgelieferten Einstieg mit Dateirundlauf starten.                                                                         |
+
+Land/Meer lässt sich nach dem Build mit
+`node scripts/atlas-p0-smoke.mjs --only coast` gezielt prüfen. Dieser Fall gehört
+auch zum normalen Smoke: sichtbarer Auftrag über beide Kachelgrenzen, getrennte
+Land-/Meer-Schritte mit Undo/Redo, unabhängig gelesene SQLite-Höhenwerte sowie
+Speichern/Öffnen und ein frischer Prozess.
 
 Die Werkzeugoberfläche lässt sich nach dem Build gezielt mit
 `node scripts/atlas-editor-ui-smoke.mjs` prüfen. Der Lauf bedient die echte

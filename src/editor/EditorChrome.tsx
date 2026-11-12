@@ -129,7 +129,10 @@ export function ToolRail({
         state?.heightMode ?? "raise",
         "▵",
         "Höhen",
-        state?.mode === "raise" || state?.mode === "lower",
+        state?.mode === "land" ||
+          state?.mode === "sea" ||
+          state?.mode === "raise" ||
+          state?.mode === "lower",
       )}
       <div
         className="tool-group"

@@ -33,6 +33,7 @@ if (
     "normal",
     "stall",
     "lifecycle",
+    "coast",
     "landscape",
     "house",
     "water",
@@ -466,6 +467,12 @@ async function scenario(name, action) {
 try {
   if (selection === "all" || selection === "normal")
     await scenario("normal", normalStart);
+  if (["all", "normal", "coast"].includes(selection)) {
+    const { runCoastScenario } = await import("./atlas-p0-coast.mjs");
+    await scenario("coast", () =>
+      runCoastScenario({ launch, out, recordCheck }),
+    );
+  }
   if (["all", "normal", "landscape"].includes(selection)) {
     const { runLandscapeScenario } = await import("./atlas-p3-landscape.mjs");
     await scenario("landscape", () =>

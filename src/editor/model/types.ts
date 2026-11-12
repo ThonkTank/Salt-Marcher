@@ -127,6 +127,16 @@ export interface HeightBrush {
   label?: string;
 }
 
+/** Immediate, spatial coast target; independent of the timed height dose. */
+export interface CoastBrush {
+  level: number;
+  radius: number;
+  mode: "land" | "sea";
+  /** Zero is round; positive values indent the coast inside the brush. */
+  roughness: number;
+  label?: string;
+}
+
 export function assertLevel(level: number): void {
   if (!Number.isInteger(level) || level < 0 || level > HEIGHT_MAX_LEVEL)
     throw new RangeError("Höhenstufe muss eine ganze Zahl von 0 bis 21 sein.");

@@ -85,6 +85,8 @@ function HeightSettings({
 }) {
   const diameter = state ? state.diameter / state.scale : null;
   const spacing = state ? 5 * 2 ** state.level : null;
+  const coast = state?.heightMode === "land" || state?.heightMode === "sea";
+  const roughness = state?.coastRoughness ?? 0;
   return (
     <>
       <label className="field">
@@ -94,7 +96,12 @@ function HeightSettings({
           value={state?.heightMode ?? "raise"}
           onChange={(event) => {
             const mode = event.target.value;
-            if (mode === "raise" || mode === "lower")
+            if (
+              mode === "land" ||
+              mode === "sea" ||
+              mode === "raise" ||
+              mode === "lower"
+            )
               action((editor) => editor.setMode(mode));
           }}
         >
@@ -102,13 +109,65 @@ function HeightSettings({
             <option
               key={mode}
               value={mode}
-              disabled={mode !== "raise" && mode !== "lower"}
+              disabled={
+                mode !== "land" &&
+                mode !== "sea" &&
+                mode !== "raise" &&
+                mode !== "lower"
+              }
             >
               {label}
             </option>
           ))}
         </select>
       </label>
+      {coast && (
+        <>
+          <label className="field">
+            <span>Küstenform</span>
+            <select
+              aria-label="Küstenform"
+              value={roughness > 0 ? "crinkled" : "round"}
+              onChange={(event) =>
+                action((editor) =>
+                  editor.setCoastRoughness(
+                    event.target.value === "crinkled" ? 0.65 : 0,
+                  ),
+                )
+              }
+            >
+              <option value="round">Rund</option>
+              <option value="crinkled">Kräuselig</option>
+            </select>
+          </label>
+          {roughness > 0 && (
+            <>
+              <label className="field">
+                <span>Küstenrauheit: {Math.round(roughness * 100)} %</span>
+                <input
+                  aria-label="Küstenrauheit (%)"
+                  type="range"
+                  min={5}
+                  max={100}
+                  step={5}
+                  value={Math.round(roughness * 100)}
+                  onChange={(event) =>
+                    action((editor) =>
+                      editor.setCoastRoughness(
+                        Number(event.target.value) / 100,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <small>
+                Unregelmäßige Buchten und Landzungen innerhalb des
+                Pinselkreises.
+              </small>
+            </>
+          )}
+        </>
+      )}
       <NumberField
         label="Pinselgröße (Pixel)"
         step={1}
@@ -133,16 +192,18 @@ function HeightSettings({
           )}
         </>
       )}
-      <NumberField
-        label="Höhenänderung (m/s)"
-        min={0.03048}
-        max={3048}
-        step="any"
-        value={Number(((state?.amount ?? 20) * 0.3048).toPrecision(15))}
-        onCommit={(value) =>
-          action((editor) => editor.setBrush(editor.diameter, value / 0.3048))
-        }
-      />
+      {!coast && (
+        <NumberField
+          label="Höhenänderung (m/s)"
+          min={0.03048}
+          max={3048}
+          step="any"
+          value={Number(((state?.amount ?? 20) * 0.3048).toPrecision(15))}
+          onCommit={(value) =>
+            action((editor) => editor.setBrush(editor.diameter, value / 0.3048))
+          }
+        />
+      )}
       <label className="check height-contours">
         <input type="checkbox" disabled aria-describedby="height-unavailable" />
         Höhenlinien
@@ -154,7 +215,12 @@ function HeightSettings({
         Ziehen: Direkt malen · Loslassen / Escape: Strich beenden · Rückgängig:
         Strich entfernen
       </small>
-      <small>Halten vertieft weiter. [ / ] oder Alt+Mausrad: Pinselgröße</small>
+      <small>
+        {coast
+          ? "Halten verändert die Küste nicht weiter."
+          : "Halten vertieft weiter."}{" "}
+        [ / ] oder Alt+Mausrad: Pinselgröße
+      </small>
     </>
   );
 }
@@ -167,7 +233,8 @@ export function ToolSettings({
   action: EditorAction;
 }) {
   const mode = state?.mode ?? "raise";
-  const height = mode === "raise" || mode === "lower";
+  const height =
+    mode === "land" || mode === "sea" || mode === "raise" || mode === "lower";
   const landscape = mode === "forest" || mode === "clearing";
   const houseMode = mode === "house" || mode === "select";
   const selectedHouse = mode === "select" ? state?.selectedHouse : null;

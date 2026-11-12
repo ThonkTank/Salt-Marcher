@@ -3,6 +3,7 @@ import type {
   AtlasDesktop,
   CommitRequest,
   ReadLandscapeRegionRequest,
+  ReadRegionRequest,
   ProjectInfo,
   SaveRequest,
 } from "./bridge";
@@ -13,9 +14,11 @@ import {
   intersectsBounds,
   type Bounds,
   type HouseHeader,
+  type HeightTile,
   type Point,
   type LandscapeTile,
   landscapeTileBounds,
+  heightTileSupport,
   LANDSCAPE_BATCH_CELL_LIMIT,
   LANDSCAPE_BATCH_POINT_LIMIT,
   landscapeSegmentCellCost,
@@ -117,6 +120,8 @@ vi.mock("./render/WorldRenderer", () => ({
       return null;
     }
     forgetSources() {}
+    updateSourcePatches() {}
+    invalidate() {}
     updateLandscape() {}
     finishFrame() {}
     destroy() {}
@@ -191,6 +196,7 @@ async function readyController(houses: HouseHeader[] = []) {
     throw new Error("The empty, resident test document needs no source read");
   };
   const storedLandscape = new Map<string, LandscapeTile>();
+  const storedHeights = new Map<string, HeightTile>();
   const bridge = {
     diagnostics: false,
     onFileAction: vi.fn((handler: typeof fileAction) => {
@@ -198,7 +204,15 @@ async function readyController(houses: HouseHeader[] = []) {
       return () => {};
     }),
     status: async () => info,
-    readRegion: vi.fn(unexpectedRead),
+    readRegion: vi.fn(async (request: ReadRegionRequest) => ({
+      ...request,
+      sequence: info.sequence,
+      tiles: [...storedHeights.values()].filter(
+        (tile) =>
+          tile.level >= (request.minLevel ?? 0) &&
+          intersectsBounds(heightTileSupport(tile), request.bounds),
+      ),
+    })),
     readPresentation: vi.fn(unexpectedRead),
     readLandscapeRegion: vi.fn(async (request: ReadLandscapeRegionRequest) => ({
       ...request,
@@ -226,6 +240,9 @@ async function readyController(houses: HouseHeader[] = []) {
         if (patch.kind === "landscape") {
           if (patch.after) storedLandscape.set(patch.key, patch.after);
           else storedLandscape.delete(patch.key);
+        } else if (patch.kind === "height") {
+          if (patch.after) storedHeights.set(patch.key, patch.after);
+          else storedHeights.delete(patch.key);
         }
       return {
         sessionId: request.sessionId,
@@ -324,6 +341,122 @@ async function readyController(houses: HouseHeader[] = []) {
 
 const FOREST = [0, 0, 255, 0];
 const CLEAR = [0, 0, 0, 0];
+
+describe("Land and Meer through the shared controller and writer", () => {
+  it("paints immediately, does not accumulate while held, and keeps one history per spatial stroke", async () => {
+    const test = await readyController();
+    test.controller.setMode("land");
+    test.controller.setBrush(64, 20);
+    test.pointer("pointerdown");
+    test.frame();
+    expect(test.doc.sampleHeight(0, 0)).toBeCloseTo(10, 10);
+    const revision = test.doc.revision;
+    for (let i = 0; i < 8; i++) test.frame();
+    expect(test.doc.revision).toBe(revision);
+    test.pointer("pointerup");
+    await test.drain();
+    expect(test.doc.metrics.historyActions).toBe(1);
+
+    test.controller.setMode("sea");
+    test.controller.setBrush(24, 10000);
+    test.pointer("pointerdown");
+    test.pointer("pointerup");
+    await test.drain();
+    expect(test.doc.sampleHeight(0, 0)).toBeCloseTo(-10, 10);
+    expect(test.doc.sampleHeight(100, 0)).toBeCloseTo(10, 10);
+    expect(test.doc.metrics.historyActions).toBe(2);
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.sampleHeight(0, 0)).toBeCloseTo(10, 10);
+    test.controller.redo();
+    await test.drain();
+    expect(test.doc.sampleHeight(0, 0)).toBeCloseTo(-10, 10);
+    expect(
+      test.bridge.commit.mock.calls.every(([request]) =>
+        request.patches.every((patch) => patch.kind === "height"),
+      ),
+    ).toBe(true);
+    expect(test.controller.state.error).toBeNull();
+  });
+
+  it("keeps corners, both tile boundaries and the actual Up endpoint before Save", async () => {
+    const test = await readyController();
+    test.controller.setMode("land");
+    test.controller.setBrush(32, 20);
+    test.pointer("pointerdown", -350, -180);
+    test.pointer("pointermove", 300, -180, [
+      [-350, -180],
+      [0, 180],
+      [300, -180],
+    ]);
+    test.pointer("pointerup", 350, -180);
+    const saving = test.controller.save();
+    expect(test.bridge.saveProject).not.toHaveBeenCalled();
+    await test.drain();
+    await saving;
+    for (const [x, y] of [
+      [-350, -180],
+      [0, 180],
+      [350, -180],
+    ])
+      expect(test.doc.sampleHeight(x, y)).toBeCloseTo(10, 10);
+    expect(test.doc.sampleHeight(0, -180)).toBe(-100);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.bridge.commit).toHaveBeenCalledOnce();
+    expect(test.bridge.saveProject).toHaveBeenCalledWith(
+      expect.objectContaining({ sequence: 1 }),
+    );
+    expect(test.controller.state.error).toBeNull();
+  });
+
+  it.each(["escape", "blur", "cancel", "tool-change"])(
+    "%s finishes accepted height work; late Up cannot paint more",
+    async (reason) => {
+      const test = await readyController();
+      test.controller.setMode("land");
+      test.controller.setBrush(32, 20);
+      test.pointer("pointerdown", -120, 0);
+      test.frame();
+      test.pointer("pointermove", 120, 0);
+      test.interrupt(reason);
+      test.pointer("pointerup", 400, 0);
+      await test.drain();
+      expect(test.doc.sampleHeight(-120, 0)).toBeCloseTo(10, 10);
+      expect(test.doc.sampleHeight(120, 0)).toBeCloseTo(10, 10);
+      expect(test.doc.sampleHeight(400, 0)).toBe(-100);
+      expect(test.doc.metrics.historyActions).toBe(1);
+      expect(test.bridge.commit).toHaveBeenCalledOnce();
+      expect(test.controller.state.error).toBeNull();
+    },
+  );
+
+  it("requires a new press after missing displayed terrain and retains a prefix after projection failure", async () => {
+    const test = await readyController();
+    test.controller.setMode("land");
+    test.controller.setBrush(32, 20);
+    test.world.inspectionStatus = "stale";
+    test.pointer("pointerdown");
+    test.world.inspectionStatus = "current";
+    test.pointer("pointermove", 80, 0);
+    test.frame();
+    expect(test.doc.sampleHeight(0, 0)).toBe(-100);
+    expect(test.doc.active).toBe(false);
+    test.pointer("pointerup");
+    test.pointer("pointerdown");
+    test.frame();
+    expect(test.doc.sampleHeight(0, 0)).toBeCloseTo(10, 10);
+    vi.spyOn(test.world, "updateSourcePatches").mockImplementationOnce(() => {
+      throw new Error("Coast projection failed");
+    });
+    test.pointer("pointermove", 120, 0);
+    test.frame();
+    await test.drain();
+    expect(test.doc.sampleHeight(0, 0)).toBeCloseTo(10, 10);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.controller.state.error).toContain("Coast projection failed");
+    expect(test.bridge.commit).toHaveBeenCalledOnce();
+  });
+});
 
 describe("house gestures through the shared controller and writer", () => {
   it.each([false, true])(

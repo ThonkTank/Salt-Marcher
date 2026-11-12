@@ -1,4 +1,10 @@
-import { prepareHeightSampler } from "./height";
+import { HEIGHT_SUM_SCALE, prepareHeightSampler } from "./height";
+import { prepareHeightGrid } from "./height-grid";
+import {
+  prepareCoastControls,
+  validateCoastBrush,
+  type CoastControls,
+} from "./coast";
 import { prepareLandscapeSampler } from "./landscape";
 import {
   WATER_MAX_REGION_SOURCES,
@@ -58,6 +64,7 @@ import {
   validateLandscapeTile,
   type Bounds,
   type ChangeSet,
+  type CoastBrush,
   type HeightBrush,
   type HeightPatch,
   type HeightSnapshot,
@@ -94,6 +101,8 @@ export interface EditorDocumentOptions {
   maxHistoryBytes?: number;
   maxHistoryActions?: number;
   maxGestureCells?: number;
+  /** Spatial targets can touch more controls than the time-dose ledger. */
+  maxCoastGestureCells?: number;
 }
 
 interface Entry {
@@ -217,7 +226,12 @@ interface HistoryAction {
 }
 
 interface Gesture {
-  brush: HeightBrush;
+  brush: HeightBrush | CoastBrush;
+  coast?: {
+    sealed: boolean;
+    regions: Map<string, Bounds>;
+    cells: Map<string, Uint8Array>;
+  };
   before: Map<string, HeightTile | null>;
   cells: Map<string, Set<number>>;
   cellCount: number;
@@ -442,6 +456,43 @@ function contained(a: Bounds, b: Bounds): boolean {
   return a[0] <= b[0] && a[1] <= b[1] && a[2] >= b[2] && a[3] >= b[3];
 }
 
+/** Merge only exact rectangular unions; never certify the hole inside a turn. */
+function retainedCoastRegions(
+  current: ReadonlyMap<string, Bounds>,
+  added: readonly Bounds[],
+): Map<string, Bounds> {
+  const regions = new Map(current);
+  for (let candidate of added) {
+    for (const [key, old] of regions) {
+      const row =
+        old[1] === candidate[1] &&
+        old[3] === candidate[3] &&
+        old[0] <= candidate[2] &&
+        candidate[0] <= old[2];
+      const column =
+        old[0] === candidate[0] &&
+        old[2] === candidate[2] &&
+        old[1] <= candidate[3] &&
+        candidate[1] <= old[3];
+      if (
+        contained(old, candidate) ||
+        contained(candidate, old) ||
+        row ||
+        column
+      ) {
+        candidate = unionBounds(old, candidate);
+        regions.delete(key);
+      }
+    }
+    regions.set(candidate.join(","), candidate);
+  }
+  if (regions.size > HEIGHT_MAX_ACTION_TILES)
+    throw new RangeError(
+      "Die Küstengeste überschreitet ihr Quellenbereichsbudget.",
+    );
+  return regions;
+}
+
 interface SpatialAuthorRules<T extends { id: string; revision: number }> {
   limit: number;
   key(id: string): string;
@@ -644,12 +695,17 @@ export class EditorDocument {
       maxHistoryBytes: options.maxHistoryBytes ?? 128 * 1024 * 1024,
       maxHistoryActions: options.maxHistoryActions ?? 100,
       maxGestureCells: options.maxGestureCells ?? 100_000,
+      maxCoastGestureCells: options.maxCoastGestureCells ?? 400_000,
     };
     for (const value of Object.values(this.options)) {
       if (!Number.isSafeInteger(value) || Number(value) < 0)
         throw new RangeError("Ungültiges Dokumentbudget oder Sequenznummer.");
     }
-    if (this.options.maxHistoryActions < 1 || this.options.maxGestureCells < 1)
+    if (
+      this.options.maxHistoryActions < 1 ||
+      this.options.maxGestureCells < 1 ||
+      this.options.maxCoastGestureCells < 1
+    )
       throw new RangeError(
         "History und Gesten benötigen ein positives Budget.",
       );
@@ -691,7 +747,9 @@ export class EditorDocument {
 
   get finishing(): boolean {
     return Boolean(
-      (this.gesture && this.prepaid?.sealed) || this.landscapeGesture?.sealed,
+      (this.gesture && this.prepaid?.sealed) ||
+      this.gesture?.coast?.sealed ||
+      this.landscapeGesture?.sealed,
     );
   }
 
@@ -1792,10 +1850,11 @@ export class EditorDocument {
 
   /** Accepted local source proofs remain valid while their contributors are pinned. */
   private retainedCoverage(): readonly SourceNeed[] {
-    if (!this.gesture || !this.prepaid) return this.coverage;
+    const regions = this.gestureSourceRegions();
+    if (!this.gesture || !regions) return this.coverage;
     return [
       ...this.coverage,
-      ...[...this.prepaid.reservedRegions.values()].map((bounds) => ({
+      ...[...regions.values()].map((bounds) => ({
         bounds,
         minLevel: this.gesture!.brush.level,
       })),
@@ -1804,13 +1863,18 @@ export class EditorDocument {
 
   private pinnedSource(key: string): boolean {
     if (this.gesture?.before.has(key)) return true;
-    if (!this.gesture || !this.prepaid) return false;
+    const regions = this.gestureSourceRegions();
+    if (!this.gesture || !regions) return false;
     const tile = parseHeightTileKey(key);
     if (tile.level < this.gesture.brush.level) return false;
     const support = heightTileSupport(tile);
-    for (const bounds of this.prepaid.reservedRegions.values())
+    for (const bounds of regions.values())
       if (intersectsBounds(support, bounds)) return true;
     return false;
+  }
+
+  private gestureSourceRegions(): ReadonlyMap<string, Bounds> | undefined {
+    return this.gesture?.coast?.regions ?? this.prepaid?.reservedRegions;
   }
 
   private reservedSourceBytes(): number {
@@ -1829,8 +1893,9 @@ export class EditorDocument {
       );
     needs.forEach(assertSourceNeed);
     const retainedNeeds = [...needs];
-    if (this.gesture && this.prepaid)
-      for (const bounds of this.prepaid.reservedRegions.values())
+    const gestureRegions = this.gestureSourceRegions();
+    if (this.gesture && gestureRegions)
+      for (const bounds of gestureRegions.values())
         retainedNeeds.push({ bounds, minLevel: this.gesture.brush.level });
     const clipped: SourceNeed[] = [];
     for (const coverage of this.coverage)
@@ -2253,14 +2318,14 @@ export class EditorDocument {
     return patches.length ? { bounds: gesture.bounds!, patches } : null;
   }
 
-  private initializeGesture(brush: HeightBrush): void {
+  private initializeGesture(brush: HeightBrush | CoastBrush): void {
     if (this.invalidationError) throw this.invalidationError;
     if (this.active) throw new Error("Eine Autorenaktion ist bereits aktiv.");
     assertLevel(brush.level);
     if (
       !Number.isFinite(brush.radius) ||
       brush.radius <= 0 ||
-      !Number.isFinite(brush.amount)
+      ("amount" in brush && !Number.isFinite(brush.amount))
     )
       throw new RangeError("Ungültiger Höhenpinsel.");
     const step = heightSpacing(brush.level);
@@ -2290,6 +2355,196 @@ export class EditorDocument {
       resolveFinished,
       rejectFinished,
     };
+  }
+
+  /** Coast targets share height authors/history, but have no time-dose account. */
+  beginCoastGesture(brush: CoastBrush): void {
+    validateCoastBrush(brush);
+    this.initializeGesture(brush);
+    this.gesture!.coast = {
+      sealed: false,
+      regions: new Map(),
+      cells: new Map(),
+    };
+  }
+
+  sealCoastGesture(): void {
+    if (this.gesture?.coast) this.gesture.coast.sealed = true;
+  }
+
+  /** A bounded complete spatial batch either publishes in full or changes nothing. */
+  applyCoastSegments(points: readonly Point[]): HeightUpdate | null {
+    if (this.invalidationError) throw this.invalidationError;
+    const gesture = this.gesture;
+    if (!gesture?.coast || !("mode" in gesture.brush))
+      throw new Error("Keine aktive Land-/Meergeste.");
+    const brush = gesture.brush;
+    const prepared = prepareCoastControls(brush, points);
+    for (const bounds of prepared.readBounds)
+      if (!this.isReady(bounds, HEIGHT_LEVELS.slice(brush.level)))
+        throw new SourcesNotReadyError(bounds);
+    const regions = retainedCoastRegions(
+      gesture.coast.regions,
+      prepared.readBounds,
+    );
+    // Exclude the active level: sampling freshly written neighboring controls
+    // would make a target drift with packet splitting or repeated visits.
+    // Fine additive residuals remain untouched. The canonical regular-grid
+    // sampler reuses coarse spline rows instead of resampling each control.
+    const coarser: HeightTile[] = [];
+    for (const { tile } of this.entries.values())
+      if (
+        tile &&
+        tile.level > brush.level &&
+        prepared.readBounds.some((bounds) =>
+          intersectsBounds(heightTileSupport(tile), bounds),
+        )
+      )
+        coarser.push(tile);
+    const baseline = prepareHeightGrid(coarser);
+    const updates: CoastControls[] = [];
+    let newCells = 0;
+    let retainedBytes = gesture.retainedBytes;
+    let sourceBytes = this.sourceBytes;
+    let newTiles = 0;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    const step = heightSpacing(brush.level);
+    for (const controls of prepared.byTile.values()) {
+      const { key, tileX, tileY } = controls;
+      const live = this.entries.get(key)?.tile;
+      const touched = gesture.coast.cells.get(key);
+      const x0 = tileX * HEIGHT_TILE_SIZE * step;
+      const y0 = tileY * HEIGHT_TILE_SIZE * step;
+      const half = step / 2;
+      const coarse = baseline(
+        [
+          x0 - half,
+          y0 - half,
+          x0 + HEIGHT_TILE_SIZE * step - half,
+          y0 + HEIGHT_TILE_SIZE * step - half,
+        ],
+        HEIGHT_TILE_SIZE,
+        [0, 0, HEIGHT_TILE_SIZE, HEIGHT_TILE_SIZE],
+      );
+      let changed = false;
+      for (let index = 0; index < HEIGHT_TILE_CELLS; index++) {
+        if (!controls.mask[index]) continue;
+        const prior = live?.values[index] ?? 0;
+        const old = coarse[index] + prior / HEIGHT_SUM_SCALE;
+        const target =
+          brush.mode === "land"
+            ? controls.profile[index]
+            : -controls.profile[index];
+        if (
+          brush.mode === "land"
+            ? old >= target / HEIGHT_SUM_SCALE
+            : old <= target / HEIGHT_SUM_SCALE
+        )
+          continue;
+        const value = target - coarse[index] * HEIGHT_SUM_SCALE;
+        if (!Number.isFinite(value))
+          throw new RangeError("Relative Küstenhöhe ist nicht endlich.");
+        if (value === prior) continue;
+        // Reuse the bounded planning buffers; no second per-control map.
+        controls.mask[index] = 2;
+        controls.profile[index] = value;
+        changed = true;
+        if (!touched?.[index]) newCells++;
+        const x = x0 + (index % HEIGHT_TILE_SIZE) * step;
+        const y = y0 + Math.floor(index / HEIGHT_TILE_SIZE) * step;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+      if (!changed) continue;
+      updates.push(controls);
+      if (!gesture.before.has(key)) {
+        newTiles++;
+        retainedBytes += HEIGHT_TILE_BYTES * (live ? 2 : 1);
+      }
+      if (!live) sourceBytes += HEIGHT_TILE_BYTES;
+    }
+    if (gesture.cellCount + newCells > this.options.maxCoastGestureCells)
+      throw new RangeError(
+        "Höchstens 400.000 Küstenpunkte je Aktion; einen kürzeren Strich malen.",
+      );
+    if (gesture.before.size + newTiles > HEIGHT_MAX_ACTION_TILES)
+      throw new RangeError(
+        "Eine Küstengeste darf höchstens 512 Höhenkacheln ändern.",
+      );
+    if (sourceBytes > this.options.maxSourceBytes)
+      throw new RangeError(
+        "Aktive Höhenquellen überschreiten das Speicherbudget.",
+      );
+    if (retainedBytes > this.options.maxHistoryBytes)
+      throw new RangeError(
+        "Diese Küstenaktion überschreitet die lokale History.",
+      );
+    if (this.pendingBytes + retainedBytes > this.options.maxPendingBytes)
+      throw new RangeError(
+        "Die Arbeitskopie muss vorhandene Änderungen zuerst sichern.",
+      );
+
+    // All source and budget checks precede even the first author/pin mutation.
+    gesture.coast.regions = regions;
+    if (!updates.length) return null;
+    const revision = this.revision + 1;
+    const patches: HeightPatch[] = [];
+    for (const { key, profile, mask } of updates) {
+      const before = this.entries.get(key)?.tile ?? null;
+      if (!gesture.before.has(key)) gesture.before.set(key, before);
+      const after: HeightTile = before
+        ? { ...before, revision, values: before.values.slice() }
+        : {
+            ...parseHeightTileKey(key),
+            key,
+            revision,
+            values: new Float64Array(HEIGHT_TILE_CELLS),
+          };
+      let touched = gesture.coast.cells.get(key);
+      if (!touched)
+        gesture.coast.cells.set(
+          key,
+          (touched = new Uint8Array(HEIGHT_TILE_CELLS)),
+        );
+      for (let index = 0; index < HEIGHT_TILE_CELLS; index++) {
+        if (mask[index] !== 2) continue;
+        after.values[index] = profile[index];
+        if (!touched[index]) {
+          touched[index] = 1;
+          gesture.cellCount++;
+        }
+      }
+      this.entries.set(key, {
+        state: "ready",
+        tile: after,
+        localSequence: this.sequence + 1,
+      });
+      patches.push({ key, before, after });
+    }
+    const dirty = clipBounds([
+      minX - 2 * step,
+      minY - 2 * step,
+      maxX + 2 * step,
+      maxY + 2 * step,
+    ]);
+    this.sourceBytes = sourceBytes;
+    gesture.retainedBytes = retainedBytes;
+    gesture.bounds = gesture.bounds
+      ? unionBounds(gesture.bounds, dirty)
+      : dirty;
+    this.revision = revision;
+    this.generation++;
+    return { bounds: dirty, patches };
+  }
+
+  finishCoastGesture(): ChangeSet | null {
+    if (!this.gesture?.coast) return null;
+    return this.finishGesture();
   }
 
   /** One C1 account and one bounded continuation belong to the active document. */
@@ -2328,8 +2583,15 @@ export class EditorDocument {
   admitBrushBatch(batch: HeightBrushBatch): BrushAdmission {
     const gesture = this.gesture;
     const work = this.prepaid;
-    if (!gesture || !work || work.sealed || work.invalidated)
+    if (
+      !gesture ||
+      "mode" in gesture.brush ||
+      !work ||
+      work.sealed ||
+      work.invalidated
+    )
       throw new Error("Keine annehmende vorausbezahlte Höhengeste.");
+    const brush = gesture.brush;
     if (
       !Number.isSafeInteger(batch.admissionId) ||
       batch.admissionId <= work.lastAdmissionId
@@ -2373,7 +2635,7 @@ export class EditorDocument {
         if (
           !Number.isFinite(
             (before?.values[change.index] ?? 0) +
-              Math.sign(gesture.brush.amount) * change.total,
+              Math.sign(brush.amount) * change.total,
           )
         )
           throw new RangeError("Relative Höhe ist nicht endlich.");
@@ -2524,7 +2786,8 @@ export class EditorDocument {
     };
     const gesture = this.gesture;
     const work = this.prepaid;
-    if (!gesture || !work || work.invalidated) return result;
+    if (!gesture || "mode" in gesture.brush || !work || work.invalidated)
+      return result;
     result.complete = false;
     const maxCells = options.maxCells ?? 2048;
     const maxMs = options.maxMs ?? 2;
@@ -2682,7 +2945,13 @@ export class EditorDocument {
     }
     const change = this.recordHistory(
       gesture.brush.label ??
-        (gesture.brush.amount >= 0 ? "Gelände anheben" : "Gelände absenken"),
+        ("mode" in gesture.brush
+          ? gesture.brush.mode === "land"
+            ? "Land malen"
+            : "Meer malen"
+          : gesture.brush.amount >= 0
+            ? "Gelände anheben"
+            : "Gelände absenken"),
       patches,
       gesture.bounds ? [gesture.bounds] : [],
     );

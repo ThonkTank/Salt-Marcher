@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./height";
+export * from "./coast";
 export * from "./height-grid";
 export * from "./overview";
 export * from "./landscape";

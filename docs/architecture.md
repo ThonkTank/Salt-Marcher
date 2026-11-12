@@ -516,14 +516,17 @@ fehlendes Quellen-, History- oder Speicherbudget vor der Wirkungsannahme auffäl
 React hält nur noch nicht übernommene Feldtexte; Undo, Saved, Writing, Finishing, Loading und
 Warteanzeige werden aus den Besitzern abgeleitet.
 
-`EditorChrome` gruppiert Anheben und Absenken unter einem Höhenwerkzeug;
+`EditorChrome` gruppiert Land, Meer, Anheben und Absenken unter einem
+Höhenwerkzeug;
 `EditorPanels` zeigt die vorhandenen Modi und Größenangaben in der V7-Anordnung.
 Der Controller hält den zuletzt gewählten Höhenmodus auch außerhalb dieses
 Werkzeugs. Die Größen-Gesten `[`/`]` und Alt+Mausrad rufen denselben
 `setBrush`-Pfad wie das Zahlenfeld auf, ausschließlich ohne aktive Pointergeste.
 Der Cursor folgt der wirksamen Größe sofort; laufende Striche behalten ihren
-fixierten Radius. Höhenwirkung, Quellenfreigabe und Abschluss folgen weiterhin
-dem vorhandenen Dokument-/Rendererpfad.
+fixierten Radius. Höhenwirkung, Quellenfreigabe und Abschluss folgen dem
+gemeinsamen Dokument-/Rendererpfad. Land/Meer und Landschaft teilen die begrenzte räumliche
+Eingabe mit eingefrorenem Pinsel, vollständiger Polylinie, Quellenhaltung und
+geordnetem Abschluss. Land/Meer verwendet keine zeitabhängige Dosis.
 
 Main und Preload besitzen Fenster, native Dialoge und die typisierte IPC-Brücke.
 Der SQLite-Store liegt im Utility-Prozess. Context Isolation und Sandbox bleiben
@@ -601,11 +604,35 @@ es gibt keine zweite Stempelrestliste.
 Koeffizienten und kopiert jede dabei geänderte Quellkachel höchstens einmal.
 Livequellen und ausgegebene Nachherpuffer bleiben danach unveränderlich.
 Eine versiegelte Geste endet erst nach ihrer letzten Übernahme mit genau einem
-History-/Pendingeintrag. Initialisierung und Historyabschluss sind interne Schritte
-dieses C1-Wegs; ein weiterer direkter Höhen-Schreibweg ist nicht verfügbar.
+History-/Pendingeintrag. Initialisierung und Historyabschluss liegen gemeinsam
+im Dokument. Der räumliche Küstenauftrag verwendet dieselben Höhenautoren und
+Vorherbilder, während ausschließlich Anheben/Absenken das C1-Zeitkonto benötigt.
 Modell- und Integrationsfixtures verwenden dieselbe Annahme und Fortsetzung oder
 ausdrücklich vorbereitete unveränderliche Quellen. Der aktive Editor besitzt
 keine zweite Autorenautorität.
+
+### Räumlicher Land-/Meerauftrag
+
+`model/coast.ts` bestimmt den Abstand zur vollständigen überstrichenen Polylinie
+und das ortsfeste V7-Küstenprofil. Die Kandidatensuche folgt dem Korridor;
+Kachelmasken und numerische Puffer vermeiden einzelne Objekte und Zeichenketten
+je Kontrollpunkt. Ein Arbeitsabschnitt enthält höchstens 64 Segmente und
+300.000 Kandidaten. Das getrennte Küsten-Gestenbudget von 400.000 geänderten
+Kontrollwerten trägt den 512-Pixel-Pinsel auf seinem feineren Raster; das
+C1-Gestenbudget bleibt bei 100.000. Quellen-, History- und Pendingbudgets sowie
+die Grenze von 512 geänderten Höhenkacheln bleiben gemeinsam.
+
+`EditorDocument.beginCoastGesture`/`applyCoastSegments`/`finishCoastGesture`
+verwenden dieselben Höhenquellen, unveränderlichen Vorherbilder und denselben
+Historyabschluss. Der Zielwert wird gegen die kanonisch abgetastete Grundhöhe
+mit ausschließlich gröberen Beiträgen geprüft. Der eigene Stufenkontrollwert
+wird direkt hinzugenommen; neue Nachbarkoeffizienten derselben Stufe werden
+nicht zurückgesampelt. Feinere Beiträge bleiben unverändert. Vor jeder
+atomaren Übernahme werden Quellen und Budgets geprüft; jede geänderte Kachel
+wird einmal kopiert. Gültige Quellenbereiche bleiben bis zum Abschluss gepinnt.
+Pins verbinden nur vollständig gedeckte Rechtecke, damit Lücken einer Kurve
+keine unberechtigte Quellenfreigabe erhalten. Bereits übernommene Autoren
+bleiben bei einem späteren Fehler erhalten.
 
 ### Gemeinsame Quellen und Landschaft
 
