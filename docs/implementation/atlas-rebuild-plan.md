@@ -48,6 +48,23 @@ Abschnitt 2 dokumentiert die gewählte D10-Änderung und D11-Umsetzung.
 Abschnitt 6 trennt Korrektheit, Hardware-Richtungsentscheidung und Freigabe.
 K1–K6 werden nicht erneut umgesetzt.
 
+**Gezielte Planergänzung vom 12. November 2026: Höhenpinsel bei Standardrate.**
+Die zusätzliche Diagnose des veröffentlichten Programms `66d3f69` zeigt, dass
+die vollständige lokale Darstellungsbestätigung beim 512-Pixel-Pinsel zu lange
+dauert und deshalb die 50-ms-Wirkungsreserve normale Haltewirkung verwirft.
+Der neue [begrenzte Auftrag H1–H4](#korrektur-des-höhenpinsels-bei-standardrate)
+ersetzt für diesen Fehler den bisherigen warmen R3-Ausführungskandidaten:
+vollständige aktuelle Änderungen als kurzer gemeinsamer Grafikbatch, direkte
+Rekonstruktion nur der aktiven Autorenstufe, unveränderte C1-Wirkung und
+Sicherheitsgrenze. **H1 ist umgesetzt; der vollständige warme H2-Kandidat
+verfehlt bisher die Normalraten-Abnahme. H3/H4 sind nicht freigegeben.**
+Direkte und anschließend separable Auswertung wurden wie unten vorgesehen
+verglichen. Der [Status](status.md) nennt den konkreten Prüfstand und die
+Softwaregrafikgrenze; die Anforderungen bleiben unverändert.
+Ein anschließendes „setze diese Lösung um“ bezieht sich auf H1–H4; es aktiviert
+nicht den gesamten P0–P9-Neubau. Bereits getrennt beauftragte Land-/Meer- und
+Oberflächenänderungen sind vor Integration am aktuellen Branchstand abzugleichen.
+
 [Status](status.md) nennt allein den geprüften Commit, Messergebnisse, offene
 Fehler und Umgebungsgrenzen. [Produktvertrag](../product-contract.md) und
 [Architektur](../architecture.md) beschreiben den implementierten Zustand.
@@ -729,13 +746,18 @@ dessen Fence warten und dadurch eine weitere obligatorische Frameperiode
 einbauen. Erst der eigene Fence dieses Scene-Draws quittiert R.
 Der Renderer meldet kein physisches Präsentationsdatum.
 
-Der feste warme Höhenweg bleibt zunächst
-H_aktuell = H_basis + (C_aktuell − C_basis). Die separable Projektion berechnet nur
-die tatsächlich geänderten Rechtecke. Die feste Basis darf über mehrere
-zusammengefasste Modelländerungen bestehen bleiben. Kalter Aufbau, echte
-Stufenwechsel, Fehlerbudget, höchstens 32 Basisübernahmen und Kontextwiederaufbau
-bleiben versioniert und budgetiert. Eine Verbesserung dieses bestehenden
-Renderwegs ist ein Kandidat, keine vorweggenommene Leistungszusage.
+Die feste warme Höhenformel bleibt
+H_aktuell = H_basis + (C_aktuell − C_basis). Die feste Basis darf über mehrere
+zusammengefasste Modelländerungen bestehen bleiben. Der Auftrag
+[H1–H4](#korrektur-des-höhenpinsels-bei-standardrate) ersetzt die wiederholte
+separable Streifenprojektion der aktiven Stufe zunächst durch einen direkten
+4×4-Spline-Kernel in einem vollständigen kurzen Grafikbatch. Kalter Aufbau,
+echte Stufenwechsel, Fehlerbudget, höchstens 32 Basisübernahmen und
+Kontextwiederaufbau bleiben versioniert und budgetiert. Der kanonische
+Mehrstufenaufbau bleibt ein konkreter Abnehmer der separablen Projektion.
+Eine gemeinsame separable aktive Projektion ist nur der dort begrenzte
+Gegenkandidat bei nachgewiesen zu hoher GPU-Rechenarbeit; keine zweite dauerhafte
+Live-Engine. Die Leistungszusage hängt an der frühen Probe.
 
 **Oberflächenberechnung und Stil haben getrennte Abhängigkeiten.** Natürliche
 Höhe, daraus und aus Gewässern/Fundamenten abgeleitete Oberfläche sowie
@@ -1429,6 +1451,223 @@ Ein dauerhaft fehlerhafter entfernter Übersichtread darf lokale bereite Arbeit
 nicht blockieren. Lokale Priorität, vollständige Übersichtsdelta-Übernahme und
 erhaltene neuere Dirtyteile werden ebenfalls geprüft.
 Unabhängiger erwarteter Inhalt zählt, nicht nur intern als angenommen gezählte Zeit.
+
+### Korrektur des Höhenpinsels bei Standardrate
+
+**Auftrag und Stand:** Am 12. November 2026 nach dem gemeldeten
+512-Pixel-/6,096-m/s-Fall geplant und anschließend zur Umsetzung beauftragt.
+Die isolierte Baseline bleibt `66d3f69`; der Kandidat enthält zusätzlich den
+veröffentlichten Land-/Meer- und Reglerstand `798cf97`. H1 ist im vorhandenen
+Runner/Auswerter implementiert. Der vollständige warme H2-Kandidat verwendet
+nach dem direkten Gegenversuch den separablen Kernel und verfehlt bisher die
+90-%-Normalraten-Abnahme auf der verfügbaren Softwaregrafik. Die vereinbarte
+frühe Stopentscheidung gilt; breite H3-Integration und H4-Freigabe sind damit
+blockiert. Ergebnisse und verbleibende Nachweise stehen allein im
+[Status](status.md). H1–H4 sind ein begrenzter Eingabe-/Renderauftrag, kein
+erneuter P0–P9-Aufbau. Die nachfolgenden Zahlen bleiben das verbindliche
+Abnahmesoll beziehungsweise die unabhängige Referenz.
+
+#### Entscheidung und verworfene Abkürzungen
+
+Der häufige Weg wird auf **einen vollständigen kurzen Grafikbatch für die
+aktuell ausstehende sichtbare Änderung** reduziert. Die Darstellungskacheln
+bleiben Cacheeinheiten; sie erhalten im warmen Höhenweg keine eigene
+16-Zeilen-Fortsetzung und keine serielle Folge von Vorbereitungs-/Grafikpausen.
+Ein Batch kann mehrere GL-Draws auf bestehenden Zielen enthalten. Entscheidend
+ist sein vollständiger Abschluss im normalen Frameablauf, nicht die Behauptung
+eines einzigen Drawcalls.
+
+| Möglichkeit                                                        | Entscheidung und Grund                                                                                                                                                                          |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Größere unbestätigte Wirkung oder höhere Defaultstärke             | Kein Fix: vergrößert unsichtbaren Fortschritt beziehungsweise verdeckt dieselbe langsame Darstellung.                                                                                           |
+| Einzelquittung je Darstellungskachel                               | Kein erster Kandidat: ein Autorenpunkt beeinflusst mehrere Kacheln; sichere Teilfreigabe braucht zusätzliche Support-/Versionsbuchhaltung und entfernt die bisherige Vorbereitungsarbeit nicht. |
+| Direkte Auswertung einer aktiven Stufe, gemeinsamer Batch          | Bevorzugt: beseitigt horizontale Zwischenprojektion und Streifenzustände im warmen Pfad; GPU-Kosten und Präzision werden früh geprüft.                                                          |
+| Zusätzliches bewegliches Pinselbild                                | Nicht erforderlich: würde einen zweiten abgeleiteten Cache mit eigener Basis, Übergabe und Lebensdauer einführen. Das echte Gelände muss während der Geste sichtbar sein.                       |
+| Globale angenommene/dargestellte Zeit statt lokaler Reservierungen | Nicht Teil dieses Fixes: würde die Garantie ändern, dass ein ausgeschöpfter Ort eine andere zulässige Stelle nicht sperrt.                                                                      |
+
+#### Zielablauf und Zuständigkeiten
+
+1. **Eingabe und Autoren:** `EditorController`, `brush.ts`, `PrepaidBrush` und
+   `EditorDocument` behalten zunächst die aktuelle C1-Regel, vollständige
+   angenommene Polylinie und die lokale Grenze von 50 ms × Rate. Das Dokument
+   materialisiert echte Float64-Koeffizienten; diese sind sofort die Grundlage
+   für History, Speichern und Darstellung. Ein bloßer optischer Strich ist
+   keine Alternative.
+2. **Änderungsmenge:** Der Renderer sammelt konkrete geänderte Koeffizienten und
+   deren vollständigen kubischen Einfluss einschließlich zwei Rasterabständen
+   Rand. Für jeden Auftrag friert er Quellenstand, sichtbare Einflussmenge und
+   passende Wirkung zusammen ein. Genau ein laufender Stand und ein
+   zusammengeführter neuester Folgewunsch bleiben erhalten. Frühester Vorherwert
+   und neuester Nachherwert werden beim Zusammenfassen bewahrt.
+3. **Feste numerische Basis:** Der vorhandene Cache hält `H_basis` samt damaligem
+   Beitrag `C_basis` der fixierten Autorenstufe. Nur `C_aktuell` wird neu
+   rekonstruiert: `H_aktuell = H_basis + (C_aktuell − C_basis)`. Andere Stufen und
+   feine Übersichten bleiben enthalten. Die Basis wird nicht bei jeder Dosis
+   durch das letzte gerundete Bild ersetzt.
+4. **Kurze warme Projektion:** Ein direkter 4×4-B-Spline-Kernel liest die aktive
+   Stufe aus dem gemeinsamen Quellenatlas. Vorhandene Hi/Lo-Paararithmetik,
+   lokal bezogene Koordinaten und Float64-berechnete Achsgewichte bleiben die
+   erste Referenz. Gewichte, Seitenzuordnung und Geometrie werden bei passender
+   Identität wiederverwendet; reine Werteänderungen erzeugen keinen kalten
+   Deskriptoraufbau. Geänderte Werte und Halos werden pro Auftrag einmal
+   kodiert/hochgeladen. Die tatsächlichen GPU-Zugriffe und Paaroperationen
+   fließen in die Arbeitszählung ein; ein billigerer Name ist kein geringerer
+   Aufwand.
+5. **Vollständiges Ergebnis:** Höhenpass, bestehende Oberflächen-/Farbkomposition
+   und Szenendarstellung werden ohne zusätzliche Warteframes zwischen den
+   nötigen Kacheln eingereicht. Wasserclip, Flussbett, Fundamente und
+   Landschaftsmaske verwenden denselben zugehörigen Stand. Der abschließende
+   echte Scene-Fence quittiert nur diesen vollständigen Einfluss. Bloße
+   Uploads, Cursorframes und alte Farbflächen geben keine Wirkung frei.
+6. **Überlappende Vorbereitung:** Die CPU darf den einen neuesten Folgeauftrag
+   vorbereiten, während ein früheres Grafikpaket läuft. Sie verändert dabei
+   weder dessen Quellbedeutung noch noch benutzte GPU-Ressourcen. Höchstens zwei
+   GL-Einreichungen, Ressourcenreservierung vor Arbeit und nicht blockierendes
+   Fence-Polling bleiben erhalten. Benutzte Seiten/Slots werden erst nach ihrem
+   tatsächlichen Abschluss wiederverwendet.
+
+`WorldRenderer`/`HeightField` besitzen diesen abgeleiteten Weg; es entsteht kein
+fünfter Besitzer. `ProjectSession` bleibt der einzige geordnete Writer. Die
+gemeinsame Aktionsbarriere für Up, Undo, Save, Open und Projektwechsel bleibt
+maßgeblich. Kamera-/Stufenwechsel beenden beziehungsweise versiegeln die Geste
+nach dem bestehenden Vertrag; eine ungültige Basis wird vor der erneuten
+Bearbeitungsfreigabe korrekt vorbereitet.
+
+**Strichgeschichte und ausstehendes Bild trennen:** Das bisherige `work.appliedRegions`
+wuchs über die gesamte Geste und darf nicht die Pflichtmenge jedes
+neuen Renderauftrags festlegen. Schon aktuelle alte Bereiche brauchen zwar
+nicht zwingend neue Projektion, vergrößern aber die Nachweis-/Abhängigkeitsgruppe.
+Der neue Auftrag verwendet noch unbestätigte Wirkung und seit dem eingefrorenen
+Stand hinzugekommene Änderungen. Der Receipt muss genau diese Werte samt
+vollständigem sichtbarem Spline-Support decken. Frühere angenommene Arbeit
+bleibt in Autoren/History erhalten; neuere Wirkung bleibt nach altem ACK offen.
+Lange Striche vergrößern die nächste Zeichenarbeit nur durch tatsächlich neue
+Änderungen, nicht automatisch durch die Länge ihrer Vergangenheit.
+
+**Freeze-Schnittstelle:** Zeichenauftrag und Wirkungsreceipt werden atomar aus
+derselben Menge bereits materialisierter, noch unbestätigter Koeffizienten
+gebildet. Bevorzugt wird der Zeichenbereich direkt aus dem vollständigen
+eingefrorenen Wirkungsvektor einschließlich seines sichtbaren Spline-Supports
+abgeleitet. `freezeBrushEffect()` darf nicht weiterhin einen größeren Vektor
+an kleinere, unabhängig ermittelte Renderbounds binden. Falls eine begrenzte
+Teilmenge nötig wird, muss auch der Receipt ausschließlich genau diese
+vollständig dargestellte Teilmenge enthalten; keine zusätzliche Kachel-ACK-
+Architektur auf Vorrat. Reservierte, noch nicht materialisierte Beiträge werden
+niemals quittiert. Ein alter ACK zieht nur seine eingefrorenen Beträge ab.
+
+**Normales Malen und Überlast:** Die 50-ms-Grenze schützt weiterhin vor
+unsichtbarem Aufstauen. Im Normalfall muss der neue Renderer schnell genug
+sein, dass sie die Rate nicht wesentlich reduziert. Bei wirklicher Überlast
+zeigt die Oberfläche „Darstellung holt auf – Höhenwirkung begrenzt“ aus dem
+tatsächlichen aktuellen Sättigungszustand. Bei lauffähiger Oberfläche erscheint
+der Hinweis mit der nächsten UI-Aktualisierung. Ein blockierter UI-Thread oder
+vollständig hängende Grafik kann währenddessen keinen neuen Hinweis zeichnen;
+dann gilt die nächstmögliche tatsächliche Darstellung. Ein bereits beendeter
+Stau darf keinen nachträglich irreführenden Pausenstatus hinterlassen.
+Es wird keine verfallene Zeit nachgeholt.
+Weiterhalten nimmt nach Erholung frische Zeit wieder auf; Up beendet neue
+Zeitannahme. Bereits angenommene Restarbeit darf den bestehenden begrenzten
+Abschluss machen. Danach entstehen weder durch Zeitablauf noch alte ACKs neue
+Autorenänderungen.
+
+#### Präzision, Ressourcen und notwendige andere Wege
+
+- Das aktuelle Weltraster und seine Samplepositionen bleiben identisch.
+  Float32-Weltkoordinaten, ungeprüfte bilineare Filterung oder groberes Malen
+  sind kein gleichwertiger Ersatz. Die bestehende Darstellungstoleranz
+  `1e-6 ft` und CPU-Referenz bleiben unverändert; das Fehlerbudget des direkten
+  Kernels ist nachzuweisen, insbesondere bei Küsten und Auslöschung.
+- Ein erster/ungültiger Basisstand, andere Autorenstufe, kalte Quellen,
+  Kontextverlust und echte numerische Ausnahmefälle behalten ihren
+  kanonischen beziehungsweise begrenzten Float64-Workerweg. Sie sind sichtbare
+  Vorbereitungs-/Ausnahmefälle, keine wiederholte Pflicht je warmer Dosis.
+  Aktive Stufen unterhalb einer numerischen Feinübersicht dürfen nicht zugleich
+  in Übersicht und direktem Beitrag gezählt werden oder aus beiden verschwinden.
+- Der erste Kandidat verwendet die bestehenden Kachelziele. Gemeinsame
+  numerische/Farb-Texturflächen werden nur bei gemessen dominanten
+  Zielwechsel-/Drawkosten eingeführt; sie ersetzen die bisherigen Ziele.
+  Alter und neuer Bestand sowie noch fencegebundene Übergänge zählen vollständig
+  zu den bestehenden Speichergrenzen. Kein zweiter ungezählter Pinselcache.
+- CPU-Vorbereitung bleibt innerhalb 2 ms je RAF und zusammen mit Eingabe
+  innerhalb des 8-ms-p95-Ziels; GPU-Paket-, Upload- und übrige Ressourcenregeln
+  bleiben bestehen. Ein normaler vollständiger Batch muss durch weniger Arbeit
+  hineinpassen. Große Sonderänderungen bleiben begrenzt fortsetzbar; ihre
+  Fortsetzung darf nicht heimlich wieder der normale 512-Pixel-Weg werden.
+
+#### H1–H4: begrenzte Umsetzung und frühe Entscheidung
+
+| Schritt                                  | Konkrete Lieferung                                                                                                                                                                                                                                                                                       | Nachweis / Stopkriterium                                                                                                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| H1: repräsentativer Gegenbeweis          | Den Screenshotfall als Standardratenfall in vorhandenen Electron-Runner/Auswerter aufnehmen; unabhängige ungedrosselte Referenz, laufende Höhenproben, tatsächliche Küsten-/Landpixel, getrennte CPU/GPU-Zeiten. Baseline am unveränderten `66d3f69`.                                                    | Der aktuelle Stand muss wegen zu geringer Wirkung scheitern. Eine künstliche 400-ms-Grafikverzögerung darf nicht durch intern gekürzte „angenommene Zeit“ grün werden.                            |
+| H2: ein vertikaler warmer Kandidat       | Direkter aktiver Kernel, stabile Metadaten, konkrete Dirtybereiche, atomar dazu passender Wirkungsreceipt, ein vollständiger Batch und Vorbereitung des nächsten Wunschs ohne Warten auf das vorige Terrain-Fence. Zunächst vorhandene Kachelziele sowie unveränderte C1-Wirkungsregel und 50-ms-Grenze. | Standardrate erreicht Inhalt und vollständigen laufenden Fortschritt bei bestehenden Budgets; bei Scheitern dominante CPU-/GPU-/Bindungsarbeit benennen, keine breite Integration.                |
+| H3: vollständige Integration und Kürzung | Den bewiesenen Weg in Controller/Renderer, Oberflächen, History/Dateien und echte Bereitschaft einbinden; warme Streifen-/Zwischenprojektionszustände und ersetzte Cachewege entfernen. Normaler Start und Diagnose verwenden denselben Weg.                                                             | Gegenfälle unten bestehen am finalen Build; kein alter aktiver Pfad neben neuem Fast-Path, keine ungeprüfte Abweichung beim normalen Start.                                                       |
+| H4: Abschluss und Auslieferungsnachweis  | Vorhandene produktrelevante Tests, gebaute Desktopanwendung, Standardratenprüfung im Paket; Dokumentation, Status und Repo-Gates auf denselben Commit beziehen.                                                                                                                                          | Funktion, Wirkung, Ressourcen, echte Hardware-/Präsentationsbelege getrennt ausweisen. Release erst über den vorhandenen geprüften Vorschaupfad und gemäß bestehender Veröffentlichungserlaubnis. |
+
+**Endliche Entscheidung nach H2:** Ist direkte 4×4-Auswertung selbst der
+gemessene GPU-Engpass, genau einen gemeinsamen separablen aktiven Kernel mit
+denselben Eingaben und Grenzen vergleichen. Er darf einen gemeinsamen
+horizontalen Schritt haben, aber keine Rückkehr zu den bisherigen seriellen
+16-Zeilen-Abläufen. Sind stattdessen Zielwechsel/Draws dominant, gemeinsame
+Zielslots prüfen. Je gemessener Ursache genau einen passenden Gegenversuch;
+keine vorab geplante Kombination beliebig vieler Optimierungen. Scheitert
+auch dieser am Normalfall, bleibt die Richtung widerlegt und wird vor weiterer
+Integration neu entschieden. Besteht der einfachere Kandidat, zusätzliche
+Varianten und optionale Optimierungen beenden.
+
+#### Abnahme am tatsächlichen Nutzerfall
+
+**Feste Eingabe:** Neue Welt, Anheben, 512 Pixel, Kamera `scale=0.25`, Radius
+1.024 ft, Autorenstufe 4, Rate **20 ft/s = 6,096 m/s**. Bereits sichtbare bereite
+Stelle zunächst `[0,0]`, anschließend Kachelinneres, Kante, Kreuz und teilweise
+außerhalb des Fensters. Gleiche Viewport-/DPR-Einstellung und identische
+Eingabeprogramme für Baseline und Kandidat. Die Oberfläche muss die wirksamen
+Werte liefern; ein inzwischen eingeführter Slider darf nicht umgangen werden.
+
+| Kriterium               | Verbindliches Soll                                                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landbildung             | Nach sechs Sekunden durchgehendem Halten ist die Pinselmitte tatsächlich als Land gezeichnet. Ausgang −30,48 m; idealer geglätteter Modellwert bei sechs Sekunden ungefähr +5,80 m.                                                           |
+| Normale Wirkung         | Mindestens 90 % der unabhängigen C1-Solländerung ohne Darstellungsdrosselung, über den gesamten Verlauf und in vorab festgelegten Ein-Sekunden-Fenstern. Keine Überschreitung der Referenz außerhalb numerischer Toleranz.                    |
+| Zehn-Sekunden-Kontrolle | Referenzzentrum ungefähr +29,99 m, also +60,47 m Änderung; 90 % davon ergeben mindestens ungefähr +23,94 m Endhöhe. Exakte Prüfschwelle aus denselben Eingabezeiten/Referenzwerten berechnen, nicht diese gerundeten Zahlen einprogrammieren. |
+| Fortlaufendes Ergebnis  | Bestehende 20-ms-p95-Ergebnisabstände, 50-ms-p95-Eingabe-/Up-Latenzen und 100-ms-Stillstandsgrenze bleiben erhalten. Vollständige Renderzyklen dürfen im normalen Lauf nicht regelmäßig die 50-ms-Wirkungsreserve überschreiten.              |
+| Budget und Lebensdauer  | Bestehende CPU-/GPU-/Speichergrenzen; höchstens ein laufender Stand und ein neuester Wunsch; korrekte Freigabe nach tatsächlichem Fence.                                                                                                      |
+| Abschluss               | Ein Undo-Schritt, tatsächlicher Save/Open-Rundlauf, keine neue Zeitwirkung nach Up und keine Autorenmutation nach abgeschlossener Aktion.                                                                                                     |
+
+Die Referenz darf nicht die bereits gedrosselte angenommene Zeit des Produkts
+als Nenner verwenden. Die bisherigen 4.000-ft/s-Fälle bleiben zusätzliche
+Geometrie-/Belastungsfälle; sie ersetzen den Standardratenfall nicht.
+Bei niedriger Rate ändert ein einzelnes 8-Bit-Farbpixel nicht in jedem Frame
+seinen RGB-Wert. Numerische GPU-Ergebnisse/gebundene vollständige Renderstände
+belegen deshalb die laufende Höhenwirkung; echte Pixel belegen Wasser, Küste,
+Land und geeignete sichtbare Zwischenstände. Eine gleichfarbige einzelne Probe
+allein beweist weder Stillstand noch Aktualität. GPU-Abschluss und CapturePage
+beweisen weiterhin keinen ersten physischen Präsentationszeitpunkt. Die
+Hardware-/Präsentationsqualifikation aus Abschnitt 6 wird nicht herabgesetzt.
+
+Nach bestandener kurzer H2-Probe gezielt diese Abhängigkeiten prüfen:
+
+- Grobes Gelände mit feinem Graben, Wechsel der Autorenstufe, alle 22 Stufen,
+  numerische Übersichten, Küste nahe null und echter CPU-Ausnahmefall.
+- Gleiche Bahn langsam/schnell, L-Kurve, Umkehr/Wiederbesuch, positive/negative
+  Kachelgrenzen, Endpunkt ohne vorangehendes Move und langer weiterlaufender
+  Strich. Frühere fertige Strichteile dürfen den aktuellen Batch nicht
+  fortlaufend vergrößern. Alle Sollpunkte stammen aus der unabhängigen Referenz.
+- Je 500 ms CPU-Stillstand und separat blockierte Grafikbestätigung, jeweils
+  Weiterhalten und Loslassen während des Stalls. Pausenzustand sichtbar;
+  die Anzeigegrenze bei blockiertem UI-Thread/Grafik wie oben berücksichtigen.
+  Unbestätigte Wirkung begrenzt; keine Nachholdosis; nach Erholung frische
+  Haltewirkung; alte ACKs erzeugen keine neue Wirkung.
+- Up→Undo/Redo, Up→Save/Open, Projektwechsel, Kontextverlust und Quellenfehler;
+  ein verzögerter letzter Renderstand darf nicht vorzeitig quittiert werden.
+- Vorbereitete Gewässerszene und vorhandene Landschaft: aktuelle Wasser-/
+  Fundamentdarstellung und korrekte Maskierung am neuen Höhenstand.
+
+Negative Kontrollen in isolierten Prüfungen: normale Bestätigung künstlich um
+400 ms verzögern; eine mittlere Wegprobe beziehungsweise eine benötigte
+Darstellungskachel auslassen; einen falschen frühen ACK anbieten. Jeweils muss
+das zentrale passende Wirkungs-/Inhalts-/Darstellungsgate scheitern. Danach
+Normalfall am unveränderten endgültigen Kandidaten erneut bestätigen.
+Für die breite Leistungsabnahme gelten die bestehenden Wiederholungen und
+Stichproben; ein einzelner Softwaregrafiklauf ist ein Diagnose-/Inhaltsbeleg.
 
 ### P0 — Vorhandene Grundlage und verbleibendes Gate
 
@@ -2260,6 +2499,12 @@ optionale Features oder Optimierungsrunden anzuhängen.
 Am 8. November 2026 geprüft; bei P0 die konkret verwendeten Versionen abgleichen.
 Diese Quellen belegen Bibliotheksfunktionen, keine SaltMarcher-Latenzen.
 
+- Für H1–H4 am 12. November 2026 erneut geprüft:
+  [MDN: WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices)
+  zu gebündelten Draws, Texturatlanten und vermiedenen synchronen GPU-Roundtrips;
+  [PixiJS-Performancehinweise](https://pixijs.com/8.x/guides/concepts/performance-tips)
+  zu Arbeitsmenge und Batching. Die direkte aktive Splineprojektion ist eine
+  eigene aus der Diagnose abgeleitete Entscheidung, kein dort belegter Benchmark.
 - [PixiJS-Renderer](https://pixijs.com/8.x/guides/components/renderers) und
   [Culling](https://pixijs.com/8.x/guides/components/application/culler-plugin).
 - [PixiJS: Render Groups](https://pixijs.com/8.x/guides/concepts/render-groups) und

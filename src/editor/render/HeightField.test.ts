@@ -828,6 +828,147 @@ it("reconstructs only the active level and dirty pixels against a fixed total-an
   expect(tile.compositionStats.anchorCopySamples).toBe(0);
 });
 
+it("draws a complete warm active rectangle with three passes and retains its page table, axes and geometry", async () => {
+  const { field, gpu } = setup();
+  field.setToolLevel(4);
+  let before = author(4, 100);
+  field.updateSources([before]);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  expect(tile.hasActiveBasis).toBe(false);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  expect(tile.hasActiveBasis).toBe(true);
+  const descriptor = vi.spyOn(field.atlas, "descriptorSteps");
+  const metadataTransfers = () =>
+    gpu.transfers.filter((transfer) => transfer.source !== field.source).length;
+  const initialTransfers = metadataTransfers();
+  let positions: Float32Array | undefined;
+  for (const value of [101, 102, 103]) {
+    const after = author(4, value);
+    change(field, before, after);
+    expect(tile.hasActiveBasis).toBe(true);
+    tile.update();
+    await drain(field, gpu);
+    const calls = gpu.render.mock.calls.length;
+    expect(tile.warmActive).toBe(true);
+    expect(tile.drawDirty(gpu.renderer)).toBe(128 ** 2);
+    expect(tile.needsComposition).toBe(false);
+    expect(tile.needsPreparation).toBe(false);
+    expect(gpu.render.mock.calls.length - calls).toBe(3);
+    expect(tile.compositionStats).toMatchObject({
+      deltaSamples: 128 ** 2,
+      horizontalSamples: 1280,
+      projectionProducts: 4 * (1280 + 128 ** 2),
+      canonicalSamples: 0,
+    });
+    const numeric = gpu.render.mock.calls[calls][0]
+      .container as (typeof gpu.render.mock.calls)[number][0]["container"] & {
+      geometry: { positions: Float32Array };
+    };
+    if (positions) expect(numeric.geometry.positions).toBe(positions);
+    positions = numeric.geometry.positions;
+    before = after;
+  }
+  expect(descriptor).not.toHaveBeenCalled();
+  expect(metadataTransfers()).toBe(initialTransfers);
+  // A newly present source can populate a previously absent page: value-only
+  // metadata reuse must not hide its contribution.
+  change(field, null, author(4, 2, -1));
+  tile.update();
+  await drain(field, gpu);
+  expect(descriptor).toHaveBeenCalled();
+  expect(tile.drawDirty(gpu.renderer)).toBe(128 ** 2);
+  expect(tile.needsComposition).toBe(false);
+  field.setToolLevel(3);
+  expect(tile.hasActiveBasis).toBe(false);
+});
+
+it("keeps a retained page table owned when unuploaded axes are prepared again and cancelled", async () => {
+  const { field, gpu } = setup();
+  field.setToolLevel(4);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  change(field, null, author(4, 1));
+  tile.update();
+  await prepare(field);
+  const pages = field.atlas.pageCount;
+  expect(pages).toBeGreaterThan(0);
+  // The descriptor was published, but axes still await their first GPU upload.
+  expect(tile.uploadReady).toBe(false);
+  tile.cancelPreparation();
+  tile.update();
+  for (
+    let step = 0;
+    step < 100 && tile.preparationState().phase !== "axes";
+    step++
+  )
+    tile.prepareStep();
+  expect(tile.preparationState().phase).toBe("axes");
+  tile.cancelPreparation();
+  expect(field.atlas.pageCount).toBe(pages);
+  tile.update();
+  await drain(field, gpu);
+  expectUploaded(gpu, field.source);
+  expect(tile.drawDirty(gpu.renderer)).toBe(128 ** 2);
+  expect(tile.needsComposition).toBe(false);
+  expect(field.atlas.pageCount).toBe(pages);
+});
+
+it("bounds warm composition at maximum surface counts without changing the ordinary whole-rectangle path", async () => {
+  const { field, gpu } = setup();
+  field.setToolLevel(4);
+  const before = author(4, 100);
+  field.updateSources([before]);
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  tile.setSurface(
+    surfaceFrame({
+      lake: new Float32Array(8 * 128 ** 2 * 4),
+      lakeLayers: 8,
+      rivers: new Float32Array(512 * 12),
+      foundations: new Float32Array(64 * 12),
+    }),
+  );
+  tile.update();
+  await drain(field, gpu, editorBudgets.uploadBytesPerFrame);
+  compose(tile, gpu);
+  change(field, before, author(4, 101));
+  tile.update();
+  await drain(field, gpu);
+  expect(tile.usesAnchor).toBe(true);
+  expect(tile.warmActive).toBe(false);
+  const calls = gpu.render.mock.calls.length;
+  let samples = 0;
+  let horizontalSamples = 0;
+  let steps = 0;
+  while (tile.needsComposition) {
+    expect(tile.compositionWork).toBeGreaterThan(0);
+    expect(tile.compositionWork).toBeLessThanOrEqual(
+      editorBudgets.compositionWorkPerFrame,
+    );
+    const drawn = tile.drawDirty(gpu.renderer);
+    expect(drawn).toBe(128 * editorBudgets.heightCompositionRowsPerStep);
+    samples += drawn;
+    horizontalSamples += tile.compositionStats.horizontalSamples;
+    steps++;
+    while (tile.needsPreparation) expect(tile.prepareStep()).toBe(true);
+  }
+  expect(samples).toBe(128 ** 2);
+  expect(horizontalSamples).toBe(1280);
+  expect(steps).toBe(128 / editorBudgets.heightCompositionRowsPerStep);
+  expect(gpu.render.mock.calls.length - calls).toBeLessThanOrEqual(steps * 3);
+
+  // Removing the dense surface lets the next ordinary update use one whole draw.
+  tile.setSurface(null);
+  tile.update();
+  await drain(field, gpu);
+  expect(tile.warmActive).toBe(true);
+  const ordinaryCalls = gpu.render.mock.calls.length;
+  expect(tile.drawDirty(gpu.renderer)).toBe(128 ** 2);
+  expect(tile.needsComposition).toBe(false);
+  expect(gpu.render.mock.calls.length - ordinaryCalls).toBe(3);
+});
+
 it("captures H and active C at the same cold state, then reuses that state within the ongoing action", async () => {
   const { field, gpu } = setup();
   const before = author(0, 100);
@@ -1526,6 +1667,7 @@ it("keeps ordinary large cancellation on the canonical GPU path and marks the st
   await drain(field, gpu);
   compose(tile, gpu);
   change(field, sources[0], author(0, -899_999));
+  expect(tile.hasActiveBasis).toBe(false);
   tile.update(undefined, [0, 0, 8, 8]);
   expect(tile.usesAnchor).toBe(false);
   expect(tile.fallback).toBe(false);
@@ -1549,6 +1691,7 @@ it("admits finite endpoints only with an independent difference bound and retain
   expect(tile.usesAnchor).toBe(false);
   expect(tile.fallback).toBe(false);
   change(field, author(0, 1_000_000), author(0, Number.MAX_VALUE));
+  expect(tile.hasActiveBasis).toBe(false);
   tile.update();
   await prepare(field);
   expect(tile.fallback).toBe(true);
@@ -1566,6 +1709,7 @@ it("allows a prepared Float64 strategy without numeric framebuffer support", asy
   await drain(field, gpu);
   compose(tile, gpu);
   expect(tile.fallback).toBe(true);
+  expect(tile.hasActiveBasis).toBe(false);
   expect(tile.preparedVersion).toBe(tile.preparationVersion);
   expect(tile.needsPreparation).toBe(false);
   expect(field.setToolLevel(0)).toBe(false);

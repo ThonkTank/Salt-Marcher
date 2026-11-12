@@ -108,6 +108,8 @@ interface GpuSubmission {
   submission: FrameSubmission | null;
   tiles: { tile: DisplayTile; revision: number; preparation: number }[];
   renderReceipt: FrozenRenderReceipt | null;
+  /** Diagnostic feedback delay; never changes the submitted commands. */
+  notBefore: number;
 }
 
 interface QueuedSource {
@@ -341,6 +343,7 @@ export class WorldRenderer {
     | "none"
     | "delay-render"
     | "drop-render"
+    | "delay-feedback"
     | "ignore-zoom"
     | "pointerup-render" = "none";
   private faultArmed = false;
@@ -659,7 +662,11 @@ export class WorldRenderer {
     this.queuedSources.set(key, {
       // A late History deletion can require a before-image which the renderer
       // never kept resident. Preserve that proof even after a queued eviction.
-      before: queued?.before ?? this.field.readSource(key) ?? before ?? null,
+      before:
+        queued &&
+        (queued.before !== null || queued.localCandidate !== undefined)
+          ? queued.before
+          : (this.field.readSource(key) ?? before ?? null),
       after,
       local,
       foreign: !local,
@@ -1857,6 +1864,16 @@ export class WorldRenderer {
       .sort((a, b) => distance(a) - distance(b));
   }
 
+  private targetPrepared(target: FrozenTarget): boolean {
+    const tile = target.tile;
+    return (
+      tile.preparedRevision === target.revision &&
+      tile.preparedIntent === target.preparation &&
+      tile.preparedContentVersion === target.contentVersion &&
+      !tile.field.needsPreparation
+    );
+  }
+
   /** Selection is metadata-only; no descriptor, raster or page is prepared here. */
   private freezeBackground(): void {
     if (
@@ -2002,6 +2019,10 @@ export class WorldRenderer {
       submission,
       tiles,
       renderReceipt,
+      notBefore:
+        this.fault === "delay-feedback" && this.faultArmed
+          ? performance.now() + 400
+          : 0,
     });
     return this.observation.gpuFence(sync, kind);
   }
@@ -2126,16 +2147,28 @@ export class WorldRenderer {
       projectionProducts: 0,
     };
 
-    if (
-      !this.terrainPending &&
-      this.pendingGpu.length < editorBudgets.glSubmissions &&
-      group
-    ) {
+    if (group) {
       const preparationStart = this.preparationStarted;
       const deadline = this.preparationDeadline;
-      const selected: FrozenTarget[] = [];
-      for (const target of this.prioritizedTargets()) {
+      const reserve = this.preparationReservation();
+      const targets = this.prioritizedTargets();
+      const warmBatch =
+        group.kind === "local" &&
+        targets.every(({ tile }) => tile.field.hasActiveBasis);
+      let reservationBlocked = false;
+      for (const target of targets) {
         const tile = target.tile;
+        // A scene only reads the retained colour targets. CPU preparation of
+        // another packet may proceed while that scene waits. A terrain packet
+        // still owns all of its selected resources until its real fence ends.
+        if (
+          this.pendingGpu.some(
+            (pending) =>
+              pending.kind === "terrain" &&
+              pending.tiles.some((reference) => reference.tile === tile),
+          )
+        )
+          continue;
         if (
           performance.now() >= deadline ||
           preparationSteps >= editorBudgets.preparationStepsPerFrame
@@ -2176,7 +2209,10 @@ export class WorldRenderer {
             nextReserve?.cpuBytes !== reserved.cpuBytes ||
             nextReserve?.gpuBytes !== reserved.gpuBytes
           ) {
-            if (!this.reservePreparation(tile, nextReserve)) break;
+            if (!reserve(tile, nextReserve)) {
+              reservationBlocked = true;
+              break;
+            }
             reserved = nextReserve;
           }
           preparationSteps++;
@@ -2232,12 +2268,29 @@ export class WorldRenderer {
           if (!group.targets.length) this.frozen = null;
           continue;
         }
-        if (!tile.field.needsPreparation) selected.push(target);
       }
+      // Selection is metadata-only and is not cut off by the preparation clock.
+      // A normal warm influence fits one work packet: do not submit its prefix
+      // just because preparation needed another RAF. Real memory pressure and
+      // cold/exception work retain their bounded, progressive path.
+      const selected = this.prioritizedTargets().filter((target) =>
+        this.targetPrepared(target),
+      );
+      const completeWarmPreparation =
+        !warmBatch ||
+        reservationBlocked ||
+        group.targets.every(
+          (target) => target.painted || this.targetPrepared(target),
+        );
       preparationMs = performance.now() - preparationStart;
       this.recordPreparation(preparationMs, preparationSteps);
       this.checkBudgets();
-      if (selected.length) {
+      if (
+        selected.length &&
+        completeWarmPreparation &&
+        !this.terrainPending &&
+        this.pendingGpu.length < editorBudgets.glSubmissions
+      ) {
         try {
           uploadStart = performance.now();
           uploaded = this.field.flush(
@@ -2292,7 +2345,7 @@ export class WorldRenderer {
               )
                 break;
               const stepStart = performance.now();
-              if (!this.reservePreparation(tile)) break;
+              if (!reserve(tile, tile.field.nextPreparationBytes)) break;
               preparationSteps++;
               const progressed = tile.field.prepareStep();
               preparationMs += performance.now() - stepStart;
@@ -2528,6 +2581,62 @@ export class WorldRenderer {
     return false;
   }
 
+  /**
+   * A synchronous preparation batch owns conservative peak allowances. Reuse
+   * one inventory instead of walking every resident tile for every small step.
+   * Each target keeps its largest allowance until this call returns; releases
+   * are deliberately not credited. No callback can allocate between steps.
+   */
+  private preparationReservation(): (
+    tile: DisplayTile,
+    reserve: { cpuBytes: number; gpuBytes: number },
+  ) => boolean {
+    const inventory = () => {
+      const metrics = this.resourceMetrics();
+      return {
+        cpuBytes: metrics.cpuBytes + this.retainedBufferBytes(),
+        gpuBytes: metrics.gpuBytes,
+      };
+    };
+    let charged = inventory();
+    const allowances = new Map<
+      DisplayTile,
+      { cpuBytes: number; gpuBytes: number }
+    >();
+    return (tile, reserve) => {
+      const previous = allowances.get(tile);
+      const allowance = {
+        cpuBytes: Math.max(previous?.cpuBytes ?? 0, reserve.cpuBytes),
+        gpuBytes: Math.max(previous?.gpuBytes ?? 0, reserve.gpuBytes),
+      };
+      let next = {
+        cpuBytes:
+          charged.cpuBytes + allowance.cpuBytes - (previous?.cpuBytes ?? 0),
+        gpuBytes:
+          charged.gpuBytes + allowance.gpuBytes - (previous?.gpuBytes ?? 0),
+      };
+      if (
+        next.cpuBytes > editorBudgets.presentationBytes ||
+        next.gpuBytes > editorBudgets.gpuBytes
+      ) {
+        // A conservative estimate can exhaust a batch before real memory does.
+        // Reconcile actual allocations and use the ordinary cold eviction gate.
+        if (!this.reservePreparation(tile, reserve)) return false;
+        const current = inventory();
+        allowances.clear();
+        allowance.cpuBytes = reserve.cpuBytes;
+        allowance.gpuBytes = reserve.gpuBytes;
+        next = {
+          cpuBytes: current.cpuBytes + reserve.cpuBytes,
+          gpuBytes: current.gpuBytes + reserve.gpuBytes,
+        };
+      }
+      allowances.set(tile, allowance);
+      charged = next;
+      return true;
+    };
+  }
+
   private resourceMetrics() {
     const metrics = this.field.metrics();
     for (const field of this.retiredFields) {
@@ -2564,6 +2673,7 @@ export class WorldRenderer {
     const gl = this.renderer.gl;
     while (this.pendingGpu.length) {
       const pending = this.pendingGpu[0];
+      if (performance.now() < pending.notBefore) break;
       const status = gl.clientWaitSync(pending.sync, 0, 0);
       if (status === gl.TIMEOUT_EXPIRED) break;
       if (status !== gl.ALREADY_SIGNALED && status !== gl.CONDITION_SATISFIED) {

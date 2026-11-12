@@ -858,7 +858,10 @@ verspäteter Lesefehler wird nur für dieselbe Version und dieselben Bounds
 beziehungsweise Fundamentbounds, auch in noch residenten kalten Renderkacheln.
 
 Ein unveränderlicher `SurfaceFrame` begleitet denselben eingefrorenen
-Terrainstand. Höchstens acht getrennte Seepegel-Layer, 512 Flusssegmente und
+Terrainstand. An der Weltgrenze werden nur die Dokumentabfragen auf den
+gültigen Weltbereich begrenzt; Kachelursprung, Rastergröße und lokale
+Oberflächenkoordinaten behalten den vollständigen Darstellungsbereich.
+Höchstens acht getrennte Seepegel-Layer, 512 Flusssegmente und
 4.096 Seemaskenpunkte pro Darstellungskachel verhindern stille Kürzungen. Der
 gemeinsame Farbpass wählt aus den tatsächlich nassen Masken den niedrigsten
 Pegel und berücksichtigt aktuelle Flussbetten und Fundamentbasen. Masken- und
@@ -951,8 +954,10 @@ Der einzige Frameablauf ist gerichtet:
 4. Priorisierte Quellen und Übersichten in kleinen Schritten übernehmen und
    lokale Gewässer-/Fundamentableitungen begrenzt fortsetzen. Erst vollständige
    Abhängigkeiten erlauben die jeweilige Bestätigung.
-5. Innerhalb desselben Vorbereitungsbudgets Deskriptoren und Projektionsstreifen
-   vorbereiten, begrenzte Terrainpakete einreichen und fertige Farbe zeichnen.
+5. Innerhalb desselben Vorbereitungsbudgets die aktuelle Höhenänderung vorbereiten,
+   begrenzte Terrainpakete einreichen und fertige Farbe zeichnen. Ein kompatibler
+   warmer Auftrag wartet auf seine vollständige Vorbereitung; die Deadline
+   allein erzeugt kein zusätzliches Teilpaket.
 6. Submitfakten, eventuellen Aktionsabschluss und abgeleitete Anzeige aktualisieren.
 
 `freezeRender` hält einen unveränderlichen Quellen-/Übersichtsstand R bis zur
@@ -963,6 +968,19 @@ auch bei bereits wartendem R+1 gültig. Der Controller paart ihn mit genau der
 zugehörigen Wirkung: Session, Geste, Ansicht, Vorbereitung und eingefrorene
 Revision müssen stimmen. Eine Teilkomposition, ein alter Beleg oder ein
 anders vorbereiteter Stand gibt keine neue Wirkungsreserve frei.
+
+`BrushReservations.freeze` bestimmt den Wirkungsvektor und dessen vollständigen
+kubischen Einfluss gemeinsam aus bereits materialisierten, noch unbestätigten
+Autorenpunkten. Der Controller übergibt genau diese Bereiche an `freezeRender`.
+Kann der Renderer sie noch nicht übernehmen, verwirft `discardBrushEffect` nur
+den Probe-Receipt. Er gibt keine Wirkung frei. Alte Bestätigungen ziehen ihre
+adressierten Beiträge ab und erhalten neuere Wirkung. Bereits fertige Teile der
+Strichgeschichte vergrößern keinen späteren lokalen Auftrag.
+
+Beim Zusammenfassen lokaler Quellen ist ein bestätigter leerer Vorherzustand
+ein echter Beleg. `null → A → B` behält deshalb `null` als ersten Zustand; ein
+neu angelegter Autor entwertet dadurch keine gültige Ozeanbasis. Ein tatsächlich
+fehlendes History-Vorherbild bleibt dagegen ein Grund zum kanonischen Neuaufbau.
 
 Die lokale Wirkungsschranke ersetzt das frühere globale Dosisgate.
 Ein ausgeschöpfter Ort darf einen anderen zulässigen Ort derselben Autorenkachel
@@ -999,6 +1017,16 @@ erhält deren bereits belegte Grundlage; neue Bereiche bleiben bis zur begrenzte
 keine Grundlage. Entfernte Quellenfehler sperren keine
 unabhängige lokale Gruppe. Hintergrundgruppen bearbeiten je eine vollständige
 lokale Kachel und geben den Quellenstand danach wieder frei.
+
+Die Vorbereitung ungebundener Targets darf während eines früheren Terrainpakets
+weiterlaufen; GPU-Uploads warten auf einen freien Terrainplatz. Eine Szenenfence
+verhindert keine reine CPU-Vorbereitung der separaten numerischen Ressourcen.
+Jeder synchrone Vorbereitungsbatch bilanziert den Bestand einmal und reserviert
+konservativ die größte zusätzliche CPU-/GPU-Allokation je Target. Bei knappen
+Budgets wird der tatsächliche Bestand neu bilanziert und nur ungebundener kalter
+Bestand verdrängt. Nach einem Abgleich muss weitere Arbeit erneut zugelassen
+werden. Die Limits und die Berücksichtigung noch benutzter Ressourcen bleiben
+unverändert.
 
 Der Pinselkreis ist ein DOM-Overlay. Seine Bewegung erzeugt keine Atlas-GL-Arbeit
 und liefert keinen Terrainnachweis. Die begrenzten Zustände belegen noch keine
@@ -1069,6 +1097,14 @@ vollständige kubische Halos. Feine Stufen dürfen eine größere lokale Seitent
 und mehr Zwischenzeilen benötigen. Absolute Weltkoordinaten werden vor
 Float32-Transformationen relativ zur Kamera gebildet.
 
+Eine normale warme Änderung verwendet das vollständige geänderte Rechteck
+pro Kachel. Seitentabelle, Achsgewichte und horizontale Projektionsgeometrie
+bleiben bei passender Identität erhalten; reine Werteänderungen kodieren nur
+die betroffenen gemeinsamen Quellseiten einschließlich Halo neu. Eine veränderte
+Autorentopologie baut die davon abhängigen Metadaten neu auf. Der direkte
+4×4-Gegenkandidat wurde im begrenzten H2-Versuch geprüft und ist kein zusätzlicher
+Produktpfad.
+
 Dirtyrechtecke begrenzen die tatsächlich projizierten und gefärbten Pixel.
 Nur der erste Live-Draw nach einer Basisaufnahme übernimmt zusätzlich unveränderte
 Basispixel in das andere numerische Ziel. Spätere Dosen und gleichstufige Gesten
@@ -1112,9 +1148,11 @@ Der Projektionsanteil bleibt auf 20 gewichtete Paarprodukte je historischer
 Arbeitseinheit normiert. Zusätzliche Basisadditionen, Farbe, See-Layer,
 Fluss-/Fundamentauswertung, Kopien und Capture-Lesezugriffe werden mitgezählt;
 das Paketlimit bleibt unverändert. CPU-Quellseiten entstehen in achtzeiligen Abschnitten; Atlaswachstum kopiert
-64 KiB je Schritt. GPU-Teilschritte umfassen höchstens 16 Pixelzeilen und jeweils
-die vollständige Folge horizontal → numerisch → Farbe. Mehrere solche Schritte
-dürfen innerhalb derselben unveränderten Arbeits- und Uploadgrenze liegen.
+64 KiB je Schritt. Normale warme Rechtecke verwenden die vollständige Folge
+horizontal → numerisch → Farbe ohne zeilenweise Fortsetzung. Kalte Aufbauten
+und warme Sonderfälle, deren vollständige Komposition das Arbeitsbudget
+überschreiten würde, bleiben in höchstens 16 Pixelzeilen fortsetzbar. Mehrere
+solche Schritte dürfen innerhalb derselben unveränderten Arbeits- und Uploadgrenze liegen.
 Ein Teilstreifen veröffentlicht keine neue Gesamtbasis oder vollständige
 Renderbestätigung. Der aktuelle Werkzeugort wird zuerst bearbeitet. Die beiden numerischen 128²-Texturen kosten zusammen 512 KiB
 je Kachel, bei 96 Kacheln 48 MiB. Hinzu kommen die variabel großen Zwischenzeilen,
@@ -1186,6 +1224,18 @@ und native Abnahme verwenden dieselben Ergebnisse; die native Ebene ergänzt
 Referenz, Präsentationszuordnung und Stichprobenumfang. Globale Vollständigkeit
 für fehlende, doppelte und unzugeordnete Eingaben bleibt eine Pflichtprüfung.
 Historische rote Journale bleiben rot; alte Schemas erhalten keine neue Bedeutung.
+
+`M03-height-standard-rate` prüft eine neue Ozeanwelt mit 512 Pixeln, `scale=0.25`
+und 20 Fuß/s über zehn physische Haltesekunden. Fünf feste Punktproben werden in
+vorab bestimmten Ein-Sekunden-Fenstern gegen die ungedrosselte unabhängige
+C1-Referenz geprüft. Die Bildwerte sind an den eingefrorenen Autorenstand und
+den tatsächlich abgeschlossenen Scene-Fence gebunden. Echte Pixel prüfen
+Landbildung bis sechs Sekunden und den Endstand; Undo muss den Ozean exakt
+wiederherstellen. Der Diagnosefehler `delay-feedback` hält echte GPU-Quittungen
+bis mindestens 400 ms nach ihrer Einreichung zurück. Positive und negative Auswerterfälle prüfen fehlende Proben,
+fehlende Bereichsabdeckung und vorzeitige Quittierung. Diese Prüfung kann einen
+Kandidaten auch bei korrekter interner Zeitbuchhaltung wegen zu geringer
+Nutzerwirkung ablehnen. Sie ersetzt keine native Präsentationsmessung.
 
 Der R4-Zweck desselben Runners verwendet eine feste kleine Matrix und zwei
 frische Prozessgruppen. Die Inhaltsprüfung beobachtet höchstens 256 vorher

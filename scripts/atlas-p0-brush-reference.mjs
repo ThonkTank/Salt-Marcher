@@ -349,6 +349,78 @@ function reconstructionStencil(point, level) {
 }
 
 /**
+ * Reconstruct independently observed author coefficients on the canonical mesh.
+ * This uses only the offline reference basis, never renderer/model helpers.
+ * Missing controls fail instead of inheriting a fabricated zero.
+ * @param {number} level
+ * @param {readonly Point[]} points
+ * @param {readonly Point[]} controls
+ * @param {readonly number[]} values
+ * @param {number} base
+ */
+export function reconstructObservedHeight(
+  level,
+  points,
+  controls,
+  values,
+  base = -100,
+) {
+  requireReference(
+    Number.isInteger(level) && level >= 0 && level <= 21,
+    "invalid observed level",
+  );
+  requireReference(
+    points.length > 0 && points.every(validPoint),
+    "invalid observed points",
+  );
+  requireReference(
+    controls.length === values.length &&
+      controls.every(validPoint) &&
+      values.every(Number.isFinite),
+    "invalid observed controls",
+  );
+  requireReference(Number.isFinite(base), "invalid observed base");
+  const byPoint = new Map(
+    controls.map((point, index) => [point.join(","), values[index]]),
+  );
+  requireReference(
+    byPoint.size === controls.length,
+    "duplicate observed control",
+  );
+  return points.map((point) => {
+    let value = base;
+    for (const item of reconstructionStencil(point, level)) {
+      const coefficient = byPoint.get(item.point.join(","));
+      requireReference(
+        coefficient !== undefined,
+        "missing observed reconstruction control",
+      );
+      if (coefficient === undefined)
+        throw new RangeError("Missing observed reconstruction control");
+      value += coefficient * item.weight;
+    }
+    return value;
+  });
+}
+
+/** @param {readonly Point[]} points @param {number} level */
+export function referenceHeightControls(points, level) {
+  requireReference(
+    Number.isInteger(level) && level >= 0 && level <= 21,
+    "invalid control level",
+  );
+  requireReference(
+    points.length > 0 && points.every(validPoint),
+    "invalid control points",
+  );
+  const controls = new Map();
+  for (const point of points)
+    for (const item of reconstructionStencil(point, level))
+      controls.set(item.point.join(","), [...item.point]);
+  return [...controls.values()];
+}
+
+/**
  * Retained negative C0 counterreference: signed initial and spatial coefficient
  * changes only. Its full spatial effect already exceeds the local bound, so
  * temporal channels, reconstructed surfaces and window evidence are unnecessary.

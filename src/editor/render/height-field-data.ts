@@ -96,6 +96,8 @@ function lowerBound(values: readonly number[], value: number): number {
 }
 
 export interface HeightDescriptor {
+  /** Source presence fixes the page table; value edits only refresh those pages. */
+  topologyVersion: number;
   data: Float32Array;
   levelCount: number;
   pages: string[];
@@ -116,6 +118,7 @@ export interface HeightDescriptor {
  */
 export class HeightSourceAtlas {
   readonly sources = new Map<string, HeightTile>();
+  topologyVersion = 0;
   /** Sorted local index; source validation and coefficient scans happen on writes. */
   private levels = new Map<number, SourceLevel>();
   private pages = new Map<string, SourcePage>();
@@ -194,6 +197,7 @@ export class HeightSourceAtlas {
       const previous = this.sources.get(key);
       if (!previous) continue;
       this.sources.delete(key);
+      this.topologyVersion++;
       this.removeMetadata(previous);
       changed.add(key);
       bounds.push(heightTileSupport(previous));
@@ -207,6 +211,7 @@ export class HeightSourceAtlas {
       )
         continue;
       const owned = cloneHeightTile(tile);
+      if (!previous) this.topologyVersion++;
       this.sources.set(tile.key, owned);
       this.writeMetadata(owned);
       changed.add(tile.key);
@@ -359,6 +364,15 @@ export class HeightSourceAtlas {
         return !page || page.needsEncoding || this.dirty.has(page.slot);
       })
     );
+  }
+
+  /** Retained descriptors own these pages; a value edit does not change slots. */
+  *refreshPagesSteps(keys: readonly string[]): Generator<void, void, void> {
+    for (const key of keys) {
+      const page = this.pages.get(key);
+      if (!page) throw new Error("Gehaltene Höhenquellseite fehlt.");
+      if (page.needsEncoding) yield* this.writePageSteps(page);
+    }
   }
 
   private hasSupport(level: number, tileX: number, tileY: number): boolean {
@@ -595,6 +609,7 @@ export class HeightSourceAtlas {
         );
       completed = true;
       return {
+        topologyVersion: this.topologyVersion,
         data,
         levelCount: levels.length,
         pages,

@@ -165,6 +165,78 @@ function queueInput(
 }
 
 describe("R2 document-owned C1 admission and bounded continuation", () => {
+  it("binds a document receipt to current materialized support and can discard an unavailable render", () => {
+    const doc = new EditorDocument("height-local-receipt", { empty: true });
+    const localBrush = { level: 0, radius: 3, amount: 60 };
+    doc.beginPrepaidGesture(localBrush, context(doc));
+    doc.admitBrushBatch({
+      admissionId: 1,
+      path: { from: [0, 0], points: [[0, 0]], end: false },
+      time: [{ from: [0, 0], to: [0, 0], elapsedMs: 20 }],
+      pointCount: 1,
+    });
+    drain(doc);
+    const first = doc.freezeBrushEffect()!;
+    expect(first.regions).toEqual([[-10, -10, 10, 10]]);
+    const before = doc.sampleHeight(0, 0);
+    expect(doc.discardBrushEffect(first)).toBe(true);
+    expect(doc.acknowledgeBrushEffect(first)).toBe(false);
+    expect(doc.sampleHeight(0, 0)).toBe(before);
+    expect(doc.brushWork!.unconfirmedCells).toBe(1);
+    expect(doc.acknowledgeBrushEffect(doc.freezeBrushEffect()!)).toBe(true);
+    expect(doc.brushWork!.unconfirmedCells).toBe(0);
+
+    doc.admitBrushBatch({
+      admissionId: 2,
+      path: { from: [1000, 0], points: [[1000, 0]], end: false },
+      time: [{ from: [1000, 0], to: [1000, 0], elapsedMs: 20 }],
+      pointCount: 1,
+    });
+    expect(doc.brushWork!.unconfirmedCells).toBe(0);
+    drain(doc);
+    expect(doc.freezeBrushEffect()!.regions).toEqual([[990, -10, 1010, 10]]);
+    expect(doc.sampleHeight(0, 0)).toBe(before);
+  });
+
+  it("reports current limited time at the requested place and clears it after ACK, a free place or Up", () => {
+    const doc = new EditorDocument("height-current-saturation", {
+      empty: true,
+    });
+    doc.beginPrepaidGesture({ level: 0, radius: 3, amount: 60 }, context(doc));
+    let admissionId = 0;
+    const offer = (point: Point, elapsedMs: number) =>
+      doc.admitBrushBatch({
+        admissionId: ++admissionId,
+        path: { from: point, points: [point], end: false },
+        time: [{ from: point, to: point, elapsedMs }],
+        pointCount: 1,
+      });
+    offer([0, 0], 50);
+    drain(doc);
+    expect(doc.brushWork!.renderSaturated).toBe(false);
+    const blocked = offer([0, 0], 20);
+    expect(blocked.discardedTime).toBeGreaterThan(0);
+    expect(doc.brushWork!.renderSaturated).toBe(true);
+    const before = doc.sampleHeight(0, 0);
+    expect(doc.acknowledgeBrushEffect(doc.freezeBrushEffect()!)).toBe(true);
+    expect(doc.brushWork!.renderSaturated).toBe(false);
+    expect(doc.sampleHeight(0, 0)).toBe(before);
+
+    offer([0, 0], 50);
+    drain(doc);
+    offer([0, 0], 20);
+    expect(doc.brushWork!.renderSaturated).toBe(true);
+    offer([1000, 0], 20);
+    expect(doc.brushWork!.renderSaturated).toBe(false);
+    drain(doc);
+    offer([0, 0], 20);
+    expect(doc.brushWork!.renderSaturated).toBe(true);
+    doc.sealBrushGesture();
+    expect(doc.brushWork!.renderSaturated).toBe(false);
+    drain(doc);
+    expect(doc.metrics.historyActions).toBe(1);
+  });
+
   it("publishes consumed positive work even when Float64 rounds the author value unchanged", () => {
     const doc = new EditorDocument("r2-rounded-materialization", {
       empty: true,

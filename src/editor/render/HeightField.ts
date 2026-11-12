@@ -167,9 +167,18 @@ function geometry(): MeshGeometry {
 }
 function setRect(mesh: Mesh<MeshGeometry, Shader>, rect: RasterRect): void {
   const [x0, y0, x1, y1] = rect.map((value) => value / SIZE);
-  const points = new Float32Array([x0, y0, x1, y0, x1, y1, x0, y1]);
-  mesh.geometry.positions = points;
-  mesh.geometry.uvs = points.slice();
+  const points = mesh.geometry.positions;
+  if (
+    points[0] === x0 &&
+    points[1] === y0 &&
+    points[4] === x1 &&
+    points[5] === y1
+  )
+    return;
+  points.set([x0, y0, x1, y0, x1, y1, x0, y1]);
+  mesh.geometry.uvs.set(points);
+  mesh.geometry.getBuffer("aPosition").update();
+  mesh.geometry.getBuffer("aUV").update();
 }
 function area(rect: RasterRect): number {
   return (rect[2] - rect[0]) * (rect[3] - rect[1]);
@@ -290,6 +299,12 @@ export class HeightFieldTile {
   private horizontalSamples = 0;
   private horizontalCompletedRows: number[] = [];
   private horizontalPlannedRows: number[] = [];
+  private activeNeedsStrips = false;
+  private activeProjection: {
+    descriptor: HeightDescriptor;
+    rect: RasterRect;
+    projection: ReturnType<typeof createHeightProjection>;
+  } | null = null;
   private peakGeometryBytes = 0;
   private axes = { data: new Float32Array(2), width: 1, height: 1 };
   private descriptor: HeightDescriptor | null = null;
@@ -618,6 +633,7 @@ export class HeightFieldTile {
   private releaseDescriptor(): void {
     if (this.descriptor) this.field.atlas.release(this.descriptor.pages);
     this.descriptor = null;
+    this.activeProjection = null;
   }
 
   private liveError(
@@ -646,6 +662,36 @@ export class HeightFieldTile {
       before + current <= HEIGHT_GPU_MAX_SCALED_VALUE * 32 &&
       this.liveError(heightMagnitude, heightError, before, current) <=
         ANCHOR_ERROR_BUDGET
+    );
+  }
+
+  private admitsActiveBasis(
+    level: number,
+    activeMagnitude: number,
+    activeSafe: boolean,
+  ): boolean {
+    return (
+      this.field.numericSupported &&
+      activeSafe &&
+      this.basisValid &&
+      this.basisLevel === level &&
+      this.admitsBasis(
+        this.basisMagnitude,
+        this.basisError,
+        this.basisContribution,
+        activeMagnitude,
+      )
+    );
+  }
+
+  /** Compatible fixed basis; pending source/colour encodings still need preparation. */
+  get hasActiveBasis(): boolean {
+    if (this.disposed || !this.basisValid) return false;
+    const level = this.field.toolLevel;
+    return this.admitsActiveBasis(
+      level,
+      this.field.atlas.magnitudeIn(this.bounds, level, level),
+      this.field.atlas.safeIn(this.bounds, level, level),
     );
   }
 
@@ -738,6 +784,7 @@ export class HeightFieldTile {
       nextRow: this.nextRow,
       stepReady: this.stepReady,
       mode: this.mode,
+      warmActive: this.warmActive,
       compositionDirty: this.compositionDirty,
       fallback: this.fallback,
       fallbackReady: this.fallbackReady,
@@ -805,6 +852,7 @@ export class HeightFieldTile {
     forceOverview: boolean,
     rect: RasterRect,
   ): Generator<void, void, void> {
+    this.activeNeedsStrips = false;
     if (this.surfaceFrame !== this.surfaceEncoded) {
       this.preparationPhase = "surface";
       const frame = this.surfaceFrame;
@@ -1017,45 +1065,36 @@ export class HeightFieldTile {
       level,
     );
     const activeSafe = this.field.atlas.safeIn(this.bounds, level, level);
-    const canonicalMagnitude =
-      100 +
-      this.field.atlas.magnitudeIn(this.bounds, minimum) +
-      this.overviewMagnitude;
-    const canonicalError =
-      canonicalMagnitude * PAIR_PROJECTION_ERROR +
-      HEIGHT_GPU_PROJECTION_ZERO_ERROR;
     this.mode = "canonical";
     this.plannedRebase = false;
-    if (this.field.numericSupported && activeSafe) {
-      if (
-        this.basisValid &&
-        this.basisLevel === level &&
-        this.admitsBasis(
-          this.basisMagnitude,
-          this.basisError,
-          this.basisContribution,
-          activeMagnitude,
-        )
-      ) {
-        this.mode = "live";
-      } else if (
-        !this.basisValid &&
-        this.numericValid &&
-        this.numericCurrent &&
-        !this.landscapeColourRect &&
-        !this.surfaceColourDirty &&
-        this.numericDepth < MAX_HEIGHT_BASIS_TRANSFERS &&
-        this.admitsBasis(
-          this.numericMagnitude,
-          this.numericError,
-          activeMagnitude,
-          activeMagnitude,
-        )
-      ) {
-        this.mode = "capture";
-      }
+    if (this.admitsActiveBasis(level, activeMagnitude, activeSafe)) {
+      this.mode = "live";
+    } else if (
+      this.field.numericSupported &&
+      activeSafe &&
+      !this.basisValid &&
+      this.numericValid &&
+      this.numericCurrent &&
+      !this.landscapeColourRect &&
+      !this.surfaceColourDirty &&
+      this.numericDepth < MAX_HEIGHT_BASIS_TRANSFERS &&
+      this.admitsBasis(
+        this.numericMagnitude,
+        this.numericError,
+        activeMagnitude,
+        activeMagnitude,
+      )
+    ) {
+      this.mode = "capture";
     }
     const planCanonical = () => {
+      const canonicalMagnitude =
+        100 +
+        this.field.atlas.magnitudeIn(this.bounds, minimum) +
+        this.overviewMagnitude;
+      const canonicalError =
+        canonicalMagnitude * PAIR_PROJECTION_ERROR +
+        HEIGHT_GPU_PROJECTION_ZERO_ERROR;
       this.mode = "canonical";
       this.plannedMagnitude = canonicalMagnitude;
       this.plannedError = canonicalError;
@@ -1096,13 +1135,26 @@ export class HeightFieldTile {
     let next: HeightDescriptor;
     this.preparationPhase = "descriptor";
     try {
-      next = yield* this.field.atlas.descriptorSteps(
-        this.bounds,
-        this.power,
-        this.mode === "canonical"
-          ? { include: this.plannedBasis ? level : undefined }
-          : { minimum: level, maximum: level },
-      );
+      const retained = this.descriptor;
+      if (
+        this.mode === "live" &&
+        retained &&
+        !retained.fallback &&
+        retained.topologyVersion === this.field.atlas.topologyVersion &&
+        (retained.levelCount === 0 ||
+          (retained.levelCount === 1 && retained.levels[0] === level))
+      ) {
+        yield* this.field.atlas.refreshPagesSteps(retained.pages);
+        next = retained;
+      } else {
+        next = yield* this.field.atlas.descriptorSteps(
+          this.bounds,
+          this.power,
+          this.mode === "canonical"
+            ? { include: this.plannedBasis ? level : undefined }
+            : { minimum: level, maximum: level },
+        );
+      }
     } catch (error) {
       if (!(error instanceof RangeError)) throw error;
       // A very fine tool on a coarse display keeps its canonical overview path.
@@ -1138,16 +1190,19 @@ export class HeightFieldTile {
         this.weightsKey = weightsKey;
         this.weightsDirty = true;
       }
-      this.releaseDescriptor();
       this.preparationPhase = "publish";
-      this.descriptor = next;
+      if (this.descriptor !== next) {
+        this.releaseDescriptor();
+        this.descriptor = next;
+        this.descriptorSource.resource = next.data;
+        this.stageSource(
+          this.descriptorSource,
+          next.width,
+          HEIGHT_DESCRIPTOR_HEIGHT,
+        );
+        this.dirty = true;
+      }
       published = true;
-      this.descriptorSource.resource = next.data;
-      this.stageSource(
-        this.descriptorSource,
-        next.width,
-        HEIGHT_DESCRIPTOR_HEIGHT,
-      );
       this.rect =
         this.mode === "live" && !this.surfaceColourDirty
           ? [...rect]
@@ -1182,7 +1237,6 @@ export class HeightFieldTile {
         : 0;
       this.colourShader.resources.heightUniforms.uniforms.uClip =
         new Float32Array(next.clip);
-      this.dirty = true;
       if (this.fallback) {
         this.plannedBasis = false;
         this.projectionInput = {
@@ -1199,7 +1253,8 @@ export class HeightFieldTile {
         yield;
       }
     } finally {
-      if (!published) this.field.atlas.release(next.pages);
+      if (!published && next !== this.descriptor)
+        this.field.atlas.release(next.pages);
     }
   }
 
@@ -1208,10 +1263,12 @@ export class HeightFieldTile {
       this.operationRect[0],
       this.nextRow,
       this.operationRect[2],
-      Math.min(
-        this.operationRect[3],
-        this.nextRow + editorBudgets.heightCompositionRowsPerStep,
-      ),
+      this.warmActive
+        ? this.operationRect[3]
+        : Math.min(
+            this.operationRect[3],
+            this.nextRow + editorBudgets.heightCompositionRowsPerStep,
+          ),
     ];
     this.projectionRect = intersectRect(this.stepRect, this.rect);
     if (this.mode === "colour") {
@@ -1221,11 +1278,23 @@ export class HeightFieldTile {
       return;
     }
     if (!this.descriptor) return;
-    const projection = createHeightProjection(
-      this.descriptor,
-      this.axes,
-      this.projectionRect,
+    const retained = this.activeProjection;
+    const reused = Boolean(
+      this.warmActive &&
+      retained?.descriptor === this.descriptor &&
+      retained.rect.every(
+        (value, index) => value === this.projectionRect[index],
+      ),
     );
+    const projection = reused
+      ? retained!.projection
+      : createHeightProjection(this.descriptor, this.axes, this.projectionRect);
+    if (this.warmActive && !reused)
+      this.activeProjection = {
+        descriptor: this.descriptor,
+        rect: [...this.projectionRect],
+        projection,
+      };
     this.horizontalPlannedRows = [...this.horizontalCompletedRows];
     if (area(this.projectionRect)) {
       for (let level = 0; level < this.descriptor.levelCount; level++) {
@@ -1252,15 +1321,28 @@ export class HeightFieldTile {
       }
     }
     this.horizontalSamples = this.fallback ? 0 : projection.samples;
-    this.horizontalMesh.geometry.positions = projection.positions;
-    this.horizontalMesh.geometry.uvs = projection.uvs;
-    this.horizontalMesh.geometry.indices = projection.indices;
+    if (this.horizontalMesh.geometry.positions !== projection.positions) {
+      this.horizontalMesh.geometry.positions = projection.positions;
+      this.horizontalMesh.geometry.uvs = projection.uvs;
+      this.horizontalMesh.geometry.indices = projection.indices;
+    }
     this.peakGeometryBytes = Math.max(
       this.peakGeometryBytes,
       this.geometryBytes,
     );
     this.stepReady = true;
-    this.preparationPhase = "strip-ready";
+    // Dense surface composition can exceed one packet even at a single active
+    // height level. Retain the existing bounded path for that whole intent.
+    if (
+      this.warmActive &&
+      this.compositionWork > editorBudgets.compositionWorkPerFrame
+    ) {
+      this.activeNeedsStrips = true;
+      this.stepReady = false;
+      this.prepareStrip();
+      return;
+    }
+    this.preparationPhase = this.warmActive ? "active-ready" : "strip-ready";
   }
 
   private requestFallback(): void {
@@ -1485,6 +1567,10 @@ export class HeightFieldTile {
   get usesAnchor(): boolean {
     return this.mode === "live";
   }
+  /** A warm rectangle uses one pass when its complete work fits a packet. */
+  get warmActive(): boolean {
+    return this.mode === "live" && !this.fallback && !this.activeNeedsStrips;
+  }
   get hasBasis(): boolean {
     return this.basisValid;
   }
@@ -1492,7 +1578,7 @@ export class HeightFieldTile {
     return this.numericDepth;
   }
 
-  /** Submit one complete horizontal → numeric → colour strip. */
+  /** Submit a complete warm rectangle, or one bounded cold/exception strip. */
   drawDirty(renderer: WebGLRenderer): number {
     if (!this.compositionDirty || this.disposed) return 0;
     if (!this.uploadReady)

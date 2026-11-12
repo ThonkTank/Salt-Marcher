@@ -24,6 +24,8 @@ import {
   evaluateBrushTime,
   evaluateBrushPublicationOrder,
   evaluateSaveOverlap,
+  evaluateStandardHeight,
+  STANDARD_HEIGHT_CASE,
   P0_FUNCTIONAL_CHECKS,
   P0_REQUIREMENTS,
 } from "../../../scripts/atlas-p0-evaluate.mjs";
@@ -37,6 +39,8 @@ import {
   referenceC0Stroke,
   referenceC1Stroke,
   reconstructReferenceC1Stroke,
+  reconstructObservedHeight,
+  referenceHeightControls,
 } from "../../../scripts/atlas-p0-brush-reference.mjs";
 import { gpuWork } from "../../../scripts/atlas-p0-graphics-probe.mjs";
 
@@ -3893,5 +3897,534 @@ describe("single justified C1 content verdict", () => {
     const observed = c1Observed(spec);
     expect(observed.windows[1].time[0]).toBeLessThan(0);
     expect(evaluateC1StrokeContent(spec, observed).passed).toBe(true);
+  });
+});
+
+/**
+ * Synthetic protocol control, not a model implementation: the author values
+ * come only from the independent offline oracle. Every completed scene has an
+ * explicit matching frozen revision, draw, fence and work record.
+ */
+function standardHeightEvidence(durationMs = 10_000) {
+  type Event = Record<string, any>;
+  const points = [
+    [0, 0],
+    [-512, 0],
+    [512, 0],
+    [0, -512],
+    [0, 512],
+  ];
+  const controls = referenceHeightControls(points, 4);
+  const input = {
+    brush: { level: 4, radius: 1024, amount: 20 },
+    start: { point: [0, 0], at: 0, input: 1 },
+    windows: [
+      {
+        at: durationMs,
+        points: [{ point: [0, 0], at: durationMs, input: 2 }],
+        end: true,
+      },
+    ],
+  };
+  const ideal = referenceC1Stroke(input, controls);
+  const base = { sessionId: "session-a", gestureId: 1, viewGeneration: 1 };
+  const work = {
+    pendingCells: controls.length,
+    pendingPoints: 1,
+    pendingAdmissions: 1,
+    cells: controls.length,
+    tiles: 4,
+    bufferBytes: 16_384,
+    effectLimit: 1,
+    maxOutstandingEffect: 0.4,
+  };
+  const events: Event[] = [
+    {
+      kind: "input",
+      id: 1,
+      inputKind: "edit",
+      eventType: "pointerdown",
+      createdAt: 0,
+      at: 0,
+    },
+    {
+      ...base,
+      kind: "brush-start",
+      dosing: "c1",
+      input: 1,
+      inputAt: 0,
+      startAt: 0,
+      point: [0, 0],
+      rateFtPerSecond: 20,
+      radius: 1024,
+      level: 4,
+      at: 0.01,
+    },
+  ];
+  for (let elapsed = 0; elapsed <= durationMs; elapsed += 20) {
+    const id = elapsed / 20 + 1;
+    const press = elapsed === 0;
+    const end = elapsed === durationMs;
+    const inputIds = press ? [1] : end ? [2] : [];
+    const receipt = {
+      id,
+      sessionId: base.sessionId,
+      viewGeneration: 1,
+      preparationId: id,
+      revision: id,
+      bounds: [[-1200, -1200, 1200, 1200]],
+    };
+    if (end)
+      events.push({
+        kind: "input",
+        id: 2,
+        inputKind: "pointerup",
+        eventType: "pointerup",
+        createdAt: elapsed,
+        at: elapsed,
+      });
+    events.push({
+      ...base,
+      kind: "brush-accepted",
+      admissionId: id,
+      from: [0, 0],
+      to: [0, 0],
+      path: end ? [[0, 0]] : [],
+      samples: end ? [{ point: [0, 0], at: elapsed, input: 2 }] : [],
+      segments: press ? [] : [{ from: [0, 0], to: [0, 0], elapsedMs: 20 }],
+      observedAt: elapsed,
+      fromAt: Math.max(0, elapsed - 20),
+      toAt: elapsed,
+      rawElapsedMs: press ? 0 : 20,
+      offeredElapsedMs: press ? 0 : 20,
+      cause: press ? "press" : end ? "terminal" : "hold",
+      end,
+      pointCount: 1,
+      pendingPoints: 1,
+      inputIds,
+      rateFtPerSecond: 20,
+      radius: 1024,
+      level: 4,
+      reserved: true,
+      reservedCells: controls.length,
+      acceptedTimeEffect: press ? 0 : 0.4,
+      discardedTimeEffect: 0,
+      work,
+      at: elapsed + 0.1,
+      cpuMs: 0.05,
+    });
+    if (end)
+      events.push({
+        ...base,
+        kind: "brush-end",
+        input: 2,
+        inputAt: elapsed,
+        clock: elapsed,
+        endAt: elapsed + 0.15,
+        reason: "pointerup",
+        at: elapsed + 0.15,
+      });
+    events.push(
+      {
+        ...base,
+        kind: "brush-interval",
+        dosing: "c1",
+        cause: "materialize",
+        intervalId: id,
+        applications: [
+          {
+            admissionId: id,
+            fromCell: 0,
+            toCell: controls.length,
+            totalCells: controls.length,
+          },
+        ],
+        admissionIds: [id],
+        completedAdmissionIds: [id],
+        inputIds: press ? [1] : [],
+        sealed: end,
+        changed: true,
+        revision: id,
+        bounds: [-1200, -1200, 1200, 1200],
+        at: elapsed + 0.2,
+        projectedAt: elapsed + 0.2,
+      },
+      {
+        ...base,
+        kind: "brush-content",
+        phase: "materialize",
+        level: 4,
+        revision: id,
+        authors: ideal.floor.map((floor: number, index: number) =>
+          Math.max(floor, (ideal.uncappedTotal[index] * elapsed) / durationMs),
+        ),
+        at: elapsed + 0.3,
+        cpuMs: 0.05,
+      },
+      {
+        ...base,
+        kind: "brush-frozen",
+        receiptId: id,
+        renderReceipt: receipt,
+        at: elapsed + 0.4,
+      },
+    );
+    // Reuse the existing valid resource/packet control. The counter fields are
+    // live in-flight slots, not a cumulative submission total.
+    for (const original of renderWorkEvents()) {
+      const event = structuredClone(original);
+      for (const key of [
+        "at",
+        "uploadStart",
+        "uploadedAt",
+        "submittedAt",
+        "sceneStart",
+        "preparationStart",
+      ])
+        if (event[key] !== undefined) event[key] += elapsed;
+      for (const key of ["uploadSpans", "compositionSpans"])
+        for (const span of event[key] ?? []) {
+          span.start += elapsed;
+          span.end += elapsed;
+        }
+      Object.assign(event, {
+        preparationFrame: id,
+        renderId: id,
+        revision: id,
+      });
+      if (event.kind === "height-terrain") event.packet = id;
+      if (event.kind === "height-draw") event.frame = id;
+      events.push(event);
+    }
+    events.push(
+      { ...base, kind: "submit", frame: id, revision: id, at: elapsed + 5 },
+      {
+        ...base,
+        kind: "brush-submit",
+        intervalId: id,
+        frame: id,
+        revision: id,
+        at: elapsed + 5.1,
+      },
+      {
+        ...base,
+        kind: "gpu-completed",
+        frame: id,
+        revision: id,
+        submittedAt: elapsed + 5,
+        renderReceipt: receipt,
+        at: elapsed + 7,
+      },
+      {
+        ...base,
+        kind: "brush-feedback",
+        receiptId: id,
+        revision: id,
+        renderReceipt: receipt,
+        accepted: true,
+        work,
+        at: elapsed + 7.1,
+      },
+      { ...base, kind: "frame", frame: id, cpuMs: 1, at: elapsed + 7.2 },
+    );
+    if (end)
+      events.push(
+        {
+          ...base,
+          kind: "brush-complete",
+          input: 2,
+          revision: id,
+          sequence: 1,
+          pendingCells: 0,
+          pendingPoints: 0,
+          pendingAdmissions: 0,
+          at: elapsed + 0.9,
+        },
+        {
+          ...base,
+          kind: "commit",
+          input: 2,
+          revision: id,
+          sequence: 1,
+          bounds: receipt.bounds,
+          at: elapsed + 1,
+        },
+        {
+          ...base,
+          kind: "edit-submit",
+          input: 2,
+          revision: id,
+          sequence: 1,
+          frame: id,
+          at: elapsed + 5.2,
+        },
+      );
+  }
+  events.sort((a, b) => a.at - b.at);
+  return {
+    points,
+    controls,
+    input,
+    events,
+    droppedEvents: 0,
+    softwareRendering: true,
+    before: {
+      sessionId: base.sessionId,
+      camera: { scale: 0.25 },
+      state: { mode: "raise", diameter: 512, amount: 20 },
+      samples: points.map(() => -100),
+      document: { sequence: 0, historyActions: 0 },
+    },
+    after: {
+      document: {
+        revision: durationMs / 20 + 1,
+        sequence: 1,
+        historyActions: 1,
+        active: false,
+        finishing: false,
+      },
+      state: { error: null },
+      samples: reconstructObservedHeight(
+        4,
+        points,
+        controls,
+        ideal.uncappedTotal,
+      ),
+    },
+    sixSecondImage: { capturedAt: 5900, pixels: [[140, 156, 112, 255]] },
+    finalImage: { pixels: points.map(() => [140, 156, 112, 255]) },
+    undone: points.map(() => -100),
+  };
+}
+
+function standardHeightScenario(evidence = standardHeightEvidence()) {
+  return {
+    id: STANDARD_HEIGHT_CASE.id,
+    kind: "edit",
+    samples: extractEditSamples(
+      evidence.events,
+      [1, 2],
+      evidence.before.sessionId,
+    ),
+    durationMs:
+      evidence.input.windows[0].points[0].at - evidence.input.start.at,
+    droppedEvents: 0,
+    standardHeight: evidence,
+  };
+}
+
+function standardHeightRun(
+  scenario: ReturnType<typeof standardHeightScenario>,
+) {
+  return {
+    schemaVersion: 6,
+    purpose: "probe",
+    selection: "collection",
+    mode: "lab",
+    errors: [],
+    diagnosticSelection: { scenarioId: STANDARD_HEIGHT_CASE.id },
+    functional: { checks: [] },
+    planned: [
+      { run: "probe-1", id: STANDARD_HEIGHT_CASE.id, state: "completed" },
+    ],
+    runs: [
+      {
+        id: "standard-control",
+        independentRunId: "probe-1",
+        instanceId: "one-process",
+        renderPackets: renderWorkEvents(),
+        renderDroppedEvents: 0,
+        scenarios: [scenario],
+      },
+    ],
+  };
+}
+
+describe("standard-rate held height is decisive in the central evaluator", () => {
+  it("requires one actual Down/Up and preserves their physical duration in native metadata", () => {
+    const scenario = standardHeightScenario(standardHeightEvidence(10_020));
+    expect(scenario.durationMs).toBe(10_020);
+    expect(
+      scenario.samples.map(
+        (sample: { inputKind: string | null }) => sample.inputKind,
+      ),
+    ).toEqual(["edit", "pointerup"]);
+    const result = evaluateRun(standardHeightRun(scenario));
+    expect(result.scopePassed).toBe(true);
+    const metadataIssues = (evaluation: ReturnType<typeof evaluateRun>) =>
+      evaluation.nativeAcceptance.unmetRequirements.filter(
+        (issue) =>
+          issue.scenario === STANDARD_HEIGHT_CASE.id &&
+          [
+            "INSUFFICIENT_SAMPLES",
+            "INSUFFICIENT_INPUT_KIND_SAMPLES",
+            "INSUFFICIENT_NAVIGATION_DURATION",
+          ].includes(issue.code),
+      );
+    expect(metadataIssues(result)).toEqual([]);
+    expect(evaluateStandardHeight(scenario.standardHeight).checks).toHaveLength(
+      10,
+    );
+    expect(STANDARD_HEIGHT_CASE.minimumRatio).toBe(0.9);
+    const short = { ...scenario, durationMs: 9999 };
+    expect(
+      metadataIssues(evaluateRun(standardHeightRun(short))),
+    ).toContainEqual(
+      expect.objectContaining({ code: "INSUFFICIENT_NAVIGATION_DURATION" }),
+    );
+    const missingUp = { ...scenario, samples: scenario.samples.slice(0, 1) };
+    expect(
+      metadataIssues(evaluateRun(standardHeightRun(missingUp))),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: "INSUFFICIENT_INPUT_KIND_SAMPLES",
+        inputKind: "pointerup",
+      }),
+    );
+  });
+
+  it("joins actual completed revisions and compares ten fixed seconds with uncapped C1", () => {
+    const result = evaluateStandardHeight(standardHeightEvidence());
+    expect(result.failures).toEqual([]);
+    expect(result).toMatchObject({
+      passed: true,
+      functionalPassed: true,
+      status: "PROXY_ONLY",
+      presentationProven: false,
+    });
+    expect(result.checks).toHaveLength(10);
+    expect(result.checks.at(-1)!.expected[0]).toBeCloseTo(98.3790185716, 8);
+    expect(result.completedGapsMs.p95).toBe(20);
+    const run = evaluateRun(standardHeightRun(standardHeightScenario()));
+    expect(run.failures).toEqual([]);
+    expect(run.status).toBe("BLOCKED");
+    expect(run.scopePassed).toBe(true);
+  });
+
+  it("does not credit missing Float64 controls as zero or use the candidate's admitted time as the denominator", () => {
+    const evidence = standardHeightEvidence();
+    expect(() =>
+      reconstructObservedHeight(
+        4,
+        evidence.points,
+        evidence.controls.slice(1),
+        evidence.controls.slice(1).map(() => 0),
+      ),
+    ).toThrow(/missing observed reconstruction control/);
+    for (const event of evidence.events)
+      if (event.kind === "brush-content")
+        event.authors = event.authors.map((value: number) => value / 8);
+    for (const event of evidence.events)
+      if (event.kind === "gpu-completed" || event.kind === "brush-feedback")
+        event.at += 400;
+    evidence.events.sort((a, b) => a.at - b.at);
+    const scenario = evaluateScenario(standardHeightScenario(evidence));
+    expect(scenario.failures).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "STANDARD_HEIGHT_RATE_TOO_LOW",
+          second: 10,
+          channel: "model",
+          probe: 0,
+        }),
+        expect.objectContaining({
+          code: "STANDARD_HEIGHT_RATE_TOO_LOW",
+          second: 10,
+          channel: "completed",
+          probe: 0,
+        }),
+        expect.objectContaining({ code: "STANDARD_HEIGHT_RESULT_STALL" }),
+      ]),
+    );
+    const aggregate = evaluateRun(
+      standardHeightRun(standardHeightScenario(evidence)),
+    );
+    expect(aggregate.status).toBe("FAIL");
+    expect(aggregate.failures).toContainEqual(
+      expect.objectContaining({
+        code: "STANDARD_HEIGHT_RATE_TOO_LOW",
+        scenario: STANDARD_HEIGHT_CASE.id,
+      }),
+    );
+  });
+
+  it("rejects a missing midpoint even when surrounding authors and final pixels claim success", () => {
+    const evidence = standardHeightEvidence();
+    const midpoint = evidence.controls.findIndex(
+      (point) => point[0] === 0 && point[1] === 0,
+    );
+    expect(midpoint).toBeGreaterThanOrEqual(0);
+    for (const event of evidence.events)
+      if (event.kind === "brush-content") event.authors[midpoint] = 0;
+    const result = evaluateScenario(standardHeightScenario(evidence));
+    expect(result.status).toBe("FAIL");
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({
+        code: "STANDARD_HEIGHT_RATE_TOO_LOW",
+        channel: "completed",
+        probe: 0,
+      }),
+    );
+  });
+
+  it("rejects an omitted required tile and separately the actual missing land pixel", () => {
+    const evidence = standardHeightEvidence();
+    // The x=512 probe belongs to the tile beginning there. A neighbouring
+    // tile ending at that edge cannot prove the probe's completed pixel.
+    for (const event of evidence.events)
+      if (event.renderReceipt)
+        event.renderReceipt.bounds = [[-1200, -1200, 512, 1200]];
+    const tile = evaluateScenario(standardHeightScenario(evidence));
+    expect(tile.status).toBe("FAIL");
+    expect(tile.failures).toContainEqual(
+      expect.objectContaining({
+        code: "STANDARD_HEIGHT_RENDER_COVERAGE_MISSING",
+      }),
+    );
+    const pixel = standardHeightEvidence();
+    pixel.finalImage.pixels[2] = [79, 131, 154, 255];
+    expect(
+      evaluateRun(standardHeightRun(standardHeightScenario(pixel))).failures,
+    ).toContainEqual(
+      expect.objectContaining({
+        code: "STANDARD_HEIGHT_FINAL_LAND_PIXELS_MISSING",
+        scenario: STANDARD_HEIGHT_CASE.id,
+      }),
+    );
+  });
+
+  it("rejects premature ACKs before the actual completed scene through the same central gate", () => {
+    const evidence = standardHeightEvidence();
+    const feedback = evidence.events.find(
+      (event) => event.kind === "brush-feedback",
+    )!;
+    feedback.at = 5.5;
+    evidence.events.sort((a, b) => a.at - b.at);
+    const result = evaluateRun(
+      standardHeightRun(standardHeightScenario(evidence)),
+    );
+    expect(result.status).toBe("FAIL");
+    expect(result.failures).toContainEqual(
+      expect.objectContaining({
+        code: "STANDARD_HEIGHT_PREMATURE_ACK",
+        scenario: STANDARD_HEIGHT_CASE.id,
+      }),
+    );
+  });
+
+  it("does not turn missing, changed or dropped standard evidence into a pass", () => {
+    const evidence = standardHeightEvidence();
+    evidence.droppedEvents = 1;
+    expect(
+      evaluateScenario(standardHeightScenario(evidence)).failures,
+    ).toContainEqual({ code: "STANDARD_HEIGHT_EVIDENCE_MISSING" });
+    const changed = standardHeightEvidence();
+    changed.before.state.amount = 4000;
+    expect(
+      evaluateScenario(standardHeightScenario(changed)).failures,
+    ).toContainEqual({ code: "STANDARD_HEIGHT_STIMULUS_CHANGED" });
+    expect(evaluateScenario({ id: STANDARD_HEIGHT_CASE.id }).status).toBe(
+      "FAIL",
+    );
   });
 });

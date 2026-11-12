@@ -808,6 +808,53 @@ describe("immutable, bounded surface packets", () => {
     expect(cached.size).toBeLessThanOrEqual(96);
   });
 
+  it("clips world-edge source reads while keeping the complete tile's lake sample lattice", () => {
+    const bounds: Bounds = [
+      -WORLD_LIMIT - 256,
+      WORLD_LIMIT - 256,
+      -WORLD_LIMIT + 256,
+      WORLD_LIMIT + 256,
+    ];
+    const inside: Bounds = [
+      -WORLD_LIMIT,
+      WORLD_LIMIT - 256,
+      -WORLD_LIMIT + 256,
+      WORLD_LIMIT,
+    ];
+    const doc = document({ watersEmpty: false });
+    doc.acceptWaterCoverage(inside, [
+      lake({
+        rings: [
+          [
+            [-WORLD_LIMIT + 32, WORLD_LIMIT - 224],
+            [-WORLD_LIMIT + 96, WORLD_LIMIT - 224],
+            [-WORLD_LIMIT + 96, WORLD_LIMIT - 160],
+            [-WORLD_LIMIT + 32, WORLD_LIMIT - 160],
+          ],
+        ],
+        terrain: emptyDependency(inside),
+      }),
+    ]);
+    const view = viewFor(doc);
+    view.sync(inside, 0.25);
+    const frame = view.freeze(bounds, 2)!;
+    const data = prepared(frame);
+    expect(data.lakeLayers).toBe(1);
+    expect(data.lake).toHaveLength(128 * 128 * 4);
+    const wet = Array.from({ length: 128 * 128 }, (_, index) => index).filter(
+      (index) => data.lake![index * 4 + 2] === 1,
+    );
+    // The unchanged 512-ft tile has 4-ft pixels: this 64-ft lake occupies
+    // x=72..87, y=8..23. Clipping the raster itself would move and stretch it.
+    expect(wet).toEqual(
+      Array.from(
+        { length: 16 * 16 },
+        (_, index) => (8 + Math.floor(index / 16)) * 128 + 72 + (index % 16),
+      ),
+    );
+    expect(view.freeze(bounds, 2)).toBe(frame);
+  });
+
   it("rejects an over-budget layer set instead of silently keeping only some lakes", () => {
     const doc = document();
     doc.acceptWaterCoverage(

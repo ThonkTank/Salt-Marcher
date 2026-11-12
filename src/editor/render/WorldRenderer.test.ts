@@ -265,6 +265,9 @@ vi.mock("./HeightField", () => ({
         get fallback() {
           return false;
         },
+        get hasActiveBasis() {
+          return state.preparedVersion >= 0;
+        },
         preparationState() {
           return {
             phase: state.needsPreparation ? "prepare" : "ready",
@@ -648,6 +651,59 @@ async function readyRenderer({
   };
   return { document, observation, world, field, frame, change, canvas };
 }
+
+it("preserves the known empty before-state when first local source updates coalesce", async () => {
+  const { world, field } = await readyRenderer();
+  const first = heightTilesFromControls(4, [[0, 0, 0.25]])[0];
+  const latest = heightTilesFromControls(4, [[0, 0, 0.5]])[0];
+  const apply = vi.spyOn(world["field"], "applySourcePatches");
+  world.updateSourcePatches([{ key: first.key, before: null, after: first }]);
+  world.updateSourcePatches([{ key: first.key, before: first, after: latest }]);
+  prepareSources(world);
+  expect(apply).toHaveBeenCalledWith([
+    { key: first.key, before: null, after: latest },
+  ]);
+  expect(field.sources.get(first.key)!.values).toEqual(latest.values);
+});
+
+it.each([
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+])(
+  "finishes world-corner navigation with boundary tiles at (%i, %i)",
+  async (x, y) => {
+    const { world, frame } = await readyRenderer({ width: 1016, height: 868 });
+    world.moveCamera({ x: x * 99_999_360, y: y * 99_999_360, scale: 0.25 });
+    world.updatePresentation(
+      [],
+      [],
+      heightOverviewKeys(world.sourceBounds(), world.presentationPower()),
+    );
+    world.refresh();
+    expect(
+      [...world["tiles"].values()].some(
+        (tile) =>
+          tile.visible &&
+          tile.bounds.some((value) => Math.abs(value) > 100_000_000),
+      ),
+    ).toBe(true);
+    for (
+      let step = 0;
+      step < 128 && world.inspectRegion(world.bounds()).status !== "current";
+      step++
+    )
+      frame();
+    expect(world.inspectRegion(world.bounds()).status).toBe("current");
+    expect(world.state()).toMatchObject({
+      queuedTiles: 0,
+      terrainPending: false,
+      graphicsFailed: false,
+    });
+    world.destroy();
+  },
+);
 
 it("requires the actual local draw after numeric data are ready and uploaded", async () => {
   const { world, field, frame } = await readyRenderer({ rendered: false });
@@ -1305,6 +1361,144 @@ it("holds delayed terrain until its deadline and does not mislabel a redraw", as
   now += 1;
   frame();
   expect(world.inspectRegion(update.bounds).status).toBe("current");
+});
+
+it("delays real feedback by 400 ms without certifying an earlier completed scene", async () => {
+  const { world, change, frame } = await readyRenderer();
+  let now = 1000;
+  vi.spyOn(performance, "now").mockImplementation(() => now);
+  world.fault = "delay-feedback";
+  const update = change([160, 160]);
+  const receipt = world.freezeRender(update.bounds)!;
+  frame();
+  expect(world.inspectRenderReceipt(receipt)).toBe("pending");
+  now += 399;
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("pending");
+  now++;
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+});
+
+it("prepares the next unsubmitted target while the previous terrain packet is still running", async () => {
+  const { world, field, change } = await readyRenderer({
+    width: 256,
+    height: 128,
+    x: 512,
+    y: 256,
+  });
+  const first = change([240, 240]);
+  const second = change([720, 240]);
+  const receipt = world.freezeRender([first.bounds, second.bounds])!;
+  let now = performance.now();
+  vi.spyOn(performance, "now").mockImplementation(() => now);
+  const targets = world["frozen"]!.targets;
+  expect(targets.length).toBeGreaterThan(1);
+  const prepared: string[] = [];
+  for (const { tile } of targets) {
+    vi.spyOn(tile.field, "hasActiveBasis", "get").mockReturnValue(false);
+    const original = tile.field.prepareStep.bind(tile.field);
+    vi.spyOn(tile.field, "prepareStep").mockImplementation(() => {
+      prepared.push(tile.key);
+      const result = original();
+      now += editorBudgets.preparationMsPerFrame + 0.1;
+      return result;
+    });
+  }
+  const gl = world.renderer.gl;
+  const wait = vi
+    .spyOn(gl, "clientWaitSync")
+    .mockReturnValue(gl.TIMEOUT_EXPIRED);
+  world.prepareFrame();
+  world.renderFrame(now);
+  expect(prepared).toHaveLength(1);
+  expect(world.state().terrainPending).toBe(true);
+  const submittedDraws = field.draws;
+  world.prepareFrame();
+  world.renderFrame(now);
+  expect(new Set(prepared).size).toBe(2);
+  expect(field.draws).toBe(submittedDraws);
+  expect(world.inspectRenderReceipt(receipt)).toBe("pending");
+  wait.mockReturnValue(gl.ALREADY_SIGNALED);
+  for (
+    let i = 0;
+    i < 16 && world.inspectRenderReceipt(receipt) === "pending";
+    i++
+  ) {
+    world.pollCompletion();
+    world.prepareFrame();
+    world.renderFrame(now);
+  }
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+});
+
+it("submits a warm local influence together after bounded preparation crosses a frame", async () => {
+  const { world, field, change } = await readyRenderer({
+    width: 256,
+    height: 128,
+    x: 512,
+    y: 256,
+  });
+  const first = change([240, 240]);
+  const second = change([720, 240]);
+  const receipt = world.freezeRender([first.bounds, second.bounds])!;
+  let now = performance.now();
+  vi.spyOn(performance, "now").mockImplementation(() => now);
+  const targets = world["frozen"]!.targets;
+  for (const { tile } of targets) {
+    const original = tile.field.prepareStep.bind(tile.field);
+    vi.spyOn(tile.field, "prepareStep").mockImplementation(() => {
+      const result = original();
+      now += editorBudgets.preparationMsPerFrame + 0.1;
+      return result;
+    });
+  }
+  const before = field.draws;
+  for (let i = 0; i < targets.length - 1; i++) {
+    world.prepareFrame();
+    world.renderFrame(now);
+    expect(field.draws).toBe(before);
+    expect(world.state().terrainPending).toBe(false);
+  }
+  world.prepareFrame();
+  world.renderFrame(now);
+  expect(field.draws - before).toBe(targets.length);
+  expect(world.state().gpuSubmissions).toBe(2);
+  world.pollCompletion();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
+});
+
+it("withholds the full receipt when one required tile fails to draw", async () => {
+  const { world, change, frame, observation } = await readyRenderer({
+    width: 256,
+    height: 128,
+    x: 512,
+    y: 256,
+  });
+  const first = change([240, 240]);
+  const second = change([720, 240]);
+  const receipt = world.freezeRender([first.bounds, second.bounds])!;
+  const missing = world["frozen"]!.targets.at(-1)!.tile;
+  const omitted = vi.spyOn(missing.field, "drawDirty").mockReturnValue(0);
+  frame();
+  expect(world.inspectRenderReceipt(receipt)).toBe("pending");
+  expect(
+    observation
+      .read()
+      .filter(
+        (event) =>
+          event.kind === "gpu-completed" && event.renderReceipt === receipt,
+      ),
+  ).toHaveLength(0);
+  omitted.mockRestore();
+  for (
+    let i = 0;
+    i < 16 && world.inspectRenderReceipt(receipt) === "pending";
+    i++
+  )
+    frame();
+  expect(world.inspectRenderReceipt(receipt)).toBe("complete");
 });
 
 it("holds terrain during pointerup control then displays the already accepted dose after release", async () => {
@@ -3766,12 +3960,16 @@ it("bounds unseen held effect locally during GPU timeout without dropping a newl
       work.effectLimit + 1e-9,
     );
   }
+  expect(controller.state.heightLimited).toBe(true);
+  expect(controller.state.message).toContain("begrenzt");
   const held = controller.observe([[-48, -48]]).samples;
   frame(1000);
   expect(controller.observe([[-48, -48]]).samples).toEqual(held);
   advance(16);
   pointer("pointermove", 56, 20);
   pointer("pointerup", 56, 20);
+  expect(controller.state.heightLimited).toBe(false);
+  expect(controller.state.message).not.toContain("begrenzt");
   await drainAction();
   const complete = controller.observe([
     [0, -48],
@@ -3782,6 +3980,8 @@ it("bounds unseen held effect locally during GPU timeout without dropping a newl
   expect(complete.document!.historyActions).toBe(1);
   wait.mockReturnValue(gl.ALREADY_SIGNALED);
   await drainView();
+  expect(controller.state.heightLimited).toBe(false);
+  expect(controller.state.message).not.toContain("begrenzt");
   expect(
     controller.observe([
       [0, -48],
@@ -4266,6 +4466,140 @@ it("R3 prunes cold tiles only after their last scene fence ends", async () => {
   for (const destroy of destructors) expect(destroy).toHaveBeenCalledOnce();
   expect(world.state().tiles).toBeLessThanOrEqual(editorBudgets.retainedTiles);
 });
+
+it.each(
+  (["CPU", "GPU"] as const).flatMap((resource) =>
+    (["cold", "GPU-pinned", "frozen-pinned"] as const).map((retention) => ({
+      resource,
+      retention,
+    })),
+  ),
+)(
+  "R3 keeps the $resource cap through A → B → A preparation with a $retention tile",
+  async ({ resource, retention }) => {
+    const { world } = await readyRenderer({ width: 512, height: 512 });
+    const tiles = [...world["tiles"].values()];
+    const [a, b, cold] = tiles.filter((tile) => tile.visible);
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    expect(cold).toBeDefined();
+
+    // Use real scene/frozen ownership. The selected tile becomes offscreen only
+    // after its owner has captured it, so it is an eviction candidate by location
+    // but cannot be released while that owner still needs its representation.
+    if (retention === "GPU-pinned") {
+      world.redraw();
+      world.renderFrame(performance.now());
+      expect(
+        world["pendingGpu"].some((pending) =>
+          pending.tiles.some((reference) => reference.tile === cold),
+        ),
+      ).toBe(true);
+    } else if (retention === "frozen-pinned") {
+      world.invalidate(cold.bounds);
+      expect(world.freezeRender(cold.bounds)).not.toBeNull();
+      expect(
+        world["frozen"]!.targets.some((target) => target.tile === cold),
+      ).toBe(true);
+    }
+    for (const tile of tiles) tile.visible = true;
+    cold.visible = false;
+
+    const MiB = 1024 * 1024;
+    const limit =
+      resource === "CPU"
+        ? editorBudgets.presentationBytes
+        : editorBudgets.gpuBytes;
+    const baseBytes = limit - 64 * MiB;
+    let aBytes = 0;
+    let bBytes = 0;
+    let coldBytes = 16 * MiB;
+    const retainedBytes = 8 * MiB;
+    const actualBytes = () => baseBytes + aBytes + bBytes + coldBytes;
+    const originalMetrics = world["field"].metrics();
+    vi.spyOn(world["field"], "metrics").mockImplementation(() => ({
+      ...originalMetrics,
+      cpuBytes: resource === "CPU" ? actualBytes() - retainedBytes : 0,
+      gpuBytes: resource === "GPU" ? actualBytes() : 0,
+    }));
+    vi.spyOn(
+      world as unknown as { retainedBufferBytes(): number },
+      "retainedBufferBytes",
+    ).mockReturnValue(retainedBytes);
+    const assertWithinBudgets = () => {
+      const state = world.state();
+      expect(state.presentationBytes).toBeLessThanOrEqual(
+        editorBudgets.presentationBytes,
+      );
+      expect(state.gpuBytes).toBeLessThanOrEqual(editorBudgets.gpuBytes);
+      expect(
+        resource === "CPU" ? state.presentationBytes : state.gpuBytes,
+      ).toBe(actualBytes());
+    };
+    const destroy = cold.field.destroy.bind(cold.field);
+    const coldDestroy = vi
+      .spyOn(cold.field, "destroy")
+      .mockImplementation(() => {
+        coldBytes = 0;
+        destroy();
+      });
+    // A parked generator's existing allocations AND preparation reservation are
+    // part of the inventory. These counters model that independent ownership;
+    // the reservation gate may neither forget them nor allocate past the cap.
+    const prepareA = vi.spyOn(a.field, "prepareStep").mockImplementation(() => {
+      aBytes += 16 * MiB;
+      assertWithinBudgets();
+      return true;
+    });
+    const prepareB = vi.spyOn(b.field, "prepareStep").mockImplementation(() => {
+      bBytes += 24 * MiB;
+      assertWithinBudgets();
+      return true;
+    });
+    const reserve = world["preparationReservation"]();
+    const step = (tile: typeof a, bytes: number) => {
+      const accepted = reserve(tile, {
+        cpuBytes: resource === "CPU" ? bytes : 0,
+        gpuBytes: resource === "GPU" ? bytes : 0,
+      });
+      if (accepted) tile.field.prepareStep();
+      assertWithinBudgets();
+      return accepted;
+    };
+    assertWithinBudgets();
+    expect(actualBytes()).toBe(limit - 48 * MiB);
+    expect(step(a, 32 * MiB)).toBe(true);
+    expect(actualBytes()).toBe(limit - 32 * MiB);
+
+    // A's conservative 32 MiB allowance plus B's 24 MiB no longer fits, but
+    // rebasing on A's still-held 16 MiB permits B without evicting anything.
+    expect(step(b, 24 * MiB)).toBe(true);
+    expect(actualBytes()).toBe(limit - 8 * MiB);
+    expect(coldDestroy).not.toHaveBeenCalled();
+    expect(prepareA).toHaveBeenCalledOnce();
+    expect(prepareB).toHaveBeenCalledOnce();
+
+    // A resumes after that rebase. Its next 16 MiB requires a real release;
+    // a cleared cached allowance must not grant it uncharged memory.
+    expect(step(a, 16 * MiB)).toBe(retention === "cold");
+    if (retention !== "cold") {
+      expect(prepareA).toHaveBeenCalledOnce();
+      expect(coldDestroy).not.toHaveBeenCalled();
+      expect(world["tiles"].get(cold.key)).toBe(cold);
+      expect(actualBytes()).toBe(limit - 8 * MiB);
+      if (retention === "GPU-pinned") world.pollCompletion();
+      else world["abandonFrozen"]();
+      expect(step(a, 16 * MiB)).toBe(true);
+    }
+    expect(prepareA).toHaveBeenCalledTimes(2);
+    expect(prepareB).toHaveBeenCalledOnce();
+    expect(coldDestroy).toHaveBeenCalledOnce();
+    expect(world["tiles"].has(cold.key)).toBe(false);
+    expect(actualBytes()).toBe(limit - 8 * MiB);
+    assertWithinBudgets();
+    world.destroy();
+  },
+);
 
 it("R3 retains every scene resource after a draw throws until its submitted prefix ends", async () => {
   const { world } = await readyRenderer({ width: 512, height: 512 });

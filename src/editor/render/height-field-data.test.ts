@@ -148,6 +148,35 @@ function sampleSeparablePacked(
 }
 
 describe("retained numeric height sources", () => {
+  it("refreshes values and seam halos without replacing a retained page table", () => {
+    const atlas = new HeightSourceAtlas();
+    const initial = [source(4, -1, -1, 100), source(4, 0, 0, 200)];
+    atlas.updateSources(initial);
+    const bounds: Bounds = [-256, -256, 256, 256];
+    const descriptor = atlas.descriptor(bounds, 2, { minimum: 4, maximum: 4 });
+    const axes = createHeightAxes(bounds, 2, descriptor.levels);
+    const table = descriptor.data.slice();
+    const updated = [source(4, -1, -1, 101), source(4, 0, 0, 205)];
+    atlas.updateSources(updated);
+    expect(atlas.topologyVersion).toBe(descriptor.topologyVersion);
+    for (const _step of atlas.refreshPagesSteps(descriptor.pages)) {
+    }
+    expect(descriptor.data).toEqual(table);
+    const canonical = prepareHeightSampler(updated);
+    for (const [x, y] of [
+      [0, 0],
+      [63, 63],
+      [64, 65],
+      [127, 127],
+    ])
+      expect(samplePacked(atlas, descriptor, x, y, axes)).toBeCloseTo(
+        canonical(-254 + x * 4, -254 + y * 4),
+        9,
+      );
+    atlas.updateSources([source(4, -1, 0, 300)]);
+    expect(atlas.topologyVersion).not.toBe(descriptor.topologyVersion);
+  });
+
   it("reconstructs source seams and ghost support in negative coordinates", () => {
     const tiles = [
       source(0, -1, -1, (x, y) => 170 + x / 3 - y / 7),

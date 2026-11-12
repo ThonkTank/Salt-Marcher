@@ -557,8 +557,12 @@ export class DerivedSurfaceView {
     if (this.disposed) return null;
     const key = `${this.geometryVersion}:${power}:${bounds.join(":")}`;
     if (this.frames.has(key)) return this.frames.get(key)!;
-    const waters = this.document.isWaterRegionReady(bounds)
-      ? this.document.waterSourcesInBounds(bounds)
+    // Display tiles keep their complete lattice across the finite world edge.
+    // Only the document query is clipped; raster samples and local geometry
+    // below must retain the original tile origin and span.
+    const sourceBounds = clipBounds(bounds);
+    const waters = this.document.isWaterRegionReady(sourceBounds)
+      ? this.document.waterSourcesInBounds(sourceBounds)
       : [];
     const lakes = waters.filter((source) => source.kind === "lake");
     const lakeLevels = [...new Set(lakes.map((lake) => lake.level))].sort(

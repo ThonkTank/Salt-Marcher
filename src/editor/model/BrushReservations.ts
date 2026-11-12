@@ -1,10 +1,14 @@
 import {
   HEIGHT_MAX_ACTION_TILES,
   HEIGHT_TILE_CELLS,
+  HEIGHT_TILE_SIZE,
   WORLD_LIMIT,
   assertLevel,
+  clipBounds,
   heightSpacing,
   parseHeightTileKey,
+  unionBounds,
+  type Bounds,
 } from "./types";
 
 const MAX_CELLS = 100_000;
@@ -32,6 +36,8 @@ export interface BrushReservation {
 
 export interface BrushEffectReceipt extends BrushReservationContext {
   readonly id: number;
+  /** Full cubic support of exactly this receipt's materialized effect. */
+  readonly regions: readonly Bounds[];
 }
 
 export type BrushReservationResult =
@@ -67,6 +73,8 @@ export interface BrushMaterialization {
 
 interface FrozenEffect {
   receipt: BrushEffectReceipt;
+  /** Sorted canonical tile/control addresses, not the gesture's historical cells. */
+  cells: Uint32Array;
   applied: Float64Array;
 }
 
@@ -116,6 +124,8 @@ export class BrushReservations {
   private readonly maxBuffers: number;
   private readonly applied: Float64Array;
   private readonly reserved: Float64Array;
+  /** Only currently materialized, unacknowledged controls need a render proof. */
+  private readonly unconfirmed = new Set<number>();
   private readonly tiles = new Map<string, TileIndex>();
   private readonly bySlot: TileIndex[] = [];
   private readonly pending = new Map<number, ReservedEffect>();
@@ -169,7 +179,8 @@ export class BrushReservations {
     for (const tile of this.tiles.values()) bytes += tile.cells.byteLength;
     for (const entry of this.pending.values())
       bytes += entry.cells.byteLength + entry.amounts.byteLength;
-    for (const entry of this.frozen.values()) bytes += entry.applied.byteLength;
+    for (const entry of this.frozen.values())
+      bytes += entry.cells.byteLength + entry.applied.byteLength;
     return bytes;
   }
 
@@ -179,6 +190,7 @@ export class BrushReservations {
       tiles: this.tiles.size,
       reservations: this.pending.size,
       receipts: this.frozen.size,
+      unconfirmedCells: this.unconfirmed.size,
       bufferBytes: this.bufferBytes,
       peakBufferBytes: this.peakBytes,
       maskBytes: 0,
@@ -328,6 +340,7 @@ export class BrushReservations {
       });
       this.reserved[cell] = Math.max(0, this.reserved[cell] - entry.amounts[i]);
       this.applied[cell] += entry.amounts[i];
+      this.unconfirmed.add(address);
     }
     entry.cursor = toCell;
     const complete = toCell === entry.count;
@@ -335,18 +348,53 @@ export class BrushReservations {
     return { fromCell, toCell, totalCells: entry.count, complete };
   }
 
-  /** Freeze applied effect only. A pending reservation is never drawn by this receipt. */
+  /** Freeze the sparse applied vector and its support together; never reserved work. */
   freeze(): BrushEffectReceipt | null {
-    const bytes = this.bufferBytes + this.cellCount * 8;
+    const bytes = this.bufferBytes + this.unconfirmed.size * 12;
     if (this.frozen.size === MAX_RECEIPTS || bytes > this.maxBuffers)
       return null;
-    const receipt = Object.freeze({ ...this.context, id: this.nextReceipt++ });
-    this.frozen.set(receipt.id, {
-      receipt,
-      applied: this.applied.slice(0, this.cellCount),
+    const cells = Uint32Array.from(this.unconfirmed).sort();
+    const applied = new Float64Array(cells.length);
+    const regions = new Map<number, Bounds>();
+    const step = heightSpacing(this.level);
+    for (let i = 0; i < cells.length; i++) {
+      const address = cells[i];
+      const slot = Math.floor(address / HEIGHT_TILE_CELLS);
+      const tile = this.bySlot[slot];
+      const index = address % HEIGHT_TILE_CELLS;
+      applied[i] = this.applied[tile.cells[index] - 1];
+      const x =
+        (tile.tileX * HEIGHT_TILE_SIZE + (index % HEIGHT_TILE_SIZE)) * step;
+      const y =
+        (tile.tileY * HEIGHT_TILE_SIZE + Math.floor(index / HEIGHT_TILE_SIZE)) *
+        step;
+      const support = clipBounds([
+        x - 2 * step,
+        y - 2 * step,
+        x + 2 * step,
+        y + 2 * step,
+      ]);
+      const old = regions.get(slot);
+      regions.set(slot, old ? unionBounds(old, support) : support);
+    }
+    const receipt = Object.freeze({
+      ...this.context,
+      id: this.nextReceipt++,
+      regions: Object.freeze(
+        [...regions.values()].map((bounds) => Object.freeze(bounds) as Bounds),
+      ),
     });
+    this.frozen.set(receipt.id, { receipt, cells, applied });
     this.peakBytes = Math.max(this.peakBytes, bytes);
     return receipt;
+  }
+
+  /** A failed render acquisition releases its receipt slot, never any effect. */
+  discard(receipt: BrushEffectReceipt): boolean {
+    const frozen = this.frozen.get(receipt.id);
+    if (!frozen || frozen.receipt !== receipt) return false;
+    this.frozen.delete(receipt.id);
+    return true;
   }
 
   /** A matching, complete external draw proof may release only its frozen vector. */
@@ -361,13 +409,35 @@ export class BrushReservations {
     )
       return false;
     for (let i = 0; i < frozen.applied.length; i++) {
+      const address = frozen.cells[i];
+      const tile = this.bySlot[Math.floor(address / HEIGHT_TILE_CELLS)];
+      const cell = tile.cells[address % HEIGHT_TILE_CELLS] - 1;
       const confirmed = frozen.applied[i];
-      this.applied[i] = Math.max(0, this.applied[i] - confirmed);
-      // Keep later receipts relative to the remaining outstanding effect. This
-      // avoids lifetime cumulative counters and their cancellation error.
-      for (const later of this.frozen.values())
-        if (later.receipt.id > receipt.id && i < later.applied.length)
-          later.applied[i] = Math.max(0, later.applied[i] - confirmed);
+      this.applied[cell] = Math.max(0, this.applied[cell] - confirmed);
+      if (this.applied[cell] === 0) this.unconfirmed.delete(address);
+    }
+    // Receipts contain different sparse sets. Merge sorted addresses rather
+    // than treating their array positions as the same author coefficient.
+    // Remaining vectors stay relative, avoiding cumulative cancellation error.
+    for (const later of this.frozen.values()) {
+      if (later.receipt.id <= receipt.id) continue;
+      let before = 0;
+      for (
+        let i = 0;
+        i < later.cells.length && before < frozen.cells.length;
+        i++
+      ) {
+        while (
+          before < frozen.cells.length &&
+          frozen.cells[before] < later.cells[i]
+        )
+          before++;
+        if (frozen.cells[before] === later.cells[i])
+          later.applied[i] = Math.max(
+            0,
+            later.applied[i] - frozen.applied[before],
+          );
+      }
     }
     this.acknowledgedReceipt = receipt.id;
     for (const id of this.frozen.keys())

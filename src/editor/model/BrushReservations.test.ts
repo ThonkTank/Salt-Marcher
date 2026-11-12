@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { splineWeights } from "./height";
-import { HEIGHT_TILE_CELLS, heightTileKey } from "./types";
+import {
+  HEIGHT_TILE_CELLS,
+  WORLD_LIMIT,
+  heightControlAddress,
+  heightTileKey,
+} from "./types";
 import {
   BrushReservations,
   type BrushControlEffect,
@@ -102,6 +107,117 @@ describe("R1 local applied/reserved effect proof", () => {
     expect(state.effectAt(key, 0).total).toBeCloseTo(0.4, 14);
     expect(state.acknowledge(first)).toBe(false);
     expect(state.acknowledge(second)).toBe(false);
+  });
+
+  it("freezes the full spline support of applied controls, excluding still-reserved controls", () => {
+    const state = new BrushReservations({ rate: 20, level: 4, context });
+    const left = heightTileKey(4, -1, 0);
+    const remote = heightTileKey(4, 1, 1);
+    const ticket = reserve(state, [
+      effect(63, 0.6, left),
+      effect(0, 0.4, remote),
+    ]);
+    state.materializeSlice(ticket, 1);
+    const first = state.freeze()!;
+    // Level 4 has an 80-ft grid. The control at (-80,0) affects +/-160 ft,
+    // including the neighbouring author tile across x=0.
+    expect(first.regions).toEqual([[-240, -160, 80, 160]]);
+    expect(state.usage.unconfirmedCells).toBe(1);
+    expect(() => {
+      first.regions[0][2] = 0;
+    }).toThrow();
+    expect(
+      state.acknowledge({ ...first, regions: [[-240, -160, 0, 160]] }),
+    ).toBe(false);
+    state.materialize(ticket);
+    expect(state.acknowledge(first)).toBe(true);
+    expect(state.effectAt(remote, 0)).toEqual({
+      applied: 0.4,
+      reserved: 0,
+      total: 0.4,
+    });
+    const second = state.freeze()!;
+    expect(second.regions).toEqual([[4960, 4960, 5280, 5280]]);
+    expect(state.acknowledge(second)).toBe(true);
+    expect(state.usage.unconfirmedCells).toBe(0);
+  });
+
+  it.each([20, -20])(
+    "matches overlapping sparse receipts by author address at rate %i",
+    (rate) => {
+      const state = ledger(rate);
+      const sign = Math.sign(rate);
+      state.materialize(reserve(state, [effect(10, sign * 0.2)]));
+      const first = state.freeze()!;
+      // The newer snapshot inserts a lower address before the old control.
+      state.materialize(
+        reserve(state, [effect(1, sign * 0.3), effect(10, sign * 0.2)]),
+      );
+      const second = state.freeze()!;
+      state.materialize(reserve(state, [effect(1, sign * 0.1)]));
+      reserve(state, [effect(50, sign * 0.2)]);
+      expect(state.acknowledge(first)).toBe(true);
+      expect(state.effectAt(key, 10).applied).toBeCloseTo(0.2, 14);
+      expect(state.acknowledge(second)).toBe(true);
+      expect(state.effectAt(key, 10).total).toBe(0);
+      expect(state.effectAt(key, 1).applied).toBeCloseTo(0.1, 14);
+      expect(state.effectAt(key, 50)).toEqual({
+        applied: 0,
+        reserved: 0.2,
+        total: 0.2,
+      });
+      expect(state.usage.unconfirmedCells).toBe(1);
+    },
+  );
+
+  it("releases failed render acquisitions without acknowledging their effect or exhausting receipt slots", () => {
+    const state = ledger();
+    state.materialize(reserve(state, [effect(0, 0.6)]));
+    const pending = reserve(state, [effect(1, 0.2)]);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const receipt = state.freeze()!;
+      expect(receipt.regions).toEqual([[-10, -10, 10, 10]]);
+      expect(state.discard({ ...receipt })).toBe(false);
+      expect(state.discard(receipt)).toBe(true);
+      expect(state.discard(receipt)).toBe(false);
+      expect(state.acknowledge(receipt)).toBe(false);
+      expect(state.usage.receipts).toBe(0);
+      expect(state.effectAt(key, 0).applied).toBe(0.6);
+      expect(state.effectAt(key, 1).reserved).toBe(0.2);
+    }
+    expect(state.materialize(pending)).toBe(true);
+    expect(state.acknowledge(state.freeze()!)).toBe(true);
+    expect(state.usage.unconfirmedCells).toBe(0);
+  });
+
+  it("keeps receipt buffers and support local after a long already-drawn stroke", () => {
+    const state = ledger();
+    for (let tileX = 0; tileX < 50; tileX++) {
+      state.materialize(
+        reserve(state, [effect(0, 0.5, heightTileKey(0, tileX, 0))]),
+      );
+      expect(state.acknowledge(state.freeze()!)).toBe(true);
+    }
+    state.materialize(
+      reserve(state, [effect(0, 0.5, heightTileKey(0, 49, 0))]),
+    );
+    const before = state.usage.bufferBytes;
+    const receipt = state.freeze()!;
+    expect(state.usage.cells).toBe(50);
+    expect(state.usage.unconfirmedCells).toBe(1);
+    expect(state.usage.bufferBytes - before).toBe(12);
+    expect(receipt.regions).toEqual([[15670, -10, 15690, 10]]);
+  });
+
+  it("clips full coefficient support only at the world boundary", () => {
+    const state = new BrushReservations({ rate: 20, level: 4, context });
+    const control = heightControlAddress(4, WORLD_LIMIT / 80, 0);
+    state.materialize(
+      reserve(state, [effect(control.index, 0.5, control.key)]),
+    );
+    expect(state.freeze()!.regions).toEqual([
+      [WORLD_LIMIT - 160, -160, WORLD_LIMIT, 160],
+    ]);
   });
 
   it("handles newer-before-older receipts without freeing the same effect twice", () => {
@@ -251,6 +367,7 @@ describe("R1 local applied/reserved effect proof", () => {
     });
     const ticket = reserve(state, [effect(0, 0.1), effect(1, 0.1)]);
     expect(state.usage.bufferBytes).toBe(maxBufferBytes);
+    state.materializeSlice(ticket, 1);
     expect(state.freeze()).toBeNull();
     expect(state.reserve([effect(2, 0.1)])).toEqual({
       accepted: false,

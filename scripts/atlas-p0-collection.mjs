@@ -10,7 +10,9 @@ import {
   R4_REQUIREMENTS,
   directionPoints,
   directionProbes,
+  STANDARD_HEIGHT_CASE,
 } from "./atlas-p0-evaluate.mjs";
+import { referenceHeightControls } from "./atlas-p0-brush-reference.mjs";
 import {
   collectGpuTimers,
   installGpuTimers,
@@ -48,6 +50,13 @@ const cutoff = (state) =>
 // actual raster/color quantization under bounded time-based painting. Geometry,
 // existing input programs, latency gates and pixel checks stay unchanged; no warmup.
 const specs = [
+  {
+    id: STANDARD_HEIGHT_CASE.id,
+    kind: "edit",
+    diameter: 512,
+    amount: 20,
+    standardHeight: true,
+  },
   { id: "M03-height-small", kind: "edit", diameter: 16, amount: 4000 },
   { id: "M03-height-large", kind: "edit", diameter: 256, amount: 4000 },
   { id: "M03-height-max", kind: "edit", diameter: 512, amount: 4000 },
@@ -963,6 +972,176 @@ async function collectBlockedInputs(session, spec) {
   return { cases };
 }
 
+/** The ordinary 512-pixel hold, exercised through real visible controls. */
+export async function collectStandardHeight(session, scenario = {}) {
+  const { page } = session;
+  await button(page, "Neu");
+  await exact(page);
+  await brush(
+    page,
+    STANDARD_HEIGHT_CASE.diameter,
+    STANDARD_HEIGHT_CASE.rateFtPerSecond,
+  );
+  await page.getByLabel("Raster anzeigen").uncheck();
+  await exact(page);
+  const canvas = await page.locator("canvas").boundingBox();
+  if (!canvas) throw new Error("Standard-height canvas unavailable");
+  await page.mouse.move(
+    canvas.x + canvas.width / 2,
+    canvas.y + canvas.height / 2,
+  );
+  await page.waitForFunction(() => {
+    const o = window.atlasObserve([], { events: false });
+    if (o.state.error) throw new Error(o.state.error);
+    return o.readiness.ready && !o.document.active;
+  });
+  const pointer = (await stateSnapshot(page)).pointer;
+  const points = [
+    pointer,
+    [pointer[0] - 512, pointer[1]],
+    [pointer[0] + 512, pointer[1]],
+    [pointer[0], pointer[1] - 512],
+    [pointer[0], pointer[1] + 512],
+  ];
+  const controls = referenceHeightControls(points, 4);
+  await page.evaluate(
+    (points) => window.atlasContentProbes({ level: 4, points }),
+    controls,
+  );
+  const before = await stateSnapshot(page, points);
+  const evidence = {
+    points,
+    controls,
+    before,
+    softwareRendering:
+      typeof session.instance?.gpu?.renderer === "string"
+        ? /swiftshader|llvmpipe|software/i.test(session.instance.gpu.renderer)
+        : null,
+    input: null,
+    events: [],
+    droppedEvents: 0,
+    sixSecondImage: null,
+    finalImage: null,
+    undone: null,
+  };
+  scenario.standardHeight = evidence;
+  let pressed = false;
+  let timer;
+  try {
+    timer = await installGpuTimers(page, true, { coverage: "terrain-packets" });
+    await page.mouse.down();
+    pressed = true;
+    const press = await page.evaluate(
+      (sinceEvent) =>
+        window
+          .atlasObserve([], { sinceEvent })
+          .events.find((event) => event.kind === "brush-start"),
+      before.eventCount,
+    );
+    if (!press) throw new Error("Standard-height pointerdown was not admitted");
+    const waitUntil = async (elapsed) => {
+      const now = await page.evaluate(() => performance.now());
+      await page.waitForTimeout(Math.max(0, press.inputAt + elapsed - now));
+    };
+    // Begin early enough that the independent capture itself completes within
+    // the six-second deadline. Content must already be visible, not fabricated
+    // from document values or a later post-Up image.
+    await waitUntil(5800);
+    evidence.sixSecondImage = await capture(
+      session,
+      "standard-height-six-seconds",
+      [points[0]],
+    );
+    evidence.sixSecondImage.capturedAt = await page.evaluate(() =>
+      performance.now(),
+    );
+    await waitUntil(10_025);
+    await page.mouse.up();
+    pressed = false;
+    await page.waitForFunction(
+      () => {
+        const o = window.atlasObserve([], { events: false });
+        if (o.state.error) throw new Error(o.state.error);
+        return (
+          !o.document.active &&
+          !o.document.finishing &&
+          !o.state.loading &&
+          o.renderer.submittedRevision === o.document.revision &&
+          o.renderer.lastCompletedFrame === o.renderer.lastSubmittedFrame &&
+          o.renderer.lastCompletedViewGeneration === o.renderer.viewGeneration
+        );
+      },
+      null,
+      { timeout: 30_000 },
+    );
+    evidence.finalImage = await capture(
+      session,
+      "standard-height-ten-seconds",
+      points,
+    );
+    const after = await snapshot(page, points, {
+      sinceEvent: before.eventCount,
+    });
+    const ends = after.events.filter(
+      (event) =>
+        event.kind === "brush-end" && event.gestureId === press.gestureId,
+    );
+    const end = ends[0];
+    if (ends.length !== 1)
+      throw new Error("Standard-height release evidence missing");
+    scenario.durationMs = end.inputAt - press.inputAt;
+    // A single physical Down -> Up program. Its uncapped reference is independent
+    // of the candidate's RAF cadence, discarded time and admission accounting.
+    evidence.input = {
+      brush: { level: 4, radius: 1024, amount: 20 },
+      start: { point: press.point, at: press.inputAt, input: press.input },
+      windows: [
+        {
+          at: end.endAt,
+          points: [{ point: press.point, at: end.inputAt, input: end.input }],
+          end: true,
+        },
+      ],
+    };
+    evidence.after = {
+      samples: after.samples,
+      document: after.document,
+      state: after.state,
+    };
+    evidence.events = after.events;
+    evidence.droppedEvents = after.droppedEvents;
+    scenario.samples = extractEditSamples(
+      after.events,
+      [press.input, end.input],
+      before.sessionId,
+    );
+    scenario.droppedEvents = after.droppedEvents;
+    if (timer.enabled) {
+      const gpu = await collectGpuTimers(page);
+      const { observation: _observation, ...gpuTimers } = gpu;
+      evidence.gpuTimers = gpuTimers;
+      timer = null;
+    } else evidence.gpuTimers = timer;
+    await button(page, /Rückgängig/);
+    await exact(page);
+    evidence.undone = (await stateSnapshot(page, points)).samples;
+    scenario.attempts = [{ attempt: 0, inputIds: [press.input, end.input] }];
+  } finally {
+    if (pressed) await page.mouse.up().catch(() => {});
+    if (!evidence.events.length) {
+      const after = await snapshot(page, points, {
+        sinceEvent: before.eventCount,
+      });
+      evidence.events = after.events;
+      evidence.droppedEvents = after.droppedEvents;
+    }
+    // Timer instrumentation is ordinary diagnostic observation. Dispose through
+    // its existing lifecycle, even if the measured gesture failed.
+    if (timer?.enabled) await collectGpuTimers(page).catch(() => {});
+  }
+  return evidence;
+}
+
 /** Collect edit/cold cases, optionally one diagnostic case. M01 belongs to its runner. */
 export async function collectRepeatedScenarios(context) {
   const selectedSpecs =
@@ -991,8 +1170,9 @@ export async function collectRepeatedScenarios(context) {
       },
       samples: [],
       droppedEvents: 0,
-      requestedAttempts:
-        context.purpose === "acceptance"
+      requestedAttempts: spec.standardHeight
+        ? 1
+        : context.purpose === "acceptance"
           ? spec.kind === "cold"
             ? 34
             : 100
@@ -1018,7 +1198,9 @@ export async function collectRepeatedScenarios(context) {
       session.instance.scenarios.push(scenario);
       await exact(session.page, 5000);
       await session.page.getByLabel("Raster anzeigen").uncheck();
-      if (spec.kind === "cold") {
+      if (spec.standardHeight) {
+        await collectStandardHeight(session, scenario);
+      } else if (spec.kind === "cold") {
         await collectCold(context, session, spec, scenario);
         scenario.blockedInputs = await collectBlockedInputs(session, spec);
       } else await collectWarm(context, session, spec, scenario);

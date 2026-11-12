@@ -260,9 +260,9 @@ interface BrushContinuation {
   invalidated: boolean;
   lastAdmissionId: number;
   reservedRegions: Map<string, Bounds>;
-  appliedRegions: Map<string, Bounds>;
   reservedBounds: Bounds | null;
-  appliedBounds: Bounds | null;
+  /** Last requested time effect that was actually limited; ACKs clear its live saturation. */
+  saturationProbe: { key: string; index: number }[];
 }
 
 export interface BrushAdmission {
@@ -785,10 +785,14 @@ export class EditorDocument {
       pendingAdmissions: work.queue.length,
       reservedBounds:
         work.reservedBounds && ([...work.reservedBounds] as Bounds),
-      appliedBounds: work.appliedBounds && ([...work.appliedBounds] as Bounds),
-      appliedRegions: [...work.appliedRegions.values()].map(
-        (bounds) => [...bounds] as Bounds,
-      ),
+      renderSaturated:
+        !work.sealed &&
+        !work.complete &&
+        work.saturationProbe.some(
+          ({ key, index }) =>
+            work.account.effectAt(key, index).total >=
+            work.account.limit * (1 - 4 * Number.EPSILON),
+        ),
       effectLimit: work.account.limit,
       maxOutstandingEffect: work.account.usage.maximumOutstanding,
     };
@@ -2573,9 +2577,8 @@ export class EditorDocument {
       invalidated: false,
       lastAdmissionId: -1,
       reservedRegions: new Map(),
-      appliedRegions: new Map(),
       reservedBounds: null,
-      appliedBounds: null,
+      saturationProbe: [],
     };
   }
 
@@ -2678,6 +2681,16 @@ export class EditorDocument {
       throw new RangeError(
         `Pinselreserve überschritten (${result.reason}); der angenommene Strich bleibt erhalten.`,
       );
+    work.saturationProbe = result.changes
+      .filter(
+        (change) =>
+          change.discardedTime >
+          Math.max(
+            Number.MIN_VALUE,
+            Math.abs(change.timeAccount) * Number.EPSILON * 4,
+          ),
+      )
+      .map(({ key, index }) => ({ key, index }));
     let changedCells = 0;
     for (const change of result.changes) {
       if (!change.delta) continue;
@@ -2748,6 +2761,13 @@ export class EditorDocument {
     return this.prepaid && !this.prepaid.invalidated
       ? this.prepaid.account.freeze()
       : null;
+  }
+
+  /** No render was acquired: keep the effect outstanding but release its probe. */
+  discardBrushEffect(receipt: BrushEffectReceipt): boolean {
+    return this.prepaid && !this.prepaid.invalidated
+      ? this.prepaid.account.discard(receipt)
+      : false;
   }
 
   acknowledgeBrushEffect(receipt: BrushEffectReceipt): boolean {
@@ -2858,14 +2878,6 @@ export class EditorDocument {
             y + 2 * step,
           ]);
           dirty = dirty ? unionBounds(dirty, support) : support;
-          const old = work.appliedRegions.get(key);
-          work.appliedRegions.set(
-            key,
-            old ? unionBounds(old, support) : support,
-          );
-          work.appliedBounds = work.appliedBounds
-            ? unionBounds(work.appliedBounds, support)
-            : support;
         },
       );
       if (!part) throw new Error("Angenommene Pinselreserve fehlt.");

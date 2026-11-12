@@ -1288,6 +1288,14 @@ anderen zulässigen Ort, auch nicht in derselben Autorenkachel. Vollständige,
 passende Renderbestätigungen geben nur ihre tatsächlich dargestellte Wirkung
 frei. Teilbilder und alte Belege zählen nicht.
 
+Wenn eine tatsächlich ausgeschöpfte Reserve weitere Zeitwirkung begrenzt,
+zeigt der Status „Darstellung holt auf – Höhenwirkung begrenzt“. Andere freie
+Stützstellen bleiben bearbeitbar. Eine passende Bestätigung, ein frei
+bearbeitbarer neuer Ort oder das Ende der Eingabe beendet diese Anzeige;
+historisch verworfene Zeit hält sie nicht künstlich aktiv. Bei einem blockierten
+UI-Thread kann der Hinweis erst mit der nächsten ausführbaren Darstellung
+erscheinen. Die verfallene Zeit wird auch dann nicht nachgeholt.
+
 Eigene spätere Änderungen entwerten die beim Beginn nachgewiesene Grundlage
 nicht. Neu berührte Orte müssen jedoch ebenfalls sichtbar bereit sein. Fehlen
 Quellen oder sichtbare Grundlage, endet die Eingabe vor dem unzulässigen

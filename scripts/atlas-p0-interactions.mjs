@@ -89,6 +89,16 @@ export async function editRangeValue(page, label) {
 }
 
 export async function setRangeValue(page, label, value) {
+  // The fixed 0.3.3 negative baseline predates sliders. Exercise its ordinary
+  // number control so the same independent program can compare both releases.
+  if (
+    (await page.getByRole("slider", { name: label, exact: true }).count()) === 0
+  ) {
+    const field = page.getByLabel(label, { exact: true });
+    await field.fill(String(value));
+    await field.press("Enter");
+    return;
+  }
   const field = await editRangeValue(page, label);
   await field.fill(String(value));
   await field.press("Enter");

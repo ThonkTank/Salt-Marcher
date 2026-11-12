@@ -3,7 +3,19 @@ import { pathToFileURL } from "node:url";
 import {
   referenceC1Stroke,
   reconstructReferenceC1Stroke,
+  reconstructObservedHeight,
 } from "./atlas-p0-brush-reference.mjs";
+
+export const STANDARD_HEIGHT_CASE = Object.freeze({
+  id: "M03-height-standard-rate",
+  diameter: 512,
+  rateFtPerSecond: 20,
+  scale: 0.25,
+  level: 4,
+  radius: 1024,
+  durationMs: 10_000,
+  minimumRatio: 0.9,
+});
 
 /**
  * The executable evaluator owns its contracts. Optional report fields remain
@@ -119,6 +131,15 @@ export const P0_REQUIREMENTS = Object.freeze({
       id: "M03-height-max",
       kind: "edit",
       minSamples: 100,
+      requiredInputKinds: ["edit", "pointerup"],
+    },
+    {
+      id: STANDARD_HEIGHT_CASE.id,
+      kind: "edit",
+      // The native manifest counts each required input kind separately:
+      // one physical Down and one physical Up for this ten-second hold.
+      minSamples: 1,
+      minDurationMs: STANDARD_HEIGHT_CASE.durationMs,
       requiredInputKinds: ["edit", "pointerup"],
     },
     {
@@ -3569,8 +3590,530 @@ export function evaluateAttempt(attempt, samples) {
   );
 }
 
+/**
+ * H1 checks the ordinary physical hold against the uncapped independent C1
+ * oracle. Product-admitted time is never the denominator. Completed scenes
+ * are joined to their frozen author revision; a submit or a later author
+ * sample cannot stand in for the terrain that was actually completed.
+ */
+export function evaluateStandardHeight(evidence) {
+  /** @type {EvaluationIssue[]} */
+  const failures = [];
+  const fail = (code, detail = {}) => failures.push({ code, ...detail });
+  const events = evidence?.events ?? [];
+  const points = evidence?.points ?? [];
+  const controls = evidence?.controls ?? [];
+  const input = evidence?.input;
+  const before = evidence?.before;
+  const result = (details = {}) => ({
+    scope: "H1-standard-height-rate",
+    passed: failures.length === 0,
+    status: failures.length ? "FAIL" : "PROXY_ONLY",
+    presentationProven: false,
+    functionalPassed: false,
+    checks:
+      /** @type {Array<{second:number, model:number[], completed:number[], expected:number[]}>} */ ([]),
+    completedGapsMs: distribution([]),
+    failures,
+    missing: [],
+    blockers: [{ code: "EXACT_NATIVE_PRESENTATION_UNPROVEN" }],
+    ...details,
+  });
+  if (
+    !input ||
+    !before ||
+    !events.length ||
+    points.length !== 5 ||
+    !controls.length ||
+    evidence.droppedEvents !== 0
+  ) {
+    fail("STANDARD_HEIGHT_EVIDENCE_MISSING");
+    return result();
+  }
+  const brush = input.brush;
+  if (
+    before.state?.diameter !== STANDARD_HEIGHT_CASE.diameter ||
+    before.state?.amount !== STANDARD_HEIGHT_CASE.rateFtPerSecond ||
+    before.state?.mode !== "raise" ||
+    before.camera?.scale !== STANDARD_HEIGHT_CASE.scale ||
+    brush?.level !== STANDARD_HEIGHT_CASE.level ||
+    brush?.radius !== STANDARD_HEIGHT_CASE.radius ||
+    brush?.amount !== STANDARD_HEIGHT_CASE.rateFtPerSecond
+  )
+    fail("STANDARD_HEIGHT_STIMULUS_CHANGED");
+  if (
+    !Array.isArray(before.samples) ||
+    before.samples.length !== points.length ||
+    before.samples.some(
+      (value) => !finite(value) || Math.abs(value + 100) > 1e-9,
+    )
+  )
+    fail("STANDARD_HEIGHT_WORLD_NOT_EMPTY");
+  const starts = events.filter((event) => event.kind === "brush-start");
+  const start = starts[0];
+  const own = (event) =>
+    event.sessionId === before.sessionId &&
+    event.gestureId === start?.gestureId;
+  const ends = events.filter(
+    (event) => event.kind === "brush-end" && own(event),
+  );
+  const end = ends[0];
+  const down = events.find(
+    (event) => event.kind === "input" && event.id === start?.input,
+  );
+  const up = events.find(
+    (event) => event.kind === "input" && event.id === end?.input,
+  );
+  const fromAt = input.start?.at;
+  const toAt = input.windows?.at(-1)?.points?.at(-1)?.at;
+  if (
+    starts.length !== 1 ||
+    ends.length !== 1 ||
+    !down ||
+    !up ||
+    input.windows?.length !== 1 ||
+    input.start?.input !== start?.input ||
+    input.windows?.[0]?.points?.length !== 1 ||
+    input.windows?.[0]?.points?.[0]?.input !== end?.input ||
+    down?.eventType !== "pointerdown" ||
+    up?.eventType !== "pointerup" ||
+    start?.rateFtPerSecond !== brush.amount ||
+    start?.radius !== brush.radius ||
+    start?.level !== brush.level ||
+    Math.abs(down.createdAt - fromAt) > 1e-6 ||
+    Math.abs(up.createdAt - toAt) > 1e-6 ||
+    !samePoint(input.start?.point, start?.point) ||
+    !samePoint(input.windows?.at(-1)?.points?.at(-1)?.point, start?.point) ||
+    !finite(fromAt) ||
+    !finite(toAt) ||
+    toAt - fromAt < STANDARD_HEIGHT_CASE.durationMs
+  )
+    fail("STANDARD_HEIGHT_PHYSICAL_INPUT_UNBOUND");
+  const expectedPoints = [
+    input.start?.point,
+    [input.start?.point?.[0] - 512, input.start?.point?.[1]],
+    [input.start?.point?.[0] + 512, input.start?.point?.[1]],
+    [input.start?.point?.[0], input.start?.point?.[1] - 512],
+    [input.start?.point?.[0], input.start?.point?.[1] + 512],
+  ];
+  if (!expectedPoints.every((point, index) => samePoint(point, points[index])))
+    fail("STANDARD_HEIGHT_PROBE_MANIFEST_CHANGED");
+  let reference;
+  try {
+    reference = reconstructReferenceC1Stroke(input, points);
+  } catch (error) {
+    fail("STANDARD_HEIGHT_REFERENCE_INVALID", { error: String(error) });
+    return result();
+  }
+  if (reference.timeWindows.length < 10)
+    fail("STANDARD_HEIGHT_SECONDS_MISSING");
+  const content = events.filter(
+    (event) =>
+      event.kind === "brush-content" &&
+      own(event) &&
+      ["materialize", "complete"].includes(event.phase),
+  );
+  const frozen = events.filter(
+    (event) => event.kind === "brush-frozen" && own(event),
+  );
+  const gpu = events.filter(
+    (event) =>
+      event.kind === "gpu-completed" &&
+      event.sessionId === before.sessionId &&
+      event.renderReceipt,
+  );
+  const completed = [];
+  const identity = (a, b) =>
+    a &&
+    b &&
+    ["id", "sessionId", "viewGeneration", "preparationId", "revision"].every(
+      (key) => a[key] === b[key],
+    );
+  const contains = (bounds, point) =>
+    Array.isArray(bounds) &&
+    bounds.some(
+      (area) =>
+        boundsValid(area) &&
+        point[0] >= area[0] &&
+        point[0] < area[2] &&
+        point[1] >= area[1] &&
+        point[1] < area[3],
+    );
+  const completedScene = (finished) => {
+    const frame = events.find(
+      (event) =>
+        event.kind === "submit" &&
+        event.sessionId === before.sessionId &&
+        event.frame === finished.frame,
+    );
+    return (
+      frame &&
+      finite(finished.at) &&
+      finite(finished.submittedAt) &&
+      frame.at === finished.submittedAt &&
+      finished.at >= frame.at &&
+      frame.viewGeneration === finished.renderReceipt.viewGeneration &&
+      frame.revision >= finished.renderReceipt.revision
+    );
+  };
+  for (const finished of gpu) {
+    const frozenEvent = frozen.find((event) =>
+      identity(event.renderReceipt, finished.renderReceipt),
+    );
+    if (!frozenEvent) continue; // unrelated prepared background scenes
+    const checkpoint = content.findLast(
+      (event) =>
+        event.revision === finished.renderReceipt.revision &&
+        event.at <= frozenEvent.at,
+    );
+    if (
+      !checkpoint ||
+      checkpoint.level !== brush.level ||
+      !completedScene(finished) ||
+      finished.at < frozenEvent.at ||
+      finished.submittedAt < frozenEvent.at ||
+      finished.at < finished.submittedAt
+    ) {
+      fail("STANDARD_HEIGHT_COMPLETED_REVISION_UNBOUND", {
+        revision: finished.renderReceipt.revision,
+      });
+      continue;
+    }
+    if (
+      !points.every((point) =>
+        contains(finished.renderReceipt.bounds, point),
+      ) ||
+      JSON.stringify(finished.renderReceipt.bounds) !==
+        JSON.stringify(frozenEvent.renderReceipt.bounds)
+    ) {
+      fail("STANDARD_HEIGHT_RENDER_COVERAGE_MISSING", {
+        revision: finished.renderReceipt.revision,
+      });
+      continue;
+    }
+    try {
+      completed.push({
+        at: finished.at,
+        frozenAt: frozenEvent.at,
+        revision: finished.renderReceipt.revision,
+        receiptId: frozenEvent.receiptId,
+        heights: reconstructObservedHeight(
+          brush.level,
+          points,
+          controls,
+          checkpoint.authors,
+        ),
+      });
+    } catch (error) {
+      fail("STANDARD_HEIGHT_COMPLETED_CONTENT_MISSING", {
+        revision: finished.renderReceipt.revision,
+        error: String(error),
+      });
+    }
+  }
+  completed.sort((a, b) => a.at - b.at);
+  for (const feedback of events.filter(
+    (event) => event.kind === "brush-feedback" && own(event) && event.accepted,
+  )) {
+    const finished = completed.find(
+      (item) =>
+        item.receiptId === feedback.receiptId &&
+        item.revision === feedback.revision,
+    );
+    if (!finished || finished.at > feedback.at)
+      fail("STANDARD_HEIGHT_PREMATURE_ACK", { receiptId: feedback.receiptId });
+  }
+  const checks = [];
+  const measured = (at, display) => {
+    const checkpoint = display
+      ? completed.filter((event) => event.at <= at).at(-1)
+      : content.findLast((event) => event.at <= at);
+    if (!checkpoint) return points.map(() => -100);
+    try {
+      return display
+        ? checkpoint.heights
+        : reconstructObservedHeight(
+            brush.level,
+            points,
+            controls,
+            checkpoint.authors,
+          );
+    } catch {
+      return points.map(() => null);
+    }
+  };
+  let priorModel = points.map(() => -100),
+    priorDisplay = [...priorModel];
+  for (const [index, window] of reference.timeWindows.slice(0, 10).entries()) {
+    const model = measured(window.toAt, false);
+    const display = measured(window.toAt, true);
+    for (const [channel, values, previous] of [
+      ["model", model, priorModel],
+      ["completed", display, priorDisplay],
+    ]) {
+      for (let probe = 0; probe < points.length; probe++) {
+        const expected = window.uncappedTotal[probe];
+        const expectedCumulative = window.after.uncappedTotal[probe];
+        const observed = values[probe] - previous[probe];
+        const cumulative = values[probe] + 100;
+        const tolerance = 1e-6 + Math.abs(expectedCumulative) * 1e-9;
+        if (
+          !finite(values[probe]) ||
+          !finite(previous[probe]) ||
+          observed < expected * STANDARD_HEIGHT_CASE.minimumRatio - tolerance ||
+          cumulative <
+            expectedCumulative * STANDARD_HEIGHT_CASE.minimumRatio - tolerance
+        )
+          fail("STANDARD_HEIGHT_RATE_TOO_LOW", {
+            second: index + 1,
+            channel,
+            probe,
+            observed,
+            expected,
+            cumulative,
+            expectedCumulative,
+          });
+        if (
+          !finite(values[probe]) ||
+          cumulative > expectedCumulative + tolerance
+        )
+          fail("STANDARD_HEIGHT_RATE_EXCEEDED", {
+            second: index + 1,
+            channel,
+            probe,
+            cumulative,
+            expectedCumulative,
+          });
+      }
+    }
+    checks.push({
+      second: index + 1,
+      model,
+      completed: display,
+      expected: window.after.uncappedTotal.map((delta) => delta - 100),
+    });
+    priorModel = model;
+    priorDisplay = display;
+  }
+  const six = evidence.sixSecondImage;
+  const ten = evidence.finalImage;
+  const land = (pixel) =>
+    Array.isArray(pixel) &&
+    pixel.length >= 3 &&
+    pixel.slice(0, 3).every(finite) &&
+    pixel[0] > pixel[2] + 15;
+  if (
+    !six ||
+    !finite(six.capturedAt) ||
+    six.capturedAt - fromAt > 6000 ||
+    six.capturedAt <= fromAt ||
+    !land(six.pixels?.[0])
+  )
+    fail("STANDARD_HEIGHT_LAND_NOT_VISIBLE_BY_SIX_SECONDS");
+  if (
+    !ten ||
+    !Array.isArray(ten.pixels) ||
+    ten.pixels.length !== points.length ||
+    !ten.pixels.every(land)
+  )
+    fail("STANDARD_HEIGHT_FINAL_LAND_PIXELS_MISSING");
+  if (
+    !Array.isArray(evidence.undone) ||
+    evidence.undone.length !== points.length ||
+    evidence.undone.some(
+      (value) => !finite(value) || Math.abs(value + 100) > 1e-6,
+    )
+  )
+    fail("STANDARD_HEIGHT_UNDO_MISMATCH");
+  const completions = events.filter(
+    (event) => event.kind === "brush-complete" && own(event),
+  );
+  if (
+    completions.length !== 1 ||
+    content.some((event) => event.at > completions[0]?.at)
+  )
+    fail("STANDARD_HEIGHT_ACTION_COMPLETION_INVALID");
+  const after = evidence.after;
+  if (
+    !after ||
+    after.document?.active !== false ||
+    after.document?.finishing !== false ||
+    after.document?.historyActions !== before.document?.historyActions + 1 ||
+    after.document?.sequence !== before.document?.sequence + 1 ||
+    after.state?.error !== null
+  )
+    fail("STANDARD_HEIGHT_ACTION_COMPLETION_INVALID");
+  try {
+    const final = content.at(-1);
+    const finalValues = reconstructObservedHeight(
+      brush.level,
+      points,
+      controls,
+      final?.authors,
+    );
+    if (
+      final?.revision !== after?.document?.revision ||
+      !Array.isArray(after?.samples) ||
+      after.samples.length !== points.length ||
+      after.samples.some(
+        (value, index) =>
+          !finite(value) ||
+          Math.abs(value - finalValues[index]) > 1e-6 ||
+          value + 100 > reference.uncappedTotal[index] + 1e-6,
+      )
+    )
+      fail("STANDARD_HEIGHT_FINAL_MODEL_MISMATCH");
+  } catch {
+    fail("STANDARD_HEIGHT_FINAL_MODEL_MISMATCH");
+  }
+  const time = evaluateBrushTime(events, [down?.id, up?.id], before.sessionId);
+  if (!time.passed) failures.push(...time.issues);
+  const live = completed.filter(
+    (event) => event.at >= fromAt && event.at <= toAt,
+  );
+  const boundaries = [fromAt, ...live.map((event) => event.at), toAt];
+  const completedGaps = distribution(
+    boundaries.slice(1).map((at, index) => at - boundaries[index]),
+  );
+  const liveCpu = directionCpu(
+    events.filter((event) => event.at >= fromAt && event.at <= toAt),
+    "STANDARD_HEIGHT",
+  );
+  const cpu = liveCpu.cpuWorkMs;
+  const renderWork = evaluateRenderWork(events, {
+    droppedEvents: evidence.droppedEvents,
+  });
+  failures.push(...renderWork.issues);
+  const samples = extractEditSamples(
+    events,
+    [down?.id, up?.id],
+    before.sessionId,
+  );
+  const inputCompletions = samples.map((sample) => {
+    // Up may retire the reservation ledger before the final authored revision
+    // has been painted. Its real scene receipts may then arrive per tile. Bind
+    // every fixed probe to that exact final revision and take their last fence;
+    // a commit-current submit timestamp is not a GPU completion.
+    const finalContent = content.findLast(
+      (event) => event.revision === sample.revision,
+    );
+    const finalScenes =
+      sample.inputKind === "pointerup" && finalContent
+        ? points.map((point) =>
+            gpu.find(
+              (event) =>
+                completedScene(event) &&
+                event.renderReceipt.revision === sample.revision &&
+                event.renderReceipt.viewGeneration ===
+                  (start.foundation?.viewGeneration ?? start.viewGeneration) &&
+                event.submittedAt >= finalContent.at &&
+                contains(event.renderReceipt.bounds, point),
+            ),
+          )
+        : [];
+    const finishedAt =
+      sample.inputKind === "pointerup"
+        ? finalScenes.length === points.length && finalScenes.every(Boolean)
+          ? Math.max(...finalScenes.map((event) => event.at))
+          : null
+        : (completed.find((event) => event.revision >= sample.revision)?.at ??
+          null);
+    return {
+      inputId: sample.inputId,
+      inputKind: sample.inputKind,
+      milliseconds:
+        finite(finishedAt) && finite(sample.modelAt) && finite(sample.createdAt)
+          ? Math.max(finishedAt, sample.modelAt) - sample.createdAt
+          : null,
+    };
+  });
+  if (inputCompletions.some((sample) => !finite(sample.milliseconds)))
+    fail("STANDARD_HEIGHT_INPUT_COMPLETION_MISSING");
+  const inputLatency = distribution(
+    inputCompletions.map((sample) => sample.milliseconds),
+  );
+  const gpuWork = evaluateDirectionGpu(
+    events,
+    evidence.gpuTimers ? [evidence.gpuTimers] : [],
+    "STANDARD_HEIGHT",
+  );
+  /** @type {EvaluationIssue[]} */
+  const performanceFailures = [...gpuWork.failures, ...liveCpu.failures];
+  if (!completedGaps.count || exceeds(completedGaps.p95, 20))
+    performanceFailures.push({
+      code: "STANDARD_HEIGHT_RESULT_GAP_EXCEEDED",
+      milliseconds: completedGaps.p95,
+      limitMs: 20,
+    });
+  if (!completedGaps.count || exceeds(completedGaps.maximum, 100))
+    performanceFailures.push({
+      code: "STANDARD_HEIGHT_RESULT_STALL",
+      milliseconds: completedGaps.maximum,
+      limitMs: 100,
+    });
+  if (exceeds(inputLatency.p95, 50))
+    performanceFailures.push({
+      code: "STANDARD_HEIGHT_INPUT_P95_EXCEEDED",
+      milliseconds: inputLatency.p95,
+      limitMs: 50,
+    });
+  if (!renderWork.preparationTiming.met)
+    performanceFailures.push({
+      code: "STANDARD_HEIGHT_PREPARATION_BUDGET_EXCEEDED",
+      overruns: renderWork.preparationTiming.overruns,
+      limitMs: 2,
+    });
+  const functionalPassed = failures.length === 0;
+  failures.push(...performanceFailures);
+  return result({
+    functionalPassed,
+    checks,
+    completed,
+    time,
+    renderWork,
+    completedGapsMs: completedGaps,
+    blockers: [
+      { code: "EXACT_NATIVE_PRESENTATION_UNPROVEN" },
+      ...gpuWork.blockers,
+    ],
+    cpuWorkMs: cpu,
+    inputLatencyMs: inputLatency,
+    inputCompletions,
+    ackLatencyMs: distribution(
+      completed.map((event) => event.at - event.frozenAt),
+    ),
+    performance: {
+      passed: performanceFailures.length === 0,
+      failures: performanceFailures,
+      gpu: gpuWork,
+      softwareRendering: evidence.softwareRendering ?? null,
+      nativeAcceptance: false,
+      meaning:
+        "Observed completed-scene cadence and CPU work; GPU timers when available. Native physical presentation remains unproven.",
+    },
+  });
+}
+
 /** Evaluate the selected scenario now, independently of a later complete run. */
 export function evaluateScenario(scenario) {
+  if (scenario.id === STANDARD_HEIGHT_CASE.id) {
+    const evaluated = evaluateStandardHeight(scenario.standardHeight);
+    const failures = [...evaluated.failures];
+    if (scenario.aborted || scenario.error)
+      failures.push({ code: "SCENARIO_ABORTED", error: scenario.error });
+    return {
+      ...evaluated,
+      passed: failures.length === 0,
+      failures,
+      missing: [],
+      status: failures.length ? "FAIL" : evaluated.status,
+      contentPassed:
+        evaluated.functionalPassed === true &&
+        !scenario.aborted &&
+        !scenario.error,
+      sampleCount: scenario.samples?.length ?? 0,
+    };
+  }
   /** @type {EvaluationIssue[]} */
   const failures = [];
   /** @type {EvaluationIssue[]} */
@@ -4550,15 +5093,19 @@ function packetGpuWork(packets, draws, timers) {
 }
 
 /** Raw asynchronous queries can disprove a budget without proving full coverage. */
-export function evaluateDirectionGpu(events, windows) {
+export function evaluateDirectionGpu(events, windows, prefix = "R4") {
   const failures = [],
     blockers = [],
     measured = [];
   const packets = events.filter((event) => event.kind === "height-terrain");
   const draws = events.filter((event) => event.kind === "height-draw");
-  const fail = (code, details = {}) => failures.push({ code, ...details });
+  const scopedCode = (code) => prefix + code.slice(2);
+  const fail = (code, details = {}) =>
+    failures.push({ code: scopedCode(code), ...details });
   const blocked = (code) => {
-    if (!blockers.some((issue) => issue.code === code)) blockers.push({ code });
+    const scoped = scopedCode(code);
+    if (!blockers.some((issue) => issue.code === scoped))
+      blockers.push({ code: scoped });
   };
   if (!Array.isArray(windows) || !windows.length) {
     blocked("R4_GPU_TIMING_UNAVAILABLE");
@@ -4626,7 +5173,7 @@ export function evaluateDirectionGpu(events, windows) {
 }
 
 /** CPU work retains handler work outside RAF, without counting nested work twice. */
-function directionCpu(events) {
+function directionCpu(events, prefix = "R4") {
   const frames = events.filter((event) => event.kind === "frame");
   const admissions = events.filter((event) =>
     ["brush-accepted", "brush-content"].includes(event.kind),
@@ -4640,7 +5187,7 @@ function directionCpu(events) {
       (event) => !finite(event.cpuMs) || event.cpuMs < 0 || !finite(event.at),
     )
   )
-    failures.push({ code: "R4_CPU_EVIDENCE_MISSING_OR_INVALID" });
+    failures.push({ code: `${prefix}_CPU_EVIDENCE_MISSING_OR_INVALID` });
   let previousFrameAt = -Infinity;
   for (let index = 0; index < frames.length; index++) {
     const frame = frames[index];
@@ -4657,7 +5204,7 @@ function directionCpu(events) {
   const cpuWorkMs = distribution(values);
   if (exceeds(cpuWorkMs.p95, 8))
     failures.push({
-      code: "R4_CPU_P95_EXCEEDED",
+      code: `${prefix}_CPU_P95_EXCEEDED`,
       milliseconds: cpuWorkMs.p95,
       limitMs: 8,
     });

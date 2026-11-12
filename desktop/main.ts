@@ -44,9 +44,13 @@ const indexPath = resolve(__dirname, "../dist-editor/index.html");
 // inherits a broken editor just because a stale fault variable remains set.
 const fault =
   diagnostics &&
-  ["delay-render", "drop-render", "ignore-zoom", "pointerup-render"].includes(
-    process.env.ATLAS_P0_FAULT ?? "",
-  )
+  [
+    "delay-render",
+    "drop-render",
+    "delay-feedback",
+    "ignore-zoom",
+    "pointerup-render",
+  ].includes(process.env.ATLAS_P0_FAULT ?? "")
     ? process.env.ATLAS_P0_FAULT
     : undefined;
 const initialURL = new URL(pathToFileURL(indexPath).href);

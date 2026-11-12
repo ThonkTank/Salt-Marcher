@@ -190,6 +190,20 @@ Desktopoberfläche einschließlich Höhenmodi, Größen-Gesten, Reglern mit gena
 Werteingabe, Hausänderung als einzelner Undo-Aktion, History und Dateiaktionen;
 er ist ebenfalls Teil der Paketprüfung.
 
+Die normale Höhenrate lässt sich nach dem Build getrennt prüfen:
+
+```bash
+node scripts/atlas-p0-run.mjs --lab --only collection --case M03-height-standard-rate --runs 1 --out src-tauri/target/diagnostics/height-standard
+```
+
+Dieser feste Fall hält den 512-Pixel-Pinsel zehn Sekunden mit 20 Fuß/s
+(6,096 m/s) auf einer neuen Welt. Er prüft die Wirkung in ganzen Sekunden
+gegen eine unabhängige ungedrosselte Referenz, abgeschlossene Renderstände,
+echte Landpixel und Undo. Die bisherigen Fälle mit 4.000 Fuß/s bleiben
+zusätzliche Geometrie-/Belastungsfälle. Der Softwaregrafiklauf kann einen
+Kandidaten ablehnen, aber keine native Hardware-/Präsentationsfreigabe erteilen.
+Der [Status](docs/implementation/status.md) nennt das aktuelle H1–H4-Ergebnis.
+
 Die Runner schreiben nach jedem Szenario Ergebnisse unter
 `artifacts/atlas-rebuild/runs/`; der Laufindex erhält fehlgeschlagene und noch
 nicht ausgeführte Fälle. Weitere Optionen nach `--`:

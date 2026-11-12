@@ -268,6 +268,10 @@ export class PrepaidBrush {
     return this.ledger.freeze();
   }
 
+  discard(receipt: BrushEffectReceipt): boolean {
+    return this.ledger.discard(receipt);
+  }
+
   acknowledge(receipt: BrushEffectReceipt): boolean {
     return this.ledger.acknowledge(receipt);
   }

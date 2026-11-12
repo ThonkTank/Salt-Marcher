@@ -100,6 +100,7 @@ export interface EditorState {
   finishing: boolean;
   loading: boolean;
   needsPress: boolean;
+  heightLimited: boolean;
   writing: boolean;
   saved: boolean;
   canUndo: boolean;
@@ -266,6 +267,7 @@ export class EditorController {
     finishing: false,
     loading: true,
     needsPress: false,
+    heightLimited: false,
     writing: false,
     saved: false,
     canUndo: false,
@@ -389,6 +391,7 @@ export class EditorController {
     if (
       fault === "delay-render" ||
       fault === "drop-render" ||
+      fault === "delay-feedback" ||
       fault === "ignore-zoom" ||
       fault === "pointerup-render"
     )
@@ -537,6 +540,9 @@ export class EditorController {
       saved: this.session.saved,
       loading: readiness.reason === "sources" || readiness.reason === "terrain",
       needsPress: this.brushState.kind === "blocked",
+      heightLimited: Boolean(
+        this.stroke && this.doc?.brushWork?.renderSaturated,
+      ),
       surfaces: this.world.surfaceState(),
     };
     this.state.message = this.session.recovering
@@ -553,11 +559,13 @@ export class EditorController {
                 ? "Zeiger außerhalb des sichtbaren Kartenbereichs"
                 : this.state.needsPress
                   ? "Zum Bearbeiten loslassen und erneut drücken"
-                  : this.session.changingProject
-                    ? "Projekt wird geöffnet …"
-                    : this.backgroundStats.waiting === true
-                      ? "Hintergrundarbeit benötigt freien Darstellungsspeicher"
-                      : "Bereit";
+                  : this.state.heightLimited
+                    ? "Darstellung holt auf – Höhenwirkung begrenzt"
+                    : this.session.changingProject
+                      ? "Projekt wird geöffnet …"
+                      : this.backgroundStats.waiting === true
+                        ? "Hintergrundarbeit benötigt freien Darstellungsspeicher"
+                        : "Bereit";
     if (
       (Object.keys(this.state) as (keyof EditorState)[]).some(
         (key) => !Object.is(previous[key], this.state[key]),
@@ -1069,6 +1077,11 @@ export class EditorController {
       this.advanceHeldBrush(performance.now());
       this.advanceSpatial();
       this.advanceAction();
+      if (
+        this.state.heightLimited !==
+        Boolean(this.stroke && this.doc.brushWork?.renderSaturated)
+      )
+        this.publish();
       if (this.world.prepareFrame()) this.checkLocalReady();
       if (this.state.surfaces !== this.world.surfaceState()) this.publish();
       this.freezeBrushRender();
@@ -1116,21 +1129,32 @@ export class EditorController {
       this.frozenEffect ||
       !work ||
       work.complete ||
-      !work.appliedRegions.length ||
+      !work.unconfirmedCells ||
       this.lastFrozenRevision === this.doc.revision
     )
       return;
-    const renderReceipt = this.world.freezeRender(work.appliedRegions);
-    if (!renderReceipt) return;
+    const effectReceipt = this.doc.freezeBrushEffect();
+    if (!effectReceipt) return;
+    let renderReceipt: FrozenRenderReceipt | null;
+    try {
+      renderReceipt = this.world.freezeRender(effectReceipt.regions);
+    } catch (error) {
+      this.doc.discardBrushEffect(effectReceipt);
+      throw error;
+    }
+    if (!renderReceipt) {
+      this.doc.discardBrushEffect(effectReceipt);
+      return;
+    }
     if (
       renderReceipt.revision !== this.doc.revision ||
       renderReceipt.sessionId !== work.context.sessionId ||
       renderReceipt.viewGeneration !== work.context.viewId ||
       renderReceipt.preparationId !== work.context.preparationId
-    )
+    ) {
+      this.doc.discardBrushEffect(effectReceipt);
       throw new Error("Renderstand und Pinselreserve gehören nicht zusammen.");
-    const effectReceipt = this.doc.freezeBrushEffect();
-    if (!effectReceipt) return;
+    }
     this.frozenEffect = { renderReceipt, effectReceipt };
     this.lastFrozenRevision = this.doc.revision;
     this.observation.event("brush-frozen", {
@@ -1156,6 +1180,10 @@ export class EditorController {
       frozen.renderReceipt.preparationId ===
         frozen.effectReceipt.preparationId &&
       this.doc.acknowledgeBrushEffect(frozen.effectReceipt);
+    if (!accepted) {
+      this.doc.discardBrushEffect(frozen.effectReceipt);
+      this.lastFrozenRevision = -1;
+    }
     this.observation.event("brush-feedback", {
       sessionId: frozen.effectReceipt.sessionId,
       gestureId: frozen.effectReceipt.gestureId,
