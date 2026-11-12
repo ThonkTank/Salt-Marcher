@@ -230,9 +230,24 @@ test("tool panels preserve the world center before subsequent zoom and window re
   await expectCenter();
   const beforeResize = await camera(page);
   await page.setViewportSize({ width: 900, height: 620 });
+  // CSS resizes before ResizeObserver publishes the new camera and paint.
+  // Poll raw dimensions: camera() asserts invariants and would abort this poll
+  // while the previous backing store is still awaiting its resize frame.
   await expect
-    .poll(async () => (await camera(page)).width)
-    .toBeLessThan(beforeResize.width);
+    .poll(() =>
+      page
+        .getByTestId("atlas-canvas")
+        .evaluate((canvas: HTMLCanvasElement, previousWidth) => {
+          const dpr = devicePixelRatio || 1;
+          return {
+            resized: canvas.clientWidth < previousWidth,
+            backingMatches:
+              Math.abs(canvas.width - canvas.clientWidth * dpr) <= 1 &&
+              Math.abs(canvas.height - canvas.clientHeight * dpr) <= 1,
+          };
+        }, beforeResize.width),
+    )
+    .toEqual({ resized: true, backingMatches: true });
   await expectCenter();
   expect((await status(page)).revision).toBe(0);
   expect(await calls(page, "commit")).toEqual([]);

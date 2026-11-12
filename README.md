@@ -1,34 +1,48 @@
 # SaltMarcher · Atlas V7
 
 Lokaler 2D-Weltatlas vom Raum bis zur Welt mit Straßen, Gelände, Gewässern,
-Regionen, Parzellen und Hausinnenräumen. React zeichnet auf Canvas, Rust verwaltet
-SQLite, Tauri stellt die Desktopanwendung bereit. Im normalen Browser erscheint
-ein Desktop-Hinweis.
+Regionen, Parzellen und Hausinnenräumen. **Atlas V7 bleibt der reguläre Einstieg:**
+React/Canvas, Rust/SQLite und Tauri. Im normalen Browser erscheint ein
+Desktop-Hinweis. Der gesondert gestartete **Atlas-P0-Versuch** verwendet
+Electron/Pixi und bietet einen begrenzten Höhen-, Landschafts- und Hauseditor
+mit vorbereiteten Gewässern und aktuellen Fundamenten.
 
-| Dokument                                   | Maßgeblicher Inhalt                                            |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| Dieses README                              | Einrichtung, Befehle und Abnahmeablauf                         |
-| [Architektur](docs/architecture.md)        | Besitzer, Datenfluss, Transaktions- und Cachegrenzen           |
-| [Produktvertrag](docs/product-contract.md) | Beobachtbares Verhalten, Dateiformat und Grenzen               |
-| [Status](docs/implementation/status.md)    | Zuletzt belegter Prüfstand, offene Fehler und nächste Übergabe |
+| Dokument                                                | Maßgeblicher Inhalt                                             |
+| ------------------------------------------------------- | --------------------------------------------------------------- |
+| Dieses README                                           | Einrichtung, Befehle und Ausführung der Prüfungen               |
+| [Architektur](docs/architecture.md)                     | Besitzer, Datenfluss, Transaktions- und Cachegrenzen            |
+| [Produktvertrag](docs/product-contract.md)              | Aktuelles beobachtbares Verhalten, Dateiformat und Grenzen      |
+| [Status](docs/implementation/status.md)                 | Geprüfter Stand, Ergebnisse, offene Fehler und nächste Übergabe |
+| [Neubauplan](docs/implementation/atlas-rebuild-plan.md) | Zielumfang F01–F19/D01–D11, offene Pakete und Abnahmekriterien  |
 
-Diese vier Dokumente werden ersetzt und aktualisiert, nicht als Arbeitschronik
-fortgeschrieben. Messreihen, Sicherungen und Detailprotokolle gehören unter die
-ignorierten Pfade `src-tauri/target/cleanup/` oder `src-tauri/target/diagnostics/`.
-
-Der angeforderte [ausführbare Atlas-Neubauplan](docs/implementation/atlas-rebuild-plan.md)
-enthält den vollständigen nächsten Implementierungsauftrag einschließlich
-Funktionsumfang, Architekturentscheidungen, Arbeitspaketen und Abschlusskriterien.
-Ein Verweis darauf mit „erledige das“ beauftragt seine vollständige Ausführung.
-Der Plan beschreibt den Zielzustand; die folgenden Befehle und Produktdokumente
-beschreiben weiterhin die bestehende Anwendung bis zu ihrer tatsächlichen Ablösung.
+Die vier Dokumente zum aktuellen Produkt werden aktualisiert, nicht als Chronik
+fortgeschrieben. Der Neubauplan beschreibt zusätzlich den beauftragten Zielzustand.
+R1 im Neubauplan hat den ersten additiven Pinselkandidaten an einem begrenzten
+Wiederbesuchsfall widerlegt. R2 integriert den ausgewählten C1: einmalige
+räumliche Mindestwirkung mit Anrechnung auf kumulierte Zeitwirkung, Reservierung
+vor Annahme und begrenzte Fortsetzung bis zum vollständigen Aktionsabschluss.
+Undo und Dateiaktionen warten auf diesen gemeinsamen Abschluss. Die unabhängige
+Inhaltsreferenz und die festen Leistungsziele bleiben erhalten.
+R3 begrenzt Quellenübernahme, Vorbereitung und GPU-Pakete; numerische
+Ausnahmefälle laufen über die gemeinsame Jobzulassung im Worker. R4 ergänzt
+die feste gemeinsame Richtungsprüfung. **R5 umfasst die implementierten
+P3.1–P3.3-Fälle:** Wald und Lichtung, räumlich geladene, drehbare Hausheader sowie
+eine vorbereitete Szene mit Seemaske, bestätigtem Flussprofil und aktuellen
+Fundamenten teilen den Kern und Dateipfad mit Höhen. Geländeänderungen clippen
+Wasser sichtbar und ändern den lokalen Abhängigkeitsstatus, ohne gespeicherte
+Masken, Profile oder Hausautoren umzuschreiben.
+Der [Status](docs/implementation/status.md) nennt die tatsächlichen Nachweise
+und die weiterhin offenen R4-/Hardwarebelege. Der nächste Planfall ist
+P3.4 mit echter Konkurrenz der Fachberechnungen; P4–P9 setzen die vollständige
+P0-Abnahme und den bestandenen gemeinsamen P3-Fall voraus.
+Detailbelege liegen ignoriert unter `src-tauri/target/diagnostics/`,
+`src-tauri/target/cleanup/` oder `artifacts/atlas-rebuild/`.
 
 ## Einrichtung
 
-CI und Referenzmessungen verwenden Node.js 22.19.0 aus `.node-version` und
-Rust 1.99.1 samt rustfmt/Clippy aus `rust-toolchain.toml`. Node muss entsprechend
-installiert/ausgewählt sein; rustup liest die Toolchaindatei im Repository.
-Benötigt werden außerdem npm und Tauri-Systembibliotheken. Unter Fedora:
+CI und V7-Referenzmessungen verwenden Node.js 22.19.0 aus `.node-version` und
+Rust 1.99.1 samt rustfmt/Clippy aus `rust-toolchain.toml`. Node entsprechend
+auswählen; rustup liest die Toolchaindatei im Repository. Unter Fedora:
 
 ```bash
 sudo dnf install -y gcc-c++ make webkit2gtk4.1-devel openssl-devel libappindicator-gtk3-devel librsvg2-devel libxdo-devel
@@ -38,133 +52,376 @@ npx playwright install chromium # einmalig; optional --with-deps
 npm run desktop
 ```
 
-Neue Dokumente beginnen als Ozean; „Höhen → Land“ legt Land an.
-„Höhen → Bergkette / Hügel / Schlucht“ ergänzt Relief mit Größenvorlagen und
-einstellbarer Breite sowie Höhe/Tiefe in Metern. Hohe Gipfel erscheinen schneeweiß,
-steile Hänge steinig. „Boden → Farbebene“ färbt Boden und Fels unabhängig.
-„Landschaft“ malt Wald, Buschland, Wiese und Felsgebiet auf allen Außenmaßstäben;
-Zieldichte und lokales Entfernen bearbeiten den Bestand, die Darstellung folgt dem Zoom.
-Werkzeuge, Gesten, Ansichtsauswahl und Dateiabläufe beschreibt der Produktvertrag.
+Neue V7-Dokumente beginnen als Ozean; „Höhen → Land“ legt Land an.
+Werkzeuge, Gesten und Dateiabläufe stehen im [Produktvertrag](docs/product-contract.md).
 
-## Entwicklung und automatisierte Abnahme
+## Entwicklung und automatisierte Prüfung
 
-```bash
-npm run check           # Verträge, Typen, TypeScript- und Rusttests
-npm run check:all       # zusätzlich Clippy, Format, Webbuild und Browsertests
-npm run package -- --ci # konfiguriertes natives Release-/RPM-Paket
-npm run format          # Prettier und rustfmt
-```
+| Befehl                       | Zweck                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `npm run desktop`            | Regulären V7-/Tauri-Desktop starten.                                         |
+| `npm run check`              | Verträge, TypeScript-Typen sowie TypeScript- und Rusttests prüfen.           |
+| `npm run check:all`          | Zusätzlich Clippy, Format, Webbuild, Browsertests und P0-Integration prüfen. |
+| `npm run package -- --ci`    | Konfiguriertes V7-/Tauri-Release mit RPM bauen.                              |
+| `npm run format`             | Prettier und rustfmt anwenden.                                               |
+| `npm run contracts:generate` | Transportverträge nach Rust-Typänderungen neu erzeugen.                      |
 
-Einzelprüfungen: `npm run typecheck`, `npm test`, `npm run test:rust`,
-`npm run check:rust`, `npm run format:check`, `npm run build:web` und
-`npm run test:e2e -- terrain-live.spec.ts`. Nach Änderungen an Rust-Transporttypen
-`npm run contracts:generate` ausführen; `contracts:check` prüft ohne Quelländerung.
+Einzelprüfungen: `npm run contracts:check`, `npm run typecheck`, `npm test`,
+`npm run test:rust`, `npm run check:rust`, `npm run format:check`,
+`npm run build:web` und `npm run test:e2e -- terrain-live.spec.ts`.
 `src/atlas/generated/` wird ausschließlich aus Rust erzeugt.
 
-Cargo-Prüfungen verwenden `--locked`, JavaScript-Abhängigkeiten `npm ci`.
+Cargo verwendet `--locked`, JavaScript-Abhängigkeiten `npm ci`.
 `.cargo/config.toml` begrenzt Builds und Rusttests auf zwei Jobs/Testthreads;
-Vitest verwendet zwei, Playwright einen Worker. `check:all` führt Prüfungen
-sequenziell aus. Nicht mehrere Gesamtprüfungen gleichzeitig starten; unter Linux
-kann `nice -n 10 npm run check:all` der Desktopbedienung Vorrang geben.
+Vitest verwendet zwei, Playwright einen Worker. `check:all` läuft sequenziell.
+Nicht mehrere Gesamtprüfungen gleichzeitig starten; unter Linux kann
+`nice -n 10 npm run check:all` der Desktopbedienung Vorrang geben.
 
-Der Entwicklungsserver verwendet Port 1420. Produkttests starten ihren eigenen
+Der Entwicklungsserver verwendet Port 1420. Produkttests starten einen eigenen
 Vite-Server auf `127.0.0.1:1421`; ein belegter Port führt zum Abbruch.
-Testworker-Build und -Start verwenden `src-tauri/target/`, unabhängig von
-`CARGO_TARGET_DIR`. Browserbelege liegen unter
-`src-tauri/target/diagnostics/playwright-<run>/`. Testanbindung und
-Zeichenbestätigungen stehen in der [Architektur](docs/architecture.md#entwicklung-und-prüfungen).
+Testworker verwenden `src-tauri/target/`, unabhängig von `CARGO_TARGET_DIR`.
+Browserbelege liegen unter `src-tauri/target/diagnostics/playwright-<run>/`.
+GitHub Actions prüft den exakten PR-Head beziehungsweise Main-Commit im Check
+`Candidate · exact-SHA aggregate`. Welche Prüfungen und Artefakte am aktuellen
+Kandidaten tatsächlich bestanden haben, steht im [Status](docs/implementation/status.md).
 
-GitHub Actions prüft den exakten PR-Head beziehungsweise den gepushten Main-Commit.
-Der erforderliche Check führt `check:all` und den konfigurierten RPM-Build aus.
-Browserdiagnosen und vorhandene Checklogs werden sieben Tage aufbewahrt.
-Native Bedienabnahme und Referenzlatenzen sind getrennte Prüfschritte.
+## Optionaler Atlas-P0-Versuch
 
-## Performanceabnahme
+### Desktopvorschau herunterladen und aktualisieren
 
-`npm run test:lod` prüft Kachelbudgets, Auflösungswechsel und Cachelebensdauer;
-`npm run test:lod:e2e` prüft Ansichten, Navigation und Invalidierung mit echtem
-Kern. Diese Teilmengen gehören zur Gesamtsuite. Deterministische Arbeits- und
-Speicherbudgets gelten in CI; maschinenabhängige Zeitziele in der Referenzabnahme.
+Der aktuelle Teststand von [Draft-PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469)
+steht im [GitHub-Prerelease **Atlas-Vorschau**](https://github.com/ThonkTank/Salt-Marcher/releases/tag/atlas-preview).
+Unter Fedora/Linux x86_64 die dort im Beschreibungstext verlinkte aktuelle
+`.rpm`-Datei einmal herunterladen und installieren. Eine ältere manuell erzeugte
+Installation benötigt dieses erste Update ebenfalls, damit der Updateknopf erscheint.
+Der Paketname bleibt `saltmarcher-atlas-p0`; der Vorschaukanal gehört zum
+Electron-Editor und ist unabhängig vom regulären V7-/Tauri-Paket.
+
+Die installierte Vorschau prüft nach dem Start auf neue veröffentlichte Builds.
+**Updates → Herunterladen → Installieren und neu starten** lädt das Paket,
+kontrolliert Größe und SHA-256 und startet die Fedora-Paketverwaltung.
+Vor der Installation werden offene Kartenänderungen über den vorhandenen
+**Speichern / Verwerfen / Abbrechen**-Dialog behandelt; DNF benötigt anschließend
+die Freigabe im Systemdialog. Die neue RPM-Version wird nach der Installation
+kontrolliert, bevor die App neu startet. Downloads und Installationen beginnen
+erst nach einem Klick. Der Dialog nennt den laufenden und verfügbaren Commit.
+
+Der automatische Workflow **Atlas preview release** baut Änderungen am Vorschauprogramm
+auf `work/atlas-p0-feasibility` als RPM und ZIP, prüft Updater und gepackte Anwendung
+und veröffentlicht erst danach den Vorschaukanal. Jeder Build erhält eine höhere
+RPM-Revision aus Workflowlauf und Wiederholungsnummer. Ein fehlgeschlagener oder
+inzwischen überholter Build ersetzt den veröffentlichten Stand nicht.
+Die Release-Seite enthält direkte Links zum jeweils aktuellen RPM und ZIP;
+ältere Dateien bleiben für bereits laufende Downloads verfügbar.
+
+Die ZIP-Ausgabe startet ohne Systeminstallation. Updates finden und herunterladen
+kann auch sie; die Installation in der App benötigt jedoch das tatsächlich
+installierte Fedora-RPM sowie `/usr/bin/dnf`, `/usr/bin/rpm` und Polkit.
+Entwicklungsstarts prüfen nicht im Netz auf Updates. Das Prerelease ist ein
+Testkanal, keine Freigabe der im [Status](docs/implementation/status.md) offenen
+Höhen-/GPU- und Hardwareabnahmen.
+
+### Entwicklung des Versuchs
+
+P0 startet einen eigenen Electron-44-Desktop mit PixiJS-8-Darstellung und SQLite
+im Utility-Prozess. Numerische Höhenquellen werden auf der GPU zusammengesetzt.
+Gleichstufige Striche und Undo verwenden eine feste numerische Basis mit dem
+damaligen Stufenbeitrag. Nur der aktuelle Beitrag dieser Stufe wird neu projiziert;
+beibehaltene Farbkacheln dienen der Kamera- und Cursorzeichnung.
+Eine nicht blockierende GPU-Rückmeldung begrenzt ausstehende Zeichenarbeit. Der
+[P0-Produktvertrag](docs/product-contract.md#optionaler-atlas-p0-versuch)
+beschreibt Funktionen und Grenzen; die
+[Architektur](docs/architecture.md#optionaler-atlas-p0-versuch) die Zuständigkeiten.
+
+Im normalen Fenster öffnet **Gewässerszene öffnen** eine neue Karte mit See samt
+Loch, abwärts gerichtetem Flussprofil und einem Haus am Hang. Sie benötigt keinen
+Diagnosemodus und verwendet den regulären Neu-/Speichern-/Öffnen-Pfad. **Neu**
+erzeugt weiterhin eine leere Welt. Das Panel **Gewässer und Fundamente** zeigt
+lokal geprüfte oder noch unbekannte Ableitungen; **Gewässer an Gelände anpassen**
+ist sichtbar deaktiviert, bis die vollständigen Werkzeuge aus P7 umgesetzt sind.
+P0 speichert diese Autoren in Format 27 (`atlas-p3-derived-water-1`), getrennt vom
+V7-Format und ohne Migration früherer P0-Dateien.
+
+Im Werkzeug **Höhen** sind **Land** und **Meer** verfügbar. Sie legen Küsten
+mit sofortiger Zielwirkung an; die Formauswahl **Rund/Kräuselig** und die
+Küstenrauheit entsprechen V7. Anheben/Absenken behalten ihre Höhenrate und
+Haltewirkung. Alle vier Modi teilen Größen-Gesten, History und Dateisicherung.
+
+Lokale Ableitungen teilen einen begrenzten Arbeitsslot. Dazu zählen neben dem
+4-MiB-Höhensnapshot auch die begrenzten Kontrollwert- und Suchstrukturen;
+überholte Leseantworten dürfen einen neueren Bedarf nicht blockieren. Ein bereits
+laufender Hash hält seine Eingabe auch über einen Projektwechsel bis zum Ende.
+Verschobene oder verkleinerte Fundamente aktualisieren ihre alte und neue Fläche,
+einschließlich noch gespeicherter Darstellungskacheln außerhalb der Ansicht.
+
+Node.js bleibt durch `.node-version` vorgegeben; Forge benötigt mindestens
+22.13.0. Nach `npm ci` prüft `build:atlas-p0` eine echte SQLite-Datenbanköffnung
+in der gepinnten Electron-Laufzeit und führt bei unpassender ABI
+`@electron/rebuild` aus. Dafür können C++-Buildwerkzeuge und Python nötig sein.
+
+| Befehl                                                                                       | Zweck                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run build:atlas-p0`                                                                     | P0-Typen prüfen, Renderer/Desktop bauen und SQLite-ABI vorbereiten.                                                                                                         |
+| `npm run desktop:atlas-p0`                                                                   | P0 bauen und im eigenen Electron-Fenster starten.                                                                                                                           |
+| `npm run test:atlas-p0`                                                                      | Modell-, Raster-, Renderer-, Auswerter- und native Vorprüfungstests ausführen.                                                                                              |
+| `npm run typecheck:p0-tools`                                                                 | Ausführbaren Auswerter anhand seiner eigenen JSDoc-Verträge prüfen.                                                                                                         |
+| `npm run test:atlas-p0:smoke`                                                                | Gebauten Electron-Start mit echter Prozess-/SQLite-Anbindung prüfen; `--only normal`, `stall`, `lifecycle`, `coast`, `landscape`, `house` oder `water` begrenzt den Umfang. |
+| `npm run check:atlas-p0`                                                                     | Tool-Typen, Build, Store-/Fixturetests, echten Electron-Smoke und GPU-Pixelreferenz einschließlich Kontextwiederherstellung prüfen.                                         |
+| `npm run p0:lab`                                                                             | Den zuvor gebauten Stand als kurze softwaregerenderte Architekturprobe prüfen.                                                                                              |
+| `npm run p0:native`                                                                          | Native Vorprüfung ausführen und nur bei erfüllten Voraussetzungen Szenarien sammeln.                                                                                        |
+| `npm run p0:direction -- --reference pfad/profil.json`                                       | Feste R4-Hardwarematrix mit gemeinsamem Inhalts-, Zeit- und Ressourcenurteil anfordern. Fehlende Voraussetzungen blockieren vor Fixtures.                                   |
+| `npm run p0:lab -- --full`                                                                   | Vollständige P0-Stichprobe im Labor sammeln.                                                                                                                                |
+| `npm run p0:native -- --full --reference pfad/profil.json`                                   | Native Vollsammlung anfordern; fehlende Präsentationsanbindung blockiert vor Fixtures.                                                                                      |
+| `npm run p0:evaluate -- pfad/zum/report.json`                                                | Einen Bericht gegen die festen Anforderungen auswerten.                                                                                                                     |
+| `node scripts/atlas-p0-gpu-check.mjs --out src-tauri/target/diagnostics/atlas-gpu-reference` | Den gebauten Editor gegen die CPU-Höhenreferenz prüfen: echte Pixel, 22 Stufen, Übersichten, Weltgrenzen und numerische Ausnahmefälle.                                      |
+| `npm run package:atlas-p0`                                                                   | Mit Forge ein startbares Anwendungsverzeichnis erzeugen.                                                                                                                    |
+| `npm run make:atlas-p0`                                                                      | RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Paketbauwerkzeuge.                                                                                                            |
+| `npm run check:atlas-p0:package`                                                             | Paket bauen, ASAR-Inhalt prüfen und den ausgelieferten Einstieg mit Dateirundlauf starten.                                                                                  |
+
+Land/Meer lässt sich nach dem Build mit
+`node scripts/atlas-p0-smoke.mjs --only coast` gezielt prüfen. Dieser Fall gehört
+auch zum normalen Smoke: sichtbarer Auftrag über beide Kachelgrenzen, getrennte
+Land-/Meer-Schritte mit Undo/Redo, unabhängig gelesene SQLite-Höhenwerte sowie
+Speichern/Öffnen und ein frischer Prozess.
+
+Die Werkzeugoberfläche lässt sich nach dem Build gezielt mit
+`node scripts/atlas-editor-ui-smoke.mjs` prüfen. Der Lauf bedient die echte
+Desktopoberfläche einschließlich Höhenmodi, Größen-Gesten, Reglern mit genauer
+Werteingabe, Hausänderung als einzelner Undo-Aktion, History und Dateiaktionen;
+er ist ebenfalls Teil der Paketprüfung.
+
+Die normale Höhenrate lässt sich nach dem Build getrennt prüfen:
+
+```bash
+node scripts/atlas-p0-run.mjs --lab --only collection --case M03-height-standard-rate --runs 1 --out src-tauri/target/diagnostics/height-standard
+```
+
+Dieser feste Fall hält den 512-Pixel-Pinsel zehn Sekunden mit 20 Fuß/s
+(6,096 m/s) auf einer neuen Welt. Er prüft die Wirkung in ganzen Sekunden
+gegen eine unabhängige ungedrosselte Referenz, abgeschlossene Renderstände,
+echte Landpixel und Undo. Die bisherigen Fälle mit 4.000 Fuß/s bleiben
+zusätzliche Geometrie-/Belastungsfälle. Der Softwaregrafiklauf kann einen
+Kandidaten ablehnen, aber keine native Hardware-/Präsentationsfreigabe erteilen.
+Der [Status](docs/implementation/status.md) nennt das aktuelle H1–H4-Ergebnis.
+
+Die Runner schreiben nach jedem Szenario Ergebnisse unter
+`artifacts/atlas-rebuild/runs/`; der Laufindex erhält fehlgeschlagene und noch
+nicht ausgeführte Fälle. Weitere Optionen nach `--`:
+
+- `--executable /absoluter/pfad/zur/anwendung`: einen Forge-Paketstand verwenden.
+- `--trace`: eine begrenzte Chromium-Aufzeichnung zusätzlich sammeln.
+- `--only interactions`, `--only scaling` oder `--full --only collection`:
+  gezielte, ausdrücklich unvollständige Diagnosen.
+- `--full --only collection --case M06-height-busy --runs 1`: einen benannten
+  Collectionfall in einer Gruppe untersuchen.
+
+Kurze Probe und vollständige Sammlung verwenden dieselben Eingaben und
+Inhaltsprüfer. Die Auswahl verkleinert nicht den Abnahmeumfang. Pflichtfälle,
+Stichproben, Fehlerkontrollen und Zeitgrenzen stehen einmal im
+[Prüfvertrag](docs/implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag).
+Aktuelle Runnerberichte verwenden Schema 6. `p0:evaluate` akzeptiert nur dieses
+Schema; historische Rohbelege bleiben unverändert und benötigen ihren zugehörigen
+Auswerterstand. Schema 6 trennt Erfassung, C1-Annahme/Reservierung,
+Materialisierung, Versiegelung, vollständigen Aktionsabschluss und Darstellung.
+Ordinalbereiche prüfen jede Reservierungsübernahme genau einmal; vollständige
+Render-Receipts belegen nur ihren eingefrorenen Einfluss. Historische Messgrößen
+werden nicht als neue Abschluss-, Upload- oder Drawzeiten umgedeutet.
+
+`--only interactions` umfasst auch einen mehrere Sekunden gezogenen
+512-Pixel-Pinsel, getrennte Live-Pixelproben, einen geknickten Strich, Halten,
+langsame/schnelle Züge, einen echten UI-Hänger und aufeinanderfolgende feine/grobe
+Gesten. Der unveränderte
+kurze 512-Pixel-Fall bleibt über `--only collection --case M03-height-max --runs 1`
+anwählbar. Die GPU-Referenzprüfung verwendet denselben gebauten Editor und echte
+Projektdateien. Sie prüft auch 64 aufeinanderfolgende Änderungen einschließlich
+Undo/Redo, feine Autoren unter groben Übersichten und Kontextwiederherstellung.
+Ihre Pixelbilder und gespeicherten Autorenwerte belegen Inhalt, keine
+Präsentationslatenz.
+
+Der normale Smoke enthält außerdem P3.1: grober Wald, feine Lichtung, erneute
+grobe Änderung, Undo/Redo und sichtbarer Escape-Abbruch, echte Dateisicherung,
+Neu/Open und ein frischer Prozess ohne Diagnosemodus. Landschaftspixel und
+unabhängig gelesene Autorenwerte werden gemeinsam geprüft; die Höhenquellen
+und feinen Ausnahmen müssen unverändert bleiben. Ein durchgehend gehaltener
+Strich liefert außerdem 320 Bewegungssamples mit zwei Samples je RAF und
+überschreitet positive sowie negative Kachelgrenzen. Tatsächliche Landschaftspixel,
+Anfang, Kurven und Endpunkt, ein gemeinsamer Undo-/Redo-Schritt und die gespeicherten
+Autorenwerte werden geprüft. `--only landscape` führt diese Fälle gezielt aus.
+Sie belegen Funktion und Inhalt; der Lauf ist keine native Leistungsabnahme.
+P3.2 ergänzt denselben Smoke um Hausplatzierung,
+Drehung, exakte Auswahl, sichtbaren Drag und Abbruch, gemeinsame History,
+kaltes räumliches Laden sowie Save/Neu/Open und einen frischen Prozess.
+`--only house` führt diesen Hausfall gezielt aus. Die Pixel- und Dateiprüfung
+vergleicht Hauspose und Identität unabhängig und kontrolliert, dass eine echte
+Geländeänderung keine Hausautoren verändert.
+P3.3 ergänzt denselben Lauf um die normale Gewässerszene: Maske und Loch,
+aktueller Wasserclip und Flussbett, lokale Fundamente, Veraltet-/Aktuell-Wechsel
+einschließlich Undo sowie denselben Datei- und Prozessrundlauf.
+`--only water` wählt diesen Fall. Unabhängige Pixel- und SQL-Prüfungen vergleichen
+die Wirkung mit den unveränderten gespeicherten Wasser- und Hausautoren.
+
+Ein Headless-Funktionslauf belegt keine native Leistung; Submission und RAF sind
+keine Präsentationszeitpunkte. Fehlende Messanbindung und Umgebungsqualifizierung
+bleiben ausdrücklich offen. Ein Paketstart ersetzt keine RPM-Installation.
+
+### R4-Richtungsprüfung
+
+`p0:direction` verwendet den bestehenden Runner mit `--native --direction`.
+Die feste Auswahl in `R4_REQUIREMENTS` umfasst zwölf Fälle in zwei frischen
+Prozessgruppen: kleine und große Pinsel, Autorenstufen 0/4/9/21, leere und
+mehrskalige Quellen, den Skalenwechsel um 0,01 sowie dieselbe lokale Bearbeitung
+bei 32/1.024/9.000 Quellen. Der erste lokal freigegebene Klick nach Navigation, normale vollständig bereite
+Wege, Stufenwechsel, Undo und tatsächlich laufendes Save sind enthalten. Kurze Fälle verlangen je 30 Gesten; Kurve und
+Halten dauern mindestens zehn Sekunden. Die R4-Auswahl lässt sich nicht durch
+`--only`, `--case` oder `--runs` verkleinern.
+
+Tatsächliche Autorenänderungen werden gegen die unabhängige C1-Referenz geprüft,
+einschließlich räumlicher Regionen und vollständiger Sekunden. Eingabeverlust,
+zu geringe Wirkung oder ein gemessener Budgetfehler bleiben Fehler, auch wenn
+weitere Hardwarebelege fehlen. Nicht ausgeführte Fälle bleiben im Laufindex.
+Nach einem entscheidenden Fehler stoppt die Richtungsprobe; spätere große
+Fixtures werden erst bei Bedarf erzeugt.
+
+`npm run p0:lab -- --direction` verwendet dieselbe Auswahl mit Softwaregrafik
+zur Diagnose. Es kann R4 nicht freigeben. R4 benötigt echte Hardware und
+qualifizierte Zeitintervalle tatsächlich geänderter Geländebilder; der aktuelle
+Beobachtungsweg kann diesen sichtbaren Takt noch nicht nachweisen. Diese Grenze
+ist von R5s zusätzlicher Zuordnung jeder Eingabe zur Präsentation getrennt.
+Der Auswerter liefert den formalen Messbefund, einschließlich `allowNextPhase`.
+Die ausdrücklich freigegebene begrenzte Fortsetzung mit R5 steht getrennt davon
+in der [Arbeitsentscheidung](docs/implementation/status.md#arbeitsentscheidung).
+Der Status nennt außerdem die ausgeführten Prüfungen und offenen Belege.
+
+### Begrenzte Grafikdiagnose
+
+Nach einem sauberen Build vergleicht derselbe Driver einen echten 512-Pixel-Strich
+auf einfachem und auf lokal mit 22 Höhenstufen belegtem Terrain. Eine dritte
+Kontrolle bewegt den Zeiger über bereits komponierte Kacheln ohne Bearbeitung.
+Sie trennt die allgemeine Bildausgabe von der laufenden Höhenrekonstruktion:
+
+```bash
+node scripts/atlas-p0-graphics-probe.mjs --hardware --runs 3 --gpu-timers --out src-tauri/target/diagnostics/graphics-hardware
+```
+
+`--lab` verwendet ausdrücklich Softwaregrafik. Jeder Fall startet in einem
+frischen Prozess; der vorhandene lange Strich behält 101 Positionen mit
+24-ms-Abständen. Die Diagnose erhält alle Fallfehler, Quellen-/Buildidentität,
+Kompositionsarbeit und Swap-Spannen. Kanonisch rekonstruierte Samples, lokale
+Delta-Samples, horizontale Zwischenarbeit, Basisaufnahmen, Farbarbeit und Kopien
+des numerischen Ausgangsstands werden getrennt gezählt. Tatsächliche GPU-Zeit wird auf die gemeldeten geänderten Samples
+bezogen; die Anzahl der GL-Aufrufe ist kein Ersatz für Pixelarbeit.
+Optionale asynchrone GPU-Zeitabfragen werden
+nur bei vorhandener Erweiterung ausgewertet; fehlende oder ungültige Ergebnisse
+bleiben offen. Trace und Zeitabfragen können die Laufzeit beeinflussen.
+
+Auch auf Hardware ist dieser Vergleich keine native Abnahme und beweist keinen
+ersten sichtbaren Terrainframe. Die statische Kontrolle ist keine Pinselprüfung.
+Die formale Präsentationszuordnung und die festen P0-Grenzen bleiben erforderlich.
+
+### Native Referenz und Vorprüfung
+
+```bash
+npm run p0:native -- --preflight --reference pfad/profil.json
+npm run p0:native -- --probe-native --out artifacts/atlas-rebuild/native-probe
+npm run p0:lab -- --probe-native --out artifacts/atlas-rebuild/lab-presentation-probe
+```
+
+`--preflight` prüft Voraussetzungen und erzeugt keine Fixtures. `--probe-native`
+verwendet die kleine gespeicherte Küstenfixture für kurze echte Pinseleingaben:
+Normalfall, unterdrückte Terrainzeichnung bei bewegtem Overlay, verzögerte
+Terrainzeichnung und anschließende Erholung. Drei unabhängige Terrainbereiche
+werden in den Tracebildern geprüft; ihre Framekennungen werden mit den Reportern
+des tatsächlichen Atlas-Renderers verglichen.
+Beide sind von `--full` und Szenarioauswahl getrennt. Für einen vorhandenen
+Paketstand kann `--executable` ergänzt werden. Ohne natives Display wird vor
+Buildzugriff, Programmstart und Fixtureerzeugung ein Blockerbericht geschrieben.
+Nur die ausdrücklich gewählte Kombination `--lab --probe-native` führt denselben
+kleinen Messversuch mit Software-Rendering aus. Sie qualifiziert keine native
+Referenz und bleibt auch bei bestandenen Inhaltskontrollen `BLOCKED`.
+
+Auf einem nativen Display entsteht `reference-observed.json` mit leerer `id`.
+Eine bewusst ausgewählte Referenz erhält eine eindeutige ID und wird über
+`--reference` erneut gegen die Beobachtungen geprüft: CPU/GPU, Plattform,
+Architektur, OS, RAM, Display und Frequenz sowie 1440×960/DPR 1 müssen stimmen;
+Hardwarebeschleunigung, sichtbares Fenster und Fokus müssen beobachtet sein.
+Die Vorlagen-Datei selbst nominiert noch keine Referenz.
+
+Eine passende Referenz beweist keine Präsentation. Die Probe kann Bildkennungen
+mit erfolgreichen Compositor-Reportern verbinden. Die vollständige Zuordnung
+einer exakten Atlas-Generation zur ersten tatsächlichen Präsentation fehlt
+weiterhin: Copy-/Refresh-Aufnahme und Screenshot besitzen in der gepinnten Trace
+keine gemeinsame nachweisbare Identität; die getestete Vorher-/Nachher-Signatur
+unterscheidet zudem nicht jede Zwischenrevision. Deshalb stoppen native
+Sammlungen vor ihren Fixtures mit **BLOCKED / Exit 2**; Captures, RAF und
+Trace-Nachbarschaft werden nicht als Ersatz akzeptiert.
+Technische Vorprüfungsfehler bleiben **FAIL / Exit 1**. `native-preflight.json`,
+`report.json` und `run-index.json` halten diese Grenze fest; nicht ausgeführte
+Szenarien werden nicht als gemessene Fehler oder bestandene Abnahme ausgegeben.
+
+## V7-Performanceprüfungen
+
+`npm run test:lod` prüft Budgets, Auflösungswechsel und Cachelebensdauer;
+`npm run test:lod:e2e` prüft Navigation und Invalidierung mit echtem Kern.
+Deterministische Arbeits-/Speicherbudgets gehören in CI, maschinenabhängige
+Zeitziele in die Referenzabnahme.
 
 ### Gelände vergleichen
 
-Der Release-Treiber verwendet neun feste Fälle: zwei Pinselgrößen und Pfadlängen
-auf leerer/bebauter Küste sowie eine Übersicht mit 120.000 Kontrollwerten.
-Autorenfixtures, Seed und Weltpfade sind festgelegt. Er misst Workerzeit,
-Transportvolumen, Bestätigung, Zeichnen und sichtbare Bestätigung.
-
 ```bash
-# Vor dem Umbau: Release-Artefakte samt Quell-/Binärhashes sichern
 npm run perf:terrain:capture -- src-tauri/target/cleanup/terrain-before
-# Nach dem Umbau: dieselben Fälle und Fixtures gegen beide Builds messen
 npm run perf:terrain -- src-tauri/target/cleanup/terrain-before
-# Nur den aktuellen Stand messen
 npm run perf:terrain
 ```
 
-Der Treiber prüft die exakten Node-/Rustversionen, baut mit Lockfile und erzeugt
-Fixtures vor der Messung. Er überschreibt keine Sicherung und verwirft veränderte
-Fingerprints oder unvergleichbare Fälle. Rohmessungen, Umgebungsdaten und
-`comparison.json` liegen unter `src-tauri/target/cleanup/atlas-simplify/terrain-<run>/`.
-Reihenfolge ist Baseline vor Kandidat; der Betriebssystemcache wird nicht geleert.
-Die Pause von 16 ms ist eine Mindestpause, keine garantierte Eingaberate.
+`capture` sichert Release-Artefakte samt Quell-/Binärhashes vor einer Änderung.
+Der Vergleich verwendet feste Autorenfixtures, Seeds und Weltpfade für neun
+Fälle: zwei Pinselgrößen/Pfadlängen auf leerer oder bebauter Küste sowie eine
+Übersicht mit 120.000 Kontrollwerten. Er prüft Node-/Rustversionen und
+Fingerprints; eine vorhandene Sicherung wird nicht überschrieben.
 
-Auf derselben Referenzmaschine gelten für die interaktiven Geländefälle
-p95 ≤16,7 ms Zeichenzeit und ≤50 ms bis zur sichtbaren Bestätigung. Der Bericht
-bewertet diese Ziele, ohne sie als CI-Zeitlimits zu erzwingen. Mehrere vergleichbare
-Läufe sind erforderlich; bei Zielverfehlung bleibt die Performanceabnahme offen.
-Der Browser-/JSONL-Pfad ersetzt keine native Tauri-IPC-Abnahme. Aufbau und
-Messgrenzen beschreibt die Architektur, den erreichten Stand das Statusdokument.
+Rohmessungen, Umgebung und `comparison.json` liegen unter
+`src-tauri/target/cleanup/atlas-simplify/terrain-<run>/`. Reihenfolge ist Baseline
+vor Kandidat; der Betriebssystemcache wird nicht geleert, 16 ms Eingabepause ist
+eine Mindestpause. Auf derselben Referenzmaschine gelten für interaktive Fälle
+p95 ≤16,7 ms Zeichenzeit und ≤50 ms bis zur sichtbaren Bestätigung. Mehrere
+vergleichbare Läufe sind erforderlich. Browser/JSONL ersetzt keine native
+Tauri-IPC-Abnahme; die Messgrenzen stehen in der Architektur.
 
-Für einen direkten Playwrightlauf zuerst `npm run perf:build` und den ignorierten
-Rust-Test `terrain_performance_fixtures` ausführen. Danach:
-`npm run perf:measure -- terrain.spec.ts`. `ATLAS_TERRAIN_FIXTURES` wählt das
-Fixtureverzeichnis; Vorgabe ist `src-tauri/target/diagnostics/terrain-performance`.
-
-Der kleine Weltkartenfall benötigt keine Fixtures: nach `npm run perf:build`
-`npm run perf:measure -- world-brush.spec.ts --repeat-each=3` ausführen.
+Für einen direkten Lauf zuerst `npm run perf:build` und den ignorierten Rust-Test
+`terrain_performance_fixtures` ausführen, danach
+`npm run perf:measure -- terrain.spec.ts`. `ATLAS_TERRAIN_FIXTURES` wählt die
+Fixtures; Vorgabe ist `src-tauri/target/diagnostics/terrain-performance`.
+Der kleine Weltkartenfall benötigt keine Fixtures:
+`npm run perf:measure -- world-brush.spec.ts --repeat-each=3` nach `perf:build`.
 
 ### Große Stadt-/Weltfixtures
-
-Diese opt-in Fixtures werden aus dem aktuellen Dateiformat neu erzeugt und liegen
-unter `src-tauri/target/diagnostics/city/` beziehungsweise `world/`:
 
 ```bash
 cargo test --locked --manifest-path src-tauri/Cargo.toml --lib city_scale_benchmark -- --ignored --nocapture
 cargo test --locked --manifest-path src-tauri/Cargo.toml --lib world_scale_benchmark -- --ignored --nocapture
 npm run perf:build
 npm run perf:measure -- release.spec.ts
-# Optionaler Stadt-Navigationstest mit seinen eigenen Zeitgrenzen
 ATLAS_CITY_BENCHMARK=1 npm run perf:measure -- city-navigation.spec.ts
 ```
 
-`ATLAS_PERF_FIXTURE` begrenzt den Release-Lauf auf `city-100000`, `city-250000`
-oder `world-10000`. Er misst erstes Öffnen in einem neuen Worker, erneutes Öffnen
-im selben Worker, erste Ansicht, Einpassen, Verschieben und alle 14 Ansichten.
-Chromium läuft bei 1440 × 960 CSS-Pixeln und DPR 1 auf Port 1422.
-Ergebnisse liegen unter `src-tauri/target/cleanup/atlas-simplify/performance-<run>/`;
-`ATLAS_PERF_OUTPUT` wählt einen anderen Ausgabepfad. JSONL enthält Roundtrip und
-Transportbytes; `ATLAS_MEASURE_WORKER=1` ergänzt Workerzeit einschließlich Queue.
+Fixtures entstehen aus dem aktuellen Format unter
+`src-tauri/target/diagnostics/city/` beziehungsweise `world/`.
+`ATLAS_PERF_FIXTURE` wählt `city-100000`, `city-250000` oder `world-10000`.
+Der Release-Lauf prüft Öffnen, erste Ansicht, Einpassen, Verschieben und alle
+14 Ansichten bei 1440×960 CSS-Pixeln, DPR 1 und Port 1422. Ergebnisse liegen unter
+`src-tauri/target/cleanup/atlas-simplify/performance-<run>/`;
+`ATLAS_PERF_OUTPUT` wählt einen anderen Pfad. `ATLAS_MEASURE_WORKER=1` ergänzt
+Workerzeit einschließlich Queue zu Roundtrip und Transportbytes.
 
-## Native Abnahme und Übergabe
+## Native Bedienabnahme
 
-Nach Interaktions- oder Dateiänderungen das frisch gebaute Desktopprogramm prüfen.
-Die folgenden Szenarien ergänzen die automatischen Tests; erwartetes Verhalten
-und Grenzen werden ausschließlich im Produktvertrag gepflegt.
+Nach Interaktions- oder Dateiänderungen die frisch gebaute Desktopanwendung
+bedienen. Relevante Fälle aus dem Produktvertrag auswählen: Dateiannahme/-abbruch,
+Navigation, Gesten/Entwürfe, History, Kontextwechsel und Wiederöffnen.
+Bei Dialogänderungen auch Fokus, Tab/Umschalt+Tab und Escape bei 900×620 prüfen.
 
-| Bereich                | Manuell durchspielen                                                                                                                           |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dateien                | Neu, Öffnen, Speichern, Speichern unter und Schließen; jeweils Annahme und Abbruch mit ungespeicherten Änderungen.                             |
-| Häuser und Innenräume  | Zeichnen, Umbenennen, Bewegen, Geschoss-/Kontextwechsel, Undo/Redo, Abbruch und anschließendes Weiterarbeiten.                                 |
-| Straßen und Parzellen  | Entwurf, automatische Bebauung, Varianten, Nodes, Verlängerung, Rauheit, Geländefolge; Übernahme per Button/Enter/Rechtsklick nach Navigation. |
-| Höhen und Gewässer     | Alle Modi, kleine/große Pinsel, Detail/Übersicht, sichtbare Zwischenstände, Abbruch, History, Ufer, Inseln, Flusskontakt und Datei-Rundlauf.   |
-| Bodenfarben            | Spitzen, Halten, Deckkraft, Farbfluss, Pipette, Radierer, Kachelnähte, Abbruch, History und Wiederöffnen.                                      |
-| Regionen               | Malen/Radieren, Nachbarn, Beziehungen, Kategorien/Ränge, Namen, Stile, Beschriftungsgrenzen und Datei-Rundlauf.                                |
-| Flüsse                 | Nodes, gemeinsame Knoten, Breite, Verlängerung, Richtung und Profile; verspätete Vorschauen, Navigation, Übernahme, Abbruch und History.       |
-| Navigation und Dialoge | Welt bis Grundstück, erhaltene lokale Details; bei 900 × 620 Dialogfokus, Tab/Umschalt+Tab, Escape und Fehlerkorrektur.                        |
-
-Plattform, Skalierung und Ergebnisse im ignorierten Diagnoseverzeichnis festhalten.
-Dateivergleiche verwenden SQLite-Integrität und Autorentabellen in Primärschlüsselreihenfolge.
-Anschließend den kurzen Status durch den gemeinsam geprüften Stand, verbleibende
-Abnahmen und nächste Übergabe ersetzen. Einzelne erfolgreiche Teilprüfungen
-belegen weder Gesamtgrün noch CI-Freigabe.
+Plattform, Skalierung, Kandidatenidentität und Ergebnisse im Diagnoseverzeichnis
+festhalten. Dateivergleiche verwenden SQLite-Integrität und Autorentabellen in
+Primärschlüsselreihenfolge. Anschließend den [Status](docs/implementation/status.md)
+durch den geprüften Stand und verbleibende Abnahmen ersetzen. Erfolgreiche
+Teilprüfungen belegen weder Gesamtgrün noch native Leistungsfreigabe.

@@ -3,6 +3,11 @@
 Verhalten, Format und Grenzen des Atlas-Editors. Umsetzung: [Architektur](architecture.md);
 Prüfstand: [Status](implementation/status.md); Befehle: [README](../README.md).
 
+Die bestehenden Abschnitte beschreiben den weiterhin aktiven Atlas V7. Für den
+separat gestarteten, begrenzten P0-Editor gilt ausschließlich der ergänzende
+[P0-Abschnitt](#optionaler-atlas-p0-versuch); er übernimmt noch nicht den gesamten
+V7-Funktionsumfang oder die Arbeitspakete P1–P9.
+
 ## Koordinaten, Eigentum und Lebenszyklus
 
 | Größe                     | Vertrag                                                         |
@@ -1078,3 +1083,467 @@ mit den umschließenden Gewässerrechtecken; überlappende Einflüsse zählen ei
 Lokale Höhenautoren
 bleiben bei groben Änderungen erhalten. Zu große Aktionen werden vollständig
 abgelehnt. Persistenz und Import folgen [Dateien und History](#dateien-und-history).
+
+## Optionaler Atlas-P0-Versuch
+
+### Vorschauupdates unter Fedora
+
+Die gepackte Linux-x86_64-Vorschau prüft einmal nach dem Start den festen
+GitHub-Kanal **Atlas-Vorschau** für Draft-PR #1469. **Updates** zeigt aktuellen
+Build und Commit und bietet eine erneute Prüfung an. Ein verfügbarer neuer
+Stand wird auch am Knopf angezeigt. Entwicklungsläufe führen keine automatische
+Netzanfrage aus. Ein Fehler beim Prüfen oder Herunterladen verändert keine Karte
+und beendet die App nicht.
+
+**Herunterladen** lädt erst nach dem Klick das passende RPM mit Fortschritt.
+Falsche Größe, Prüfsumme, Plattform oder Kanal werden abgewiesen; ein
+fehlgeschlagener Download ist nicht installierbar. **Installieren und neu starten**
+ist nur in einer vom passenden RPM installierten App mit DNF und Polkit verfügbar.
+Die Aktion beendet angenommene Bearbeitungen und ausstehende Writes und bietet bei
+ungespeicherten Karten **Speichern / Verwerfen / Abbrechen** an. Abbrechen oder
+fehlgeschlagenes Speichern startet keine Installation und erhält die Bearbeitung.
+Danach bestätigt der Nutzer die Installation im Systemdialog. Der Renderer kann
+keine fremden Pakete, Installationsziele oder Befehle übergeben.
+
+Die App installiert keine ältere oder bereits vorhandene Paketversion. Nach der
+Systeminstallation muss die tatsächliche RPM-Identität dem angeforderten Build
+entsprechen. Erst dann erfolgt der Neustart. Zwischen erfolgreicher Installation
+und Neustart bleibt die Bearbeitung gesperrt; alte und neue Programmdateien werden
+nicht in einer weiterlaufenden Editorsitzung gemischt. Falls der Neustart nicht
+abgeschlossen werden kann, bleibt **Jetzt neu starten** verfügbar. Auch ein
+nicht eindeutig bestätigter Paketvorgang verlangt einen Neustart, ohne als
+erfolgreiches Update ausgewiesen zu werden.
+
+Die Release-Seite bietet RPM und ZIP auch direkt zum Download. Die ZIP-Ausgabe
+ersetzt keine RPM-Installation und bietet ohne diese keinen System-Updateknopf.
+Prüfsummen und HTTPS sichern den Downloadpfad; unabhängige Paketsignaturen sind
+kein Bestandteil dieses Testkanals. Vorschauupdates sind keine Aussage über
+vollständige Leistungsabnahme oder Kompatibilität früherer Versuchsdateien.
+
+### Editorumfang
+
+P0 ist ein eigener, ausdrücklich gewählter Höhen-, Landschafts- und Hauseditor.
+Er bietet Verschieben und Zoom vom Nahbereich bis zur Welt, Raster ein/aus,
+Land, Meer, Anheben und Absenken, einen kleinen Landschafts-/Lichtungspinsel,
+rechteckige Häuser mit Auswahl, Drehung und Bewegung, eine vorbereitete Gewässerszene mit
+aktuellen Fundamenten, Undo/Redo sowie
+Neu, Öffnen, Speichern und Speichern unter. Die Pinselgröße wird
+in Bildschirmpixeln, die Höhenänderungsrate in Metern pro Sekunde eingestellt;
+die Berechnung verwendet Fuß und Sekunden. Straßen, vollständiger Hausbau,
+Innenräume, Regionen sowie Werkzeuge zum Erstellen oder Anpassen von Gewässern
+gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht verfügbar.
+
+Das Werkzeug **Höhen** verwendet die V7-Anordnung: **Pinselmodus**,
+**Pinselgröße (Pixel)**, Weltdurchmesser und Höhenraster, anschließend
+bei Anheben/Absenken **Höhenänderung (m/s)**. Land/Meer bietet stattdessen
+**Küstenform → Rund/Kräuselig** und bei Kräuselig **Küstenrauheit (%)**
+von 5 bis 100 Prozent in Fünferschritten. Rund ist die Vorgabe; der Wechsel
+auf Kräuselig beginnt bei 65 Prozent. Die übrigen V7-Modi und Höhenlinien
+sind sichtbar deaktiviert. Der zuletzt gewählte
+Höhenmodus bleibt beim Wechsel zu anderen Werkzeugen erhalten. Die
+Größenangaben folgen der aktuellen Kamera und Autorenstufe, metrisch mit
+höchstens drei signifikanten Stellen und ab einem Kilometer in Kilometern.
+
+Im Höhenwerkzeug vergrößern `]` und Alt+Mausrad nach oben den Durchmesser um
+den Faktor 1,1; `[` und Alt+Mausrad nach unten verkleinern ihn entsprechend.
+Das Ergebnis wird auf ganze Pixel gerundet und auf 8–512 begrenzt. Diese
+Gesten ändern weder die Kamera noch einen laufenden Strich; während einer
+aktiven oder noch abzuschließenden Pointergeste bleiben sie ohne Wirkung.
+Fokussierte Regler und Präzisionsfelder behalten ihre eigene Tastaturbedienung. Die
+Größenkurzbefehle berücksichtigen AltGraph-Tastaturen. Eine zusätzliche
+Leertaste-Ziehen-Geste wird nicht angeboten. Die zeitabhängige Wirkung beim
+Halten und langsamen Ziehen gilt für Anheben/Absenken. Land/Meer folgt dem
+räumlichen Zielprofil; Halten und wiederholtes Übermalen derselben Geometrie
+verstärken den Auftrag nicht.
+
+Numerische Einstellungen müssen endlich sein. Pinselgröße und Stärke werden
+auf ihre wirksamen Grenzen begrenzt: 8–512 Bildschirmpixel für Höhe,
+8–128 für Landschaft und 0,03048–3.048 Meter pro Sekunde Höhenrate.
+Landschaftsdichte bleibt bei 0–100 Prozent. Hausmaße und Fundamentparameter
+müssen ihre unten angegebenen Grenzen einhalten; ungültige Werte werden mit
+sichtbarem Fehler abgewiesen und nicht als neue Autoren übernommen.
+
+Pinselgrößen, Höhenrate, Landschaftsdichte sowie Hausmaße, Drehung und
+Fundamentparameter werden über Regler mit sichtbarem Wert und Einheit bedient.
+Höhenrate und Hausbreite/-tiefe verwenden eine logarithmische Skala, damit kleine
+und große Werte gleichermaßen erreichbar bleiben. Pinsel- und Dichteänderungen
+werden während des Ziehens wirksam. Hausregler übernehmen ihren Entwurf einmal
+beim Loslassen, Abschluss einer Tastenbedienung oder Verlassen; Escape verwirft
+einen noch offenen Hausreglerentwurf. Ein geändertes ausgewähltes Haus erzeugt
+dadurch einen einzelnen Undo-Schritt pro Reglerbedienung.
+
+Ein Klick auf den angezeigten Wert öffnet eine genaue Eingabe ohne Stepper.
+Sie akzeptiert Dezimalpunkt oder Dezimalkomma; gültige Werte werden beim Verlassen
+oder Enter übernommen. Escape oder eine leere Eingabe erhält den bisherigen
+Wert; ungültige Werte zeigen einen lokalen Fehler und verändern die Einstellung
+nicht. Ein direkter Kartenklick übernimmt einen gültigen fokussierten Wert vor
+Beginn des Strichs. Zielkoordinaten bleiben direkte Zahlenfelder.
+
+Ohne ausgewähltes Haus erklärt das Auswahlpanel den nächsten Schritt und zeigt
+keine vermeintlichen Objekteigenschaften. Abmessungen und Fundament bilden
+getrennte Gruppen. Gewässer und Fundamente sind in leeren Karten eingeklappt;
+vorhandene Ableitungen, eine Hausauswahl oder neue Warnungen öffnen den Bereich.
+Ansichtsvorgaben behalten den aktuellen Kartenmittelpunkt bei und verwenden
+keine noch nicht aufgerufenen Koordinateneingaben. Der Wechsel zwischen
+Werkzeugpanels erhält Canvas und Kamera.
+
+Eine neue P0-Welt ist Ozean mit natürlicher Höhe −100 Fuß und Meeresspiegel 0.
+Die natürliche Oberfläche entsteht aus der Summe relativer Höhenfelder mit
+Abständen von `5 × 2^level` Fuß auf Stufen 0–21. Erst die vollständig
+rekonstruierte Summe wird auf ±100.000 Fuß begrenzt. Weltkoordinaten müssen
+endlich und innerhalb ±100.000.000 Fuß sein. Grobes Anheben oder Absenken lässt
+die feineren Restwerte unverändert; an den Höhenlimits kann die abschließende
+Begrenzung Relief abschneiden. Küsten folgen der zusammengesetzten Oberfläche,
+sie besitzen keine getrennten Höhenautoren.
+
+**Land/Meer** übernimmt den räumlichen Küstenauftrag aus V7: Land hebt im
+Pinselinneren auf mindestens +10 Fuß, Meer senkt auf höchstens −10 Fuß.
+Höheres Land beziehungsweise tieferes Meer bleibt erhalten. Am Rand entsteht
+ein weicher Übergang über den Meeresspiegel. Die vollständige angenommene
+Polylinie einschließlich Ecken und Endpunkt bestimmt die Wirkung, unabhängig
+von Ereignisanzahl oder Geschwindigkeit. Kräuselig verwendet ein ortsfestes
+stetiges Rauschfeld innerhalb des Pinselkreises; die Rauheit ändert die Küstenform.
+
+Die Küsten-Autorenstufe wird beim Druck mit höchstens zwei Bildschirmpixeln
+Rasterabstand gewählt, soweit das feinste 5-Fuß-Raster es erlaubt. Radius,
+Stufe, Modus und Rauheit bleiben während des Strichs fest. Der Zielwert gilt
+für Grundhöhe plus gröbere Beiträge und den eigenen Kontrollwert der gewählten
+Stufe. Feinere additive Beiträge werden nicht umgeschrieben und bleiben als
+Relief erhalten; sie können das endgültige lokale Vorzeichen weiterhin bestimmen.
+Feindetails folgen damit weiterhin dem additiven Höhenmodell.
+Land/Meer verwendet dieselben Höhenpatches, Undo/Redo und Dateisicherung wie
+Anheben/Absenken. Loslassen beendet die Eingabe; der gemeinsame Aktionsabschluss
+wartet auf den vollständigen angenommenen Weg. Escape und Fokusverlust erhalten
+die angenommenen Höhenänderungen. Quellen-, Arbeits- oder Darstellungsfehler
+nehmen bereits materialisierte Teile des Strichs nicht zurück.
+
+Für die Farbdarstellung werden Höhen höchstens `0,000001` Fuß von den
+Klassengrenzen 0 oder 12 Fuß entfernt auf die jeweilige Grenze gesetzt. Dieses
+Band von rund 0,3 Mikrometern stabilisiert Farbklassen bei abweichender
+CPU-/GPU-Rundung. Es beschreibt die numerische Toleranz der Darstellung;
+Farbentscheidungen unmittelbar an einer Bandgrenze werden auf dieser
+Höhengenauigkeit verglichen. Die Regel betrifft ausschließlich die Darstellung; Autorenwerte, exakte
+Höhenabfragen, Undo und gespeicherte Daten behalten ihre `Float64`-Werte.
+
+Normale Rundungsreste bleiben auf der GPU: ausschließlich skalierte Beträge
+unter `1e-30` dürfen in der Darstellung als null erscheinen. Die obige
+Darstellungstoleranz bleibt unverändert. Echte numerische Ausnahmefälle werden
+mit unveränderlichen lokalen Eingaben außerhalb des UI-Threads berechnet;
+ungefertigte Flächen bleiben sichtbar wartend.
+
+**Bearbeitung beginnt auf sichtbarem, lokal bereitem Gelände.** Diese Freigabe
+gilt auch ohne Diagnosemodus. Die nötigen Quellen müssen vorhanden oder
+bestätigt leer sein; der sichtbare Wirkbereich muss zur aktuellen Ansicht und
+Werkzeugvorbereitung passen und von der GPU fertig gezeichnet sein. Ein Submit
+allein ist keine solche Bestätigung. Diese Rückmeldung belegt noch nicht die
+erste physische Bildschirmpräsentation.
+
+Eine reguläre numerische Übersicht auf dem gewählten Maßstab und ein gezeichneter
+leerer Ozean sind gültige Grundlagen. Ein alter Ersatzframe, eine Ladefläche oder
+bloß vorhandene Daten genügen nicht. Die Pinselfläche muss das Fenster mit
+positiver Fläche schneiden. Ein über den Fensterrand ragender Pinsel benötigt
+nur für den sichtbaren Teil ein Bild; die Daten für den vollständigen Eingriff
+bleiben erforderlich. Fehlende entfernte Bildteile sperren einen bereiten
+lokalen Ort nicht. Noch ungezeichnete Flächen sind schraffiert. Pinsel und Status
+zeigen fehlende Bereitschaft; Fehler bieten einen erneuten Ladeversuch an.
+Navigation bleibt bedienbar. Der lokale Quellenbedarf folgt auch dem Zeiger und
+Änderungen der Pinselgröße ohne aktive Geste.
+
+Terrainarbeit und das Zeichnen fertiger Bilder haben getrennte, begrenzte
+Grafikplätze. Eine neue Kamerabewegung ersetzt einen noch nicht gezeichneten
+älteren Kamerawunsch. Der Pinselkreis bewegt sich unabhängig davon als
+Oberflächenanzeige; er bestätigt niemals eine Geländeänderung. Teilweise
+vorbereitete Kacheln und bloße Uploads geben keine neue Pinselwirkung frei.
+
+Ein Druck vor Freigabe wird abgewiesen. Er erzeugt keine Modelländerung, keinen
+Undo-Schritt und keine vorgemerkte Wirkung. Auch wenn die Taste bis nach dem
+Laden gehalten wird, beginnt kein Strich automatisch. Der Nutzer muss loslassen
+und erneut drücken; bei gehaltener Taste erklärt ein Hinweis diesen Zustand.
+Wartezeit und Wege vor der Freigabe werden nicht nachgeholt.
+
+Die folgenden Zeit- und Wirkungsregeln gelten für Anheben/Absenken.
+Ein Strich hält Autorenstufe und Pinselparameter bis zum Abschluss fest.
+**Gedrücktes Halten vertieft die Stelle. Langsame Züge wirken stärker als
+schnelle, weil mehr Zeit auf die betroffenen Stellen entfällt.** C1 verwendet
+je Stützstelle den größeren Wert aus einer einmaligen räumlichen Mindestwirkung
+und kumulierter angenommener Zeitwirkung: `V = max(F, T)`. Die räumliche
+Mindestwirkung folgt dem größten quartischen Kernelwert auf der vollständigen
+angenommenen Polylinie, multipliziert mit 1/60 Sekunde der fixierten Rate.
+Der Anfangsklick gehört zu diesem einmaligen Anteil. Er wird auf die Zeitwirkung
+angerechnet; wiederholte Nullzeitbesuche stapeln keine neuen Mindestimpulse.
+Dies ist die in R1 ausgewählte Semantik.
+
+Bewegungs- und Haltezeit werden auf derselben kausalen Uhr einmal verbucht.
+Gleiche Zeitstempel erhalten ihre Ecken; ihre neue Zeit verteilt sich nach
+Weglänge. Verspätete Ereignisse erhalten ihre noch nicht aufgenommene Geometrie,
+erzeugen aber keine bereits verbuchte Zeit erneut. Pro Annahmefenster werden
+höchstens 50 ms Zeit proportional auf seine Teilstrecken verteilt. Überzählige
+Zeit verfällt und erzeugt später keinen Nachholauftrag. Die Rate bleibt fest.
+
+Vor jeder Annahme werden Quellen, sichtbare Grundlage, Arbeit und Speicher
+geprüft und die vollständige Wirkung reserviert. Je Stützstelle dürfen angewandte
+und reservierte, noch nicht passend bestätigte Beiträge gemeinsam höchstens
+50 ms der fixierten Rate ausmachen. Ein ausgeschöpfter Ort verwirft keinen
+anderen zulässigen Ort, auch nicht in derselben Autorenkachel. Vollständige,
+passende Renderbestätigungen geben nur ihre tatsächlich dargestellte Wirkung
+frei. Teilbilder und alte Belege zählen nicht.
+
+Wenn eine tatsächlich ausgeschöpfte Reserve weitere Zeitwirkung begrenzt,
+zeigt der Status „Darstellung holt auf – Höhenwirkung begrenzt“. Andere freie
+Stützstellen bleiben bearbeitbar. Eine passende Bestätigung, ein frei
+bearbeitbarer neuer Ort oder das Ende der Eingabe beendet diese Anzeige;
+historisch verworfene Zeit hält sie nicht künstlich aktiv. Bei einem blockierten
+UI-Thread kann der Hinweis erst mit der nächsten ausführbaren Darstellung
+erscheinen. Die verfallene Zeit wird auch dann nicht nachgeholt.
+
+Eigene spätere Änderungen entwerten die beim Beginn nachgewiesene Grundlage
+nicht. Neu berührte Orte müssen jedoch ebenfalls sichtbar bereit sein. Fehlen
+Quellen oder sichtbare Grundlage, endet die Eingabe vor dem unzulässigen
+Abschnitt; der bereits angenommene Teil bleibt erhalten und ein neuer Druck
+ist erforderlich. Quellen- und Bildprüfungen erhalten die Ecken des Wegs.
+Es gibt kein globales Warten auf eine einzelne eigene Dosis.
+
+Zusammengefasste Mausereignisse werden in ihrer gelieferten Reihenfolge
+aufgenommen; ihr zusammenfassendes Ereignis wird nicht doppelt gezählt.
+Die gemeinsame noch nicht abgearbeitete Eingabe ist auf 128 Punkte begrenzt.
+Nichtterminale Eingabe lässt einen Platz für Up frei. Ein tatsächlicher
+Kapazitätsüberlauf wird vor Annahme verständlich abgewiesen und beendet die
+weitere Eingabe. Er kürzt keine zuvor angenommene Arbeit und malt keine
+Abkürzung durch eine Kurve. Eine langsame Zeichenrunde verwirft keinen schon
+angenommenen Weg.
+
+**Loslassen beendet die Eingabe, der Aktionsabschluss folgt nach der letzten
+angenommenen Arbeit.** Up reserviert seinen tatsächlichen Endpunkt samt noch
+zulässiger Zeit vor Rückkehr des Handlers, auch ohne vorangegangenes Move.
+Danach wird keine zusätzliche Zeit oder Geometrie angenommen. Die begrenzte
+Fortsetzung kann weitere Frames benötigen; der Status zeigt den Abschluss an.
+Die gesamte Geste erzeugt genau einen Undo-Schritt. Nach dem tatsächlichen
+Aktionsabschluss erfolgt keine weitere Autorenmutation für diese Geste.
+
+Escape, Fokusverlust, Pointercancel und ausdrücklicher Ansichtwechsel beenden
+die Eingabe und erhalten die bereits angenommene Arbeit einschließlich ihrer
+Fortsetzung. Ein vollständig aktueller Endstand benötigt keinen künstlichen
+identischen Terrainframe. Ausstehende Darstellung bleibt ausstehend.
+Schnelle Klickfolgen dürfen weder eine noch abschließende Aktion überholen noch
+auf ungesehenem eigenem Gelände unsichtbare Schritte stapeln.
+
+Während einer gehaltenen Bewegung folgt das tatsächliche Gelände dem Pinsel
+kontinuierlich. Wenige frühe Zwischenbilder und ein korrektes Endbild genügen
+dafür nicht. Cursor und Pinselkreis ersetzen die laufende Ergebnisdarstellung
+nicht; Eingabe, lokale Änderung, exakter Renderstand und Pointerup werden getrennt
+beobachtet. Verfehlte Live- oder Zeitziele bleiben im Prüfstand ausdrücklich offen.
+
+Grobe Ansichten verwenden numerische Übersichten feiner Höhenbeiträge. Sie
+erhalten den Einfluss lokaler Details auf die zusammengesetzte Oberfläche und
+deren Küste; sie verlangen keine vollständige Feindatenabdeckung im aktiven
+Editor. Genaue beliebige Punktabfragen bleiben bei ungeladenen Feindaten
+unbekannt, bis die betreffende Detailansicht geladen ist. Für die lokale
+Bearbeitungsfreigabe werden die Quellen der gewählten Autorenstufe und gröbere
+Beiträge benötigt.
+
+### Landschaft im begrenzten P3.1-Fall
+
+Die Landschaftsauswahl bietet Wald, Buschland, Wiese und Felsgebiet mit einer
+Zieldichte von 0–100 Prozent. Der Pinsel ist zunächst auf 8–128 Bildschirmpixel
+begrenzt; seine Autorenstufe und Parameter bleiben während eines Strichs fest.
+Er schreibt Deckung auf 64×64-Zellen mit `2^level` Fuß Abstand (Stufen 0–24).
+Landschaftsdeckung ist eine zielgerichtete Flächenbearbeitung; die zeitabhängige
+Höhenrate gilt hier nicht. Die innere Radiushälfte erreicht die gewählte Dichte
+in einem Strich vollständig, der äußere Ring läuft weich aus. Das gilt auch
+für die Lichtung mit Zieldichte null. Mehr Pointerereignisse oder längeres
+Halten verstärken denselben Landschaftsstrich nicht.
+
+Fehlende Landschaftszellen erben den gröberen Wert. Explizit leere Zellen sind
+eigene Autoren und unterdrücken groben Wald. Eine feine Lichtung bleibt bei
+späterer grober Waldänderung erhalten, ebenso beim Verlassen der Detailansicht,
+Undo/Redo und Speichern/Wiederöffnen. Der Pinsel beginnt nur auf sichtbarer,
+lokal bereiter Darstellung mit den nötigen Quellen. Geladene Übersicht und
+beliebige exakte Punktabfrage bleiben unterschiedliche Bereitschaftsbelege.
+
+Ein bereiter Kachelübergang unterbricht den Strich nicht. Benötigte Quellen im
+nahen Umfeld werden vorgeladen; tatsächlich unbekannte oder noch nicht sichtbare
+Bereiche bleiben gesperrt. Trifft der Pinsel auf einen solchen Bereich oder eine
+Arbeitsgrenze, stoppt die weitere Annahme mit sichtbarem Hinweis. Der bereits
+gemalte Teil bleibt erhalten. Abgewiesene Bewegung wird nach dem Laden nicht
+nachgeholt; zum Weitermalen ist ein neuer Druck erforderlich.
+
+Loslassen versiegelt den Endpunkt. Ein erhaltener Strich mit tatsächlichen
+Änderungen erzeugt genau einen gemeinsamen Undo-Schritt; Speichern und History
+warten auf seinen Abschluss.
+Nur ausdrückliches Escape vor dem Loslassen nimmt den gesamten laufenden
+Strich zurück. Fokusverlust, Pointercancel sowie Ansicht- oder Werkzeugwechsel
+beenden die Eingabe und erhalten den Strich. Nach dem Versiegeln kann auch
+Escape ihn nicht mehr zurücknehmen. Ein Fehler während der weiteren Berechnung
+oder Darstellung löscht keine bereits übernommenen Landschaftsänderungen und
+keine früheren Striche. Der erhaltene Stand bleibt rückgängig machbar und kann
+nach erfolgreicher Speicherung wieder geöffnet werden.
+
+Die Darstellung zeigt die vier Deckungen als gemischte Flächen. Wasser blendet
+sie aus, ohne ihre Autoren zu löschen; erneutes Anheben kann sie wieder sichtbar
+machen. Landschaftsübersichten enthalten den feinsten Eigenbeitrag und seine
+Restvererbung an festen Weltpunkten. Die spätere vollständige Symbol-, Kronen-
+und Landschafts-LOD-Darstellung ist Teil von P4.
+
+### Ein Haus im begrenzten P3.2-Fall
+
+**Haus platzieren** setzt ein rechteckiges Haus mit stabiler ID. Seine Breite
+und Tiefe sind positive Werte bis jeweils 3.048 Meter; die Drehung verwendet
+Grad und wird auf 0 bis unter 360 normalisiert. Die gesamte gedrehte Grundfläche
+muss innerhalb der Atlaswelt liegen. **Haus auswählen** trifft die tatsächliche
+gedrehte Grundfläche und ermöglicht direktes Verschieben. Ein Klick oder eine
+Rückkehr zur Ausgangspose ohne Autorenänderung erzeugt keinen Undo-Schritt.
+Breite, Tiefe und Drehung bearbeiten in diesem Modus das ausgewählte Haus.
+
+Die Zwischenpose erscheint während des Ziehens. Escape, Fokusverlust,
+Pointerabbruch, Ansichts- oder Werkzeugwechsel vor dem Loslassen nehmen die
+gesamte Bewegung beziehungsweise Platzierung zurück. Nach dem Loslassen bleibt
+die abgeschlossene Aktion erhalten. Ein nicht bereiter Endpunkt bricht die
+Bewegung mit sichtbarer Meldung ab. Speichern, History und Dateiaktionen während
+des Ziehens schließen die bereits sichtbare Pose über die gemeinsame Aktionsgrenze
+ab. Jede abgeschlossene Änderung zählt als ein gemeinsamer Undo-Schritt.
+
+Fundamenthöhe (0–30,48 Meter, Vorgabe 0,3048 Meter) und Übergangsbreite
+(0–152,4 Meter, Vorgabe 3,048 Meter) werden pro Haus gespeichert und sind
+rückgängig machbar. Ihre lokale Darstellung wird aus dem aktuellen Gelände
+einschließlich bestätigtem Flussbett abgeleitet. Geländeänderungen lassen die
+gespeicherte Hauspose, ID und Fundamenteinstellungen unverändert. Innenräume
+und Parzellen sind noch nicht mit diesem Hausheader verbunden.
+
+Hausheader werden räumlich geladen. Kalte Bereiche bleiben bis zur vollständigen
+Antwort unbekannt; ein Ausschnitt mit mehr als 4.096 Häusern wird mit einer
+Aufforderung zum näheren Heranzoomen abgewiesen. Bereits bereite Geländebereiche
+bleiben unabhängig davon bearbeitbar. Beim Verlassen eines Bereichs dürfen
+bestätigte Header verdrängt werden; Wiederkehr, Undo/Redo und Wiederöffnen
+erhalten die stabile Identität und die vollständigen Autorenwerte.
+
+### Vorbereitete Gewässer und Fundamente im P3.3-Fall
+
+**Gewässerszene öffnen** im Panel **Gewässer und Fundamente** erzeugt über den
+regulären Dateiwechsel eine neue Karte mit echtem See samt Loch, einem kleinen
+bestätigten Flussprofil und einem Haus am Hang nahe dem Flussufer. Der See hat
+32 Fuß beziehungsweise 9,7536 Meter Pegel. Die schräge Oberfläche lässt zugleich
+nasse und trockene Teile der gespeicherten Maske erkennen. Die Szene enthält
+editierbare Höhenautoren und echte gespeicherte Gewässer- und Hausquellen; sie
+ist auch ohne Diagnosemodus verfügbar. **Neu** erzeugt weiterhin die leere Welt.
+Ungespeicherte Änderungen werden bei beiden Wegen über denselben
+Speichern-/Verwerfen-/Abbrechen-Ablauf behandelt.
+
+Ein See speichert einen Außenring, mögliche Löcher und seinen Pegel. Ein Fluss
+speichert Weltpunkte, Breite und absolute Pegel in nicht ansteigender Reihenfolge.
+Gewöhnliches Anheben oder Absenken verändert weder diese Daten noch ihre IDs.
+Sichtbares Wasser wird gegen das **aktuelle natürliche Gelände einschließlich
+Flussbett, vor Hausfundamenten** geprüft: Nur Gelände unter dem jeweiligen Pegel
+ist nass. Bei mehreren nassen Gewässern gilt der niedrigste Pegel. Löcher bleiben
+ausgespart. Angehobene Maskenteile werden trocken; späteres Absenken kann sie
+wieder sichtbar machen, weil die gespeicherte Maske erhalten bleibt.
+
+Das bestätigte Flussprofil senkt das aktuelle Gelände auf ein Bett zwei Fuß unter
+seinem Wasserstand ab, soweit das natürliche Gelände höher liegt. Es hebt tieferes
+Gelände nicht an; der Uferübergang läuft weich aus. Auch nach einer groben
+Geländeanhebung bleiben die absoluten Pegel bestehen, sodass ein tieferer
+Einschnitt entstehen kann. Wasserstände werden durch einen Höhenstrich nicht
+automatisch neu berechnet.
+
+Jedes gespeicherte Gewässer hält die vollständigen Bounds seines damaligen
+Geländereads und eine SHA-256-Inhaltsidentität der wirksamen Kontrollwerte aller
+22 Höhenstufen. Diese Identität enthält auch den Nachweis bekannter Abwesenheit
+im abgefragten Bereich. Ein dort später hinzugekommener wirksamer Kontrollwert
+entwertet sie. Der lokale Status zeigt **Aktuell**, **Veraltet**, **Wird geprüft**
+oder mit Begründung **Nicht geprüft**. Die Folge A → B → Undo(A) stellt die
+ursprüngliche Inhaltsidentität wieder her und kann das unveränderte Gewässer
+erneut als aktuell bestätigen. Die steigende Laufzeitrevision allein hält es
+nicht veraltet. Unbekannte Quellen gelten niemals als leer oder als erfolgreich
+geprüft; entfernte Gewässer werden nicht weltweit nachgeführt.
+
+Ein aktuelles Fundament verwendet das belegte Maximum des natürlichen Geländes
+nach Flussabsenkung über seiner vollständigen gedrehten Grundfläche. Diese
+**Basis** trägt Plateau und Geländeübergang. Die **Oberkante** liegt um die
+gespeicherte Fundamenthöhe darüber; eine Änderung dieser Höhe verändert nicht
+die Geländeplattform. Innerhalb einer Hausgrundfläche gilt ihre Basis, bei
+mehreren überlappenden Grundflächen die höchste Basis. Außerhalb kann ein
+weicher Übergang das Gelände anheben; eine benachbarte Übergangszone ersetzt
+keine Grundfläche. Der Nachweis arbeitet mit einer Höhentoleranz von 0,0001 Fuß.
+Fehlende Eingaben oder ein nicht belegbares Maximum bleiben sichtbar unbekannt,
+statt ein altes Fundament als aktuell auszugeben.
+
+Die Ableitung erfolgt nur für den lokalen Bedarf. Es gelten folgende Grenzen:
+
+| Lokaler Bedarf                 | Grenze und Verhalten                                                                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Geladene Gewässerquellen       | Höchstens 128 pro vollständigem Read und Ansicht; größere Bereiche verlangen näheren Zoom.                                                                 |
+| Einzelne Gewässerquelle        | Höchstens 512 Punkte einschließlich Lochringen und 128 KiB; alle Koordinaten und Pegel sind endlich.                                                       |
+| Ableitungssnapshot             | Höchstens 4 MiB vollständige lokale Höhenquellen; ohne vollständigen Read keine aktuelle Freigabe.                                                         |
+| Aktuelle Fundamente            | Höchstens 64 lokale Kandidaten mit mindestens einem Bildschirmpixel Ausdehnung von Grundfläche oder Übergang; weitere werden in näherer Ansicht berechnet. |
+| Fundamentnachweis              | Höchstens 8.192 gehaltene relevante Kontrollwerte und 16.384 bearbeitete Suchknoten; ein ausgeschöpfter Nachweis bleibt unbekannt.                         |
+| Gewässerdarstellung pro Kachel | Höchstens 8 verschiedene Seepegel, 512 Flusssegmente und 4.096 Seemaskenpunkte; Überschreitungen erscheinen als lokale Grenze, ohne stille Kürzung.        |
+
+Wasserautoren teilen Quellen, History, Pendingjournal, Writer, Dateisnapshot
+und den begrenzten Quellenleseslot mit den übrigen Autoren. Die kooperative
+Ableitung erhält höchstens 0,5 ms und 32 Schritte aus dem gemeinsamen
+2-ms-Vorbereitungsbudget eines Frames. GPU und numerischer CPU-Ausnahmeweg
+führen zur selben Oberflächen-Farbkomposition; der Ausnahmeweg liefert dafür
+zusätzlich absolute Hi/Lo-Höhen. Diese Arbeitsgrenzen sind keine Aussage über
+bereits nachgewiesene native Reaktionszeiten.
+
+Zum gemeinsamen Speicherbudget gehören auch die Kontrollwert- und Suchstrukturen:
+Ein neuer Ableitungsjob benötigt eine konservative Zulassung von 10 MiB, ein
+laufender Fundamentjob trägt 4 MiB Metadaten zusätzlich zu seinen Höhendaten.
+Für das Zusammenführen der Hash-Eingabe werden höchstens 2 MiB zusätzlich zu den
+bereits gehaltenen Puffern reserviert. Ein laufender Hash behält seinen Slot und
+seine gezählten Eingaben über einen Projektwechsel bis zum tatsächlichen Ende.
+Veraltete Lesefehler sperren keinen neueren lokalen Bedarf. Verschieben oder
+Verkleinern eines Fundaments aktualisiert dessen alte und neue Fläche auch beim
+Zurückkehren in noch zwischengespeicherte Ansichten.
+
+**Gewässer an Gelände anpassen** bleibt sichtbar deaktiviert und erklärt die
+ausstehende automatische Anpassung. Vollständige Erstellungs- und
+Anpassungswerkzeuge gehören weiterhin zu P7. Die vorbereitete Szene und der
+lokale Status ersetzen deren Autorenoperationen nicht.
+
+### Gemeinsame P0-Projektdatei
+
+P0-Projekte verwenden `.saltatlas` als SQLite-Format **27** mit Schemakennung
+`atlas-p3-derived-water-1`. Gespeichert werden sparse relative Höhenkacheln,
+maskierte Landschaftskacheln, räumliche Hausheader, bestätigte Seemasken/Pegel
+und Flussprofile einschließlich vollständiger Bounds und Inhaltsabhängigkeiten,
+Projektmetadaten und abgeleitete numerische
+Übersichten desselben bestätigten Sequenzstands. Dieses Versuchsformat ist
+getrennt vom V7-Format 22; frühere P0-Formate 23 bis 26 werden verständlich
+abgelehnt und nicht migriert.
+Öffnen arbeitet auf einer temporären Kopie; Undo/Redo bleibt
+auf die Sitzung begrenzt. Eine lokale Änderung, ihre Bestätigung in der
+Arbeitskopie und ihre Speicherung in der Projektdatei sind verschiedene Zustände.
+Speichern veröffentlicht den reservierten Stand atomar. Spätere Bearbeitungen
+bleiben ungespeichert, bis ein weiterer Speichervorgang auch sie erfasst.
+Das Lesen benötigter Ausschnitte kann während des asynchronen Speicherns
+weiterlaufen. Schreibaufträge und Projektwechsel bleiben geordnet; die Datei
+enthält weiterhin genau den reservierten Stand.
+
+Undo/Redo, Speichern, Recovery, Neu, Öffnen und Schließen verwenden dieselbe
+Aktionsbarriere. Sie versiegeln zunächst die Eingabe und warten auf sämtliche
+angenommene Restarbeit, bevor History, Writer oder Dateisnapshot ihren Stand
+auswählen. Neu, Öffnen und Schließen warten außerdem auf ausstehende Schreibaufträge. Bei ungespeicherten Änderungen stehen
+**Speichern, Verwerfen und Abbrechen** zur Wahl. Abbrechen erhält den vollständigen
+abgeschlossenen Strich samt History und lässt das Dokument geöffnet. Ein
+fehlgeschlagenes Öffnen erhält ihn ebenfalls. Erfolgreicher Dokumentwechsel
+und Disposal invalidieren alte Fortsetzungen und verspätete Antworten. Ein Fehler
+beim Speichern oder eine fehlende Bestätigung des Editors schließt das Fenster nicht.
+
+Nach einem Schreibfehler bleiben die angenommenen Änderungen im Editor und der
+Fehler sichtbar. Weitere Bearbeitungen und Historyaktionen pausieren; Navigation
+bleibt möglich. **Speicherstand prüfen** gleicht die erhaltenen Änderungen mit der
+Arbeitskopie ab und versucht eine sichere Fortsetzung. Speichern nutzt bei Bedarf
+denselben Weg. Schlägt er fehl, bleiben Fehler und Änderungen erhalten. Neu,
+Öffnen oder Schließen ermöglichen weiterhin das ausdrückliche Verwerfen; andere
+Bedienelemente dürfen den Speicherfehler nicht als „Bereit“ verbergen.
+
+Der normale Start sammelt kein ausführliches Diagnosejournal und zeigt keine
+künstlichen Belastungswerkzeuge. Eine ausdrücklich gestartete Diagnose darf
+das Verhalten nur beobachten. Prüfverfahren stehen im
+[Neubauplan](implementation/atlas-rebuild-plan.md#6-prüf--und-performancevertrag),
+der erreichte Stand, die aktuelle Arbeitsentscheidung und offene Abnahmen im
+[Status](implementation/status.md).
+Der R4-Prüflauf bewertet Wirkung, vollständige Eingabe, Ressourcen und Zeitziele
+gemeinsam. Softwaregrafik oder schnelle Submission allein erlauben keine positive
+Hardwareentscheidung. Fehlende sichtbare Zeitbelege bleiben offen, auch wenn
+Inhalts- und Strukturprüfungen bestehen.

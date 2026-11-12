@@ -1,0 +1,136 @@
+name: Atlas preview release
+
+on:
+  push:
+    branches: [work/atlas-p0-feasibility]
+    paths:
+      - .github/workflows/atlas-preview.yml
+      - .node-version
+      - desktop/**
+      - src/editor/**
+      - scripts/*atlas*
+      - forge.atlas.config.cjs
+      - package.json
+      - package-lock.json
+      - tsconfig*.json
+      - vite.editor.config.ts
+      - vitest.config.ts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-preview
+  cancel-in-progress: true
+
+env:
+  ATLAS_PREVIEW_BUILD: ${{ github.run_id }}.${{ github.run_attempt }}
+
+jobs:
+  build:
+    name: Preview · tested Fedora package
+    if: github.repository == 'ThonkTank/Salt-Marcher' && github.ref == 'refs/heads/work/atlas-p0-feasibility'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: "true"
+    outputs:
+      revision: ${{ steps.release.outputs.revision }}
+      artifact: ${{ steps.release.outputs.artifact }}
+    steps:
+      - name: Check out exact preview candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify candidate identity
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Install RPM build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3 rpm
+      - name: Install locked JavaScript dependencies
+        run: npm ci
+      - name: Install desktop test dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Prepare Electron's Linux sandbox helper
+        run: |
+          node -e 'require("electron")'
+          electron_sandbox_helper="$(node -e 'process.stdout.write(require("node:path").join(require("node:path").dirname(require("electron")), "chrome-sandbox"))')"
+          test -f "$electron_sandbox_helper"
+          sudo chown root:root "$electron_sandbox_helper"
+          sudo chmod 4755 "$electron_sandbox_helper"
+      - name: Check types and update/release failure handling
+        run: |
+          npm run typecheck
+          npx vitest run src/editor/preview-updates.test.ts --maxWorkers=1
+          node --test scripts/atlas-preview-release.test.mjs
+          node --test scripts/atlas-preview-network.test.mjs
+      - name: Build and verify the actual RPM and packaged app
+        run: npm run check:atlas-p0:package
+      - name: Exercise the packaged update dialog and IPC
+        run: node scripts/atlas-preview-smoke.mjs --executable "out/Atlas P0-linux-x64/saltmarcher-atlas-p0"
+      - name: Prepare verified update assets
+        id: release
+        run: |
+          node scripts/atlas-preview-release.mjs prepare
+          printf 'revision=%s\nartifact=atlas-preview-%s-%s\n' "$ATLAS_PREVIEW_BUILD" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - name: Pass only tested release assets to publisher
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: ${{ steps.release.outputs.artifact }}
+          path: out/preview-release/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Preserve package diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: atlas-preview-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/atlas-rebuild/ci-package/
+            !**/*.saltatlas
+            !**/*.saltatlas-*
+            !**/*.db
+            !**/*.db-*
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    name: Preview · publish checked channel
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      ATLAS_PREVIEW_BUILD: ${{ needs.build.outputs.revision }}
+    steps:
+      - name: Check out the tested publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/atlas-preview-release.mjs
+          sparse-checkout-cone-mode: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.19.0
+          package-manager-cache: false
+      - name: Retrieve the tested release assets
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: out/preview-release
+      - name: Verify and publish the preview channel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/atlas-preview-release.mjs publish

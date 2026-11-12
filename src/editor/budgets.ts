@@ -1,0 +1,20 @@
+/** P0 uses the plan's caps; these are limits, never permission to discard edits. */
+export const editorBudgets = Object.freeze({
+  sourceBytes: 256 * 1024 * 1024,
+  presentationBytes: 128 * 1024 * 1024,
+  gpuBytes: 256 * 1024 * 1024,
+  historyBytes: 128 * 1024 * 1024,
+  historyActions: 100,
+  pendingWriteBytes: 32 * 1024 * 1024,
+  computeWorkers: 2,
+  preparationMsPerFrame: 2,
+  preparationStepsPerFrame: 128,
+  heightCompositionRowsPerStep: 16,
+  heightOverviewSamplesPerStep: 256,
+  glSubmissions: 2,
+  uploadBytesPerFrame: 4 * 1024 * 1024,
+  /** One dense 22-level tile plus its colour pass, or equivalent local work. */
+  compositionWorkPerFrame: 23 * 128 * 128,
+  retainedTiles: 96,
+  observationEvents: 120_000,
+});

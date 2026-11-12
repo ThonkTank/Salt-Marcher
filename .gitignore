@@ -7,3 +7,7 @@ test-results/
 *.tsbuildinfo
 __pycache__/
 *.py[cod]
+artifacts/atlas-rebuild/
+desktop-dist/
+dist-editor/
+out/
