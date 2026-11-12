@@ -75,10 +75,24 @@ abgesenkt. Nachweise liegen ignoriert unter
 
 ## Vorschau und offene Abnahmen
 
-Die lokale UI- und Funktionsabnahme ist abgeschlossen. Ein Paket-/Releasebeleg
-für diese UI-Änderung wird erst nach erfolgreichem Abschluss des vorhandenen
-Vorschauworkflows behauptet. Dessen Paketprüfung enthält dieselben UI- und
-normalen Smoke-Fälle; Veröffentlichung und Updatekanal bleiben unverändert.
+**Die Vorschau 0.3.3-43208901872.1 ist veröffentlicht.** Programmstand ist
+[798cf97](https://github.com/ThonkTank/Salt-Marcher/commit/798cf974ce32018ebd5c3d373bc6903fc7f95c32).
+Der [Release-Lauf 43208901872](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43208901872)
+ist vollständig erfolgreich: Typ-/Updateprüfungen, tatsächlicher RPM-/ZIP-Bau,
+normaler Paket-Smoke, gepackte UI-Prüfung, Update-Dialog/IPC und Veröffentlichung.
+Der öffentliche Update-Feed und der Release-Tag nennen exakt diesen Commit und
+Revision 43208901872.1. Die hochgeladenen Quellbäume wurden mit dem lokal
+geprüften Inhalt identisch abgeglichen; der abschließende Statuscommit ändert
+nur dieses Dokument.
+
+**Updates → Nach Updates suchen → Herunterladen → Installieren und neu starten**
+bezieht diesen Stand. Alternativ:
+[Fedora-RPM](https://github.com/ThonkTank/Salt-Marcher/releases/download/atlas-preview/saltmarcher-atlas-p0-0.3.3-43208901872.1.x86_64.rpm)
+oder [portable ZIP](https://github.com/ThonkTank/Salt-Marcher/releases/download/atlas-preview/saltmarcher-atlas-p0-0.3.3-43208901872.1.linux-x64.zip).
+
+Der separate Repository-Baseline-Lauf war beim Veröffentlichungsabschluss noch
+aktiv. Aus dem erfolgreichen Vorschauworkflow wird kein vollständiger
+Repository-/V7-Nachweis abgeleitet.
 
 Die letzte vollständige Höhen-GPU-Referenzreihe aus P3.2 bleibt historisch
 **FAIL, 3/6**. R4-Halten, native Hardware-/Eingabelatenzabnahme, der frühere
