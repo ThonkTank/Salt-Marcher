@@ -73,12 +73,20 @@ export async function waitForSaveCompletion(session, start) {
   }, start);
 }
 
+export async function heightMode(page, mode) {
+  await button(page, "Höhen");
+  await page.getByLabel("Pinselmodus", { exact: true }).selectOption(mode);
+}
+
 export async function brush(page, diameter, rateFeetPerSecond) {
-  await page.getByLabel("Pinselgröße", { exact: true }).fill(String(diameter));
+  await heightMode(page, "raise");
   await page
-    .getByLabel("Pinselstärke", { exact: true })
+    .getByLabel("Pinselgröße (Pixel)", { exact: true })
+    .fill(String(diameter));
+  await page
+    .getByLabel("Höhenänderung (m/s)", { exact: true })
     .fill(String(rateFeetPerSecond * 0.3048));
-  await button(page, /Anheben/);
+  await page.getByLabel("Höhenänderung (m/s)", { exact: true }).press("Enter");
 }
 export async function exact(page, timeout = 20_000) {
   await page.waitForFunction(

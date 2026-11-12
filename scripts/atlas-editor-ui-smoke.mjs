@@ -45,6 +45,26 @@ const ready = () =>
   });
 const click = (name) =>
   page.getByRole("button", { name, exact: typeof name === "string" }).click();
+const heightMode = async (mode) => {
+  await click("Höhen");
+  await page.getByLabel("Pinselmodus", { exact: true }).selectOption(mode);
+  await page.waitForFunction(
+    (mode) => window.atlasObserve([], { events: false }).state.mode === mode,
+    mode,
+  );
+};
+const diameter = () => page.getByLabel("Pinselgröße (Pixel)", { exact: true });
+const sampleHeight = (point) =>
+  page.evaluate(
+    (point) => window.atlasObserve([point], { events: false }).samples[0],
+    point,
+  );
+const waitForDiameter = (value) =>
+  page.waitForFunction(
+    (value) =>
+      window.atlasObserve([], { events: false }).state.diameter === value,
+    value,
+  );
 
 try {
   await ready();
@@ -90,14 +110,15 @@ try {
 
   for (const [name, mode] of [
     ["Haus auswählen", "select"],
-    ["Anheben", "raise"],
-    ["Absenken", "lower"],
+    ["Höhen", "raise"],
+    ["Höhen", "lower"],
     ["Wald", "forest"],
     ["Lichtung", "clearing"],
     ["Haus platzieren", "house"],
     ["Verschieben", "pan"],
   ]) {
-    await click(name);
+    if (name === "Höhen") await heightMode(mode);
+    else await click(name);
     await page.waitForFunction(
       (mode) => window.atlasObserve([], { events: false }).state.mode === mode,
       mode,
@@ -114,6 +135,14 @@ try {
       `${mode}: canvas bounds changed`,
     );
     assert.deepEqual((await state()).camera, camera, `${mode}: camera changed`);
+    if (mode === "pan")
+      check(
+        "navigation does not expose height editing controls",
+        (await page.getByLabel("Pinselmodus", { exact: true }).count()) === 0 &&
+          (await page
+            .getByLabel("Höhenänderung (m/s)", { exact: true })
+            .count()) === 0,
+      );
   }
   check(
     "tool changes retain the canvas element",
@@ -123,18 +152,90 @@ try {
     ),
   );
 
-  await click("Anheben");
-  await page.getByLabel("Pinselgröße", { exact: true }).fill("120");
-  await page.getByLabel("Pinselgröße", { exact: true }).press("Enter");
+  await click("Höhen");
+  check(
+    "one height tool retains the chosen mode across tool changes",
+    (await state()).state.mode === "lower" &&
+      (await page.getByLabel("Pinselmodus", { exact: true }).inputValue()) ===
+        "lower" &&
+      (await page
+        .locator(".atlas-tools")
+        .getByRole("button", { name: /Anheben|Absenken/ })
+        .count()) === 0,
+  );
+  const heightOptions = await page
+    .getByLabel("Pinselmodus", { exact: true })
+    .locator("option")
+    .evaluateAll((options) =>
+      options.map((option) => ({
+        value: option.value,
+        label: option.textContent,
+        disabled: option.disabled,
+      })),
+    );
+  assert.deepEqual(heightOptions, [
+    { value: "land", label: "Land", disabled: true },
+    { value: "sea", label: "Meer", disabled: true },
+    { value: "mountains", label: "Bergkette", disabled: true },
+    { value: "hills", label: "Hügel", disabled: true },
+    { value: "canyon", label: "Schlucht", disabled: true },
+    { value: "raise", label: "Anheben", disabled: false },
+    { value: "lower", label: "Absenken", disabled: false },
+    { value: "smooth", label: "Glätten", disabled: true },
+    { value: "flatten", label: "Einebnen", disabled: true },
+  ]);
+  check("height mode choices preserve the available engine scope", true);
+  check(
+    "unavailable contours are visibly disabled",
+    (await page.getByLabel("Höhenlinien", { exact: true }).isVisible()) &&
+      (await page.getByLabel("Höhenlinien", { exact: true }).isDisabled()),
+  );
+  await heightMode("raise");
+  await diameter().fill("120");
+  await diameter().press("Enter");
   check(
     "brush diameter commits on Enter",
     (await state()).state.diameter === 120,
   );
-  await page.getByLabel("Pinselstärke", { exact: true }).fill("3.048");
-  await click("Absenken");
+  await diameter().fill("240");
+  await diameter().press("Escape");
+  check(
+    "Escape discards the diameter draft",
+    (await state()).state.diameter === 120 &&
+      (await diameter().inputValue()) === "120",
+  );
+  await diameter().focus();
+  await page.keyboard.press("]");
+  check(
+    "brush shortcuts do not change a focused number field",
+    (await state()).state.diameter === 120,
+  );
+  await diameter().press("Escape");
+  await page.getByLabel("Höhenänderung (m/s)", { exact: true }).fill("3.048");
+  await page.getByLabel("Pinselmodus", { exact: true }).click();
+  await page.getByLabel("Pinselmodus", { exact: true }).selectOption("lower");
   check(
     "brush strength commits on blur with the existing unit conversion",
     Math.abs((await state()).state.amount - 10) < 1e-9,
+  );
+  const heightFields = await Promise.all(
+    [
+      "Pinselmodus",
+      "Pinselgröße (Pixel)",
+      "Höhenänderung (m/s)",
+      "Höhenlinien",
+    ].map((label) => page.getByLabel(label, { exact: true }).boundingBox()),
+  );
+  check(
+    "height controls retain the previous top-to-bottom order",
+    heightFields.every(
+      (box, index) => box && (index === 0 || box.y > heightFields[index - 1].y),
+    ),
+  );
+  const brushInfo = page.getByText(/^Durchmesser: .* · Höhenraster:/);
+  check(
+    "world diameter and height grid are visible",
+    await brushInfo.isVisible(),
   );
   await click("Wald");
   await page.getByLabel("Landschaft", { exact: true }).selectOption("2");
@@ -172,12 +273,56 @@ try {
   await page.getByLabel("Raster anzeigen").uncheck();
   check("map grid remains connected", (await state()).state.grid === false);
 
+  await heightMode("raise");
   const navigationBox = await page.locator("canvas").boundingBox();
+  const beforeGestures = await state();
+  await page.locator("canvas").focus();
   const beforeZoom = (await state()).camera;
   await page.mouse.move(
     navigationBox.x + navigationBox.width / 2,
     navigationBox.y + navigationBox.height / 2,
   );
+  await page.keyboard.press("]");
+  await waitForDiameter(132);
+  await page.keyboard.press("[");
+  await waitForDiameter(120);
+  check(
+    "bracket keys resize the height brush by the previous increments",
+    true,
+  );
+  await page.keyboard.down("Alt");
+  await page.mouse.wheel(0, -160);
+  await waitForDiameter(132);
+  await page.mouse.wheel(0, 160);
+  await waitForDiameter(120);
+  await page.keyboard.up("Alt");
+  assert.deepEqual((await state()).camera, beforeZoom);
+  check("Alt-wheel resizes the brush without zooming or moving the map", true);
+  await diameter().fill("512");
+  await diameter().press("Enter");
+  await page.locator("canvas").focus();
+  await page.keyboard.press("]");
+  check(
+    "brush enlargement retains the existing maximum",
+    (await state()).state.diameter === 512,
+  );
+  await diameter().fill("8");
+  await diameter().press("Enter");
+  await page.locator("canvas").focus();
+  await page.keyboard.press("[");
+  check(
+    "brush reduction retains the existing minimum",
+    (await state()).state.diameter === 8,
+  );
+  await diameter().fill("120");
+  await diameter().press("Enter");
+  check(
+    "brush setting gestures leave document content and history unchanged",
+    (await state()).document.revision === beforeGestures.document.revision &&
+      (await state()).document.sequence === beforeGestures.document.sequence &&
+      (await state()).state.canUndo === beforeGestures.state.canUndo,
+  );
+  const infoBeforeZoom = await brushInfo.textContent();
   await page.mouse.wheel(0, -160);
   await page.waitForFunction(
     (scale) => window.atlasObserve([], { events: false }).camera.scale > scale,
@@ -189,6 +334,11 @@ try {
     "wheel zoom retains the world point under the map centre",
     Math.abs(zoomed.x - beforeZoom.x) < 1e-6 &&
       Math.abs(zoomed.y - beforeZoom.y) < 1e-6,
+  );
+  check(
+    "zoom preserves screen diameter and refreshes the world diameter display",
+    (await state()).state.diameter === 120 &&
+      (await brushInfo.textContent()) !== infoBeforeZoom,
   );
   await page.mouse.down({ button: "middle" });
   await page.mouse.move(
@@ -205,26 +355,108 @@ try {
       Math.abs(panned.y - zoomed.y) < 1e-6,
   );
 
-  await click("Anheben");
+  await heightMode("raise");
   await ready();
   const box = await page.locator("canvas").boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await ready();
+  const point = [(await state()).camera.x, (await state()).camera.y];
+  const heightBefore = await sampleHeight(point);
+  assert.equal(typeof heightBefore, "number", "pre-stroke height is known");
+  // Keep the current author level: a level change correctly requires a fresh
+  // visible foundation and another press, which is not a field-commit failure.
+  await diameter().fill("108");
+  check(
+    "number field remains a draft before the canvas press",
+    (await state()).state.diameter === 120,
+  );
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.waitForTimeout(160);
-  await page.mouse.up();
   await page.waitForFunction(
-    () => window.atlasObserve([], { events: false }).state.canUndo,
+    () => window.atlasObserve([], { events: false }).gesture?.kind === "active",
+  );
+  const active = await state();
+  check(
+    "canvas press commits the field before fixing the stroke brush",
+    active.state.diameter === 108 &&
+      Math.abs(active.gesture.brush.radius - 54 / active.camera.scale) < 1e-9,
+  );
+  await page.keyboard.press("]");
+  await page.keyboard.down("Alt");
+  await page.mouse.wheel(0, -160);
+  await page.keyboard.up("Alt");
+  await page.mouse.wheel(0, -160);
+  await page.waitForFunction(
+    ({ point, heightBefore }) => {
+      const snapshot = window.atlasObserve([point], { events: false });
+      return (
+        typeof snapshot.samples[0] === "number" &&
+        snapshot.samples[0] > heightBefore
+      );
+    },
+    { point, heightBefore },
+  );
+  const held = await state();
+  assert.deepEqual(held.camera, active.camera);
+  assert.deepEqual(held.gesture.brush, active.gesture.brush);
+  check(
+    "active height stroke ignores brush-size keys and wheel gestures",
+    held.state.diameter === 108,
+  );
+  check("held brush changes actual terrain while the pointer is down", true);
+  await page.mouse.up();
+  await page.waitForFunction(() => {
+    const snapshot = window.atlasObserve([], { events: false });
+    return snapshot.state.canUndo && !snapshot.state.finishing;
+  });
+  const heightAfter = await sampleHeight(point);
+  check(
+    "completed height gesture raises the sampled terrain",
+    heightAfter > heightBefore,
   );
   await click(/Rückgängig/);
   await page.waitForFunction(
     () => window.atlasObserve([], { events: false }).state.canRedo,
   );
-  check("header undo reaches the real history", (await state()).state.canRedo);
+  check(
+    "header undo restores the pre-stroke terrain exactly",
+    (await state()).state.canRedo &&
+      Math.abs((await sampleHeight(point)) - heightBefore) < 1e-9,
+  );
   await click(/Wiederholen/);
   await page.waitForFunction(
     () => window.atlasObserve([], { events: false }).state.canUndo,
   );
-  check("header redo reaches the real history", (await state()).state.canUndo);
+  check(
+    "header redo restores the completed terrain exactly",
+    (await state()).state.canUndo &&
+      Math.abs((await sampleHeight(point)) - heightAfter) < 1e-9,
+  );
+  await heightMode("lower");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await ready();
+  await page.mouse.down();
+  await page.waitForFunction(
+    ({ point, heightAfter }) => {
+      const snapshot = window.atlasObserve([point], { events: false });
+      return (
+        snapshot.gesture?.kind === "active" &&
+        typeof snapshot.samples[0] === "number" &&
+        snapshot.samples[0] < heightAfter
+      );
+    },
+    { point, heightAfter },
+  );
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await page.waitForFunction(() => {
+    const snapshot = window.atlasObserve([], { events: false });
+    return !snapshot.gesture && !snapshot.state.finishing;
+  });
+  check(
+    "lowering changes terrain and Escape keeps the completed stroke",
+    (await sampleHeight(point)) < heightAfter && (await state()).state.canUndo,
+  );
   await click("Speichern");
   await page.waitForFunction(
     () => window.atlasObserve([], { events: false }).state.saved,
@@ -292,7 +524,12 @@ try {
   check("no renderer exceptions", session.errors.length === 0);
   report.passed = true;
 } catch (error) {
-  report.error = String(error);
+  report.error = error.stack ?? String(error);
+  await writeFile(
+    join(out, "failure-observation.json"),
+    JSON.stringify(await state(), null, 2),
+  );
+  await page.screenshot({ path: join(out, "failure.png") });
   process.exitCode = 1;
 } finally {
   await writeFile(join(out, "report.json"), JSON.stringify(report, null, 2));

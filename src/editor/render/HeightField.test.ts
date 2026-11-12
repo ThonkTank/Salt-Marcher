@@ -3,7 +3,11 @@ import { BufferImageSource, type GlTexture, type WebGLRenderer } from "pixi.js";
 import { heightTilesFromControls } from "../model/fixtures";
 import { editorBudgets } from "../budgets";
 import { createHeightOverviewTile } from "../model/overview";
-import { heightTileKey, type HeightTile } from "../model/types";
+import {
+  heightTileKey,
+  type HeightTile,
+  type LandscapeWeights,
+} from "../model/types";
 import {
   HeightField,
   type HeightFieldTile,
@@ -16,7 +20,7 @@ import type {
   HeightProjectionService,
   HeightProjectionImage,
 } from "./HeightProjectionService";
-import { prepareHeightGrid } from "../model/height-grid";
+import { prepareHeightGrid, type RasterRect } from "../model/height-grid";
 import { rasterize } from "./raster";
 import type { LandscapeFrame } from "./LandscapeView";
 import type { SurfaceData, SurfaceFrame } from "./DerivedSurfaceView";
@@ -87,7 +91,14 @@ function recordingRenderer() {
     { texture: GlTexture; memory: Uint8Array }
   >();
   const allocations: { source: BufferImageSource; bytes: number }[] = [];
-  const transfers: { source: BufferImageSource; bytes: number }[] = [];
+  const transfers: {
+    source: BufferImageSource;
+    bytes: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }[] = [];
   let active: BufferImageSource;
   let failure: ((source: BufferImageSource) => boolean) | undefined;
   const gl = {
@@ -124,7 +135,14 @@ function recordingRenderer() {
             ),
             ((y + row) * active.width + x) * bytesPerTexel,
           );
-      transfers.push({ source: active, bytes: bytes.byteLength });
+      transfers.push({
+        source: active,
+        bytes: bytes.byteLength,
+        x,
+        y,
+        width,
+        height,
+      });
     },
   } as unknown as WebGLRenderingContext;
   const upload = (source: BufferImageSource) => {
@@ -249,6 +267,24 @@ function surfaceFrame(data: SurfaceData): SurfaceFrame {
     *prepare() {
       yield;
       return data;
+    },
+  };
+}
+
+function landscapeFrame(
+  version: number,
+  dirty: RasterRect,
+  sample: (x: number, y: number) => LandscapeWeights,
+  previousVersion: number | null = version > 1 ? version - 1 : null,
+): LandscapeFrame {
+  return {
+    key: "landscape-overview:2:0:0",
+    version,
+    previousVersion,
+    dirty,
+    buffers: new Set(),
+    *prepare() {
+      return sample;
     },
   };
 }
@@ -936,6 +972,10 @@ it.each([false, true])(
     });
     let encoded = 0;
     const landscape: LandscapeFrame = {
+      key: "landscape-overview:2:0:0",
+      version: 1,
+      previousVersion: null,
+      dirty: [0, 0, 128, 128],
       buffers: new Set(),
       *prepare() {
         encoded++;
@@ -985,6 +1025,248 @@ it.each([false, true])(
       colourSamples: 0,
       basisCaptureSamples: 128 ** 2,
     });
+  },
+);
+
+it.each<RasterRect>([
+  [0, 0, 2, 3],
+  [127, 126, 128, 128],
+  [62, 62, 67, 66],
+])(
+  "samples and transfers only a landscape edit rectangle %j over the unchanged numeric surface",
+  async (...dirty) => {
+    const { field, gpu } = setup();
+    field.updateSources([author(0, 100)]);
+    const tile = field.createTile([0, 0, 512, 512], 2);
+    tile.setLandscape(landscapeFrame(1, [0, 0, 128, 128], () => [70, 0, 0, 0]));
+    await drain(field, gpu);
+    compose(tile, gpu);
+    const beforeBasis = tile.basisTransfers;
+    const samples: [number, number][] = [];
+    tile.setLandscape(
+      landscapeFrame(2, dirty, (x, y) => {
+        samples.push([x, y]);
+        return [180, 0, 0, 0];
+      }),
+    );
+    tile.update(undefined, dirty);
+    gpu.transfers.length = 0;
+    gpu.render.mockClear();
+    await drain(field, gpu);
+    const count = (dirty[2] - dirty[0]) * (dirty[3] - dirty[1]);
+    expect(samples).toHaveLength(count);
+    expect(
+      samples.every(
+        ([x, y]) =>
+          x >= dirty[0] * 4 &&
+          x < dirty[2] * 4 &&
+          y >= dirty[1] * 4 &&
+          y < dirty[3] * 4,
+      ),
+    ).toBe(true);
+    expect(gpu.bytes()).toBe(count * 4);
+    expect(
+      gpu.transfers.every(
+        (transfer) =>
+          transfer.x === dirty[0] &&
+          transfer.y >= dirty[1] &&
+          transfer.y < dirty[3] &&
+          transfer.width === dirty[2] - dirty[0] &&
+          transfer.height === 1,
+      ),
+    ).toBe(true);
+    compose(tile, gpu);
+    expect(tile.compositionStats).toMatchObject({
+      canonicalSamples: 0,
+      deltaSamples: 0,
+      colourSamples: count,
+      horizontalSamples: 0,
+      projectionProducts: 0,
+      basisCaptureSamples: 0,
+    });
+    expect(
+      gpu.render.mock.calls.every(
+        ([request]) => "uLandscape" in request.container.shader.resources,
+      ),
+    ).toBe(true);
+    expect(tile.basisTransfers).toBe(beforeBasis);
+    const source = gpu.transfers[0].source;
+    expectUploaded(gpu, source);
+    const pixels = source.resource as Uint8Array;
+    for (let y = 0; y < 128; y++)
+      for (let x = 0; x < 128; x++)
+        expect(pixels[(y * 128 + x) * 4]).toBe(
+          x >= dirty[0] && x < dirty[2] && y >= dirty[1] && y < dirty[3]
+            ? 180
+            : 70,
+        );
+  },
+);
+
+it("retains all encoded landscape changes across cancelled preparation before upload or completed colour", async () => {
+  const { field, gpu } = setup();
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  tile.setLandscape(landscapeFrame(1, [0, 0, 128, 128], () => [10, 0, 0, 0]));
+  await drain(field, gpu);
+  compose(tile, gpu);
+  const source = gpu.transfers.find(
+    (transfer) =>
+      transfer.source.format === "rgba8unorm" && transfer.source.width === 128,
+  )!.source;
+  const previous = source.resource as Uint8Array;
+  tile.setLandscape(landscapeFrame(2, [1, 2, 3, 4], () => [80, 0, 0, 0]));
+  tile.update(undefined, [1, 2, 3, 4]);
+  await prepare(field);
+  tile.cancelPreparation();
+  expect(previous[4 * (2 * 128 + 1)]).toBe(10);
+  tile.setLandscape(landscapeFrame(3, [7, 8, 9, 10], () => [160, 0, 0, 0]));
+  tile.update(undefined, [7, 8, 9, 10]);
+  gpu.transfers.length = 0;
+  gpu.render.mockClear();
+  await drain(field, gpu);
+  expect(gpu.bytes()).toBe(8 * 8 * 4);
+  expectUploaded(gpu, source);
+  expect(tile.sampleLandscape([6, 10])).toEqual([80, 0, 0, 0]);
+  expect(tile.sampleLandscape([30, 34])).toEqual([160, 0, 0, 0]);
+  compose(tile, gpu);
+  expect(tile.compositionStats).toMatchObject({
+    canonicalSamples: 0,
+    colourSamples: 64,
+  });
+});
+
+it("discards an interrupted landscape encoding and fully replaces a broken frame lineage", async () => {
+  const { field, gpu } = setup();
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  tile.setLandscape(landscapeFrame(1, [0, 0, 128, 128], () => [10, 0, 0, 0]));
+  await drain(field, gpu);
+  compose(tile, gpu);
+  tile.setLandscape(landscapeFrame(2, [0, 0, 16, 16], () => [80, 0, 0, 0]));
+  tile.update(undefined, [0, 0, 16, 16]);
+  expect(tile.prepareStep()).toBe(true);
+  expect(tile.preparationState().phase).toBe("landscape");
+  tile.cancelPreparation();
+  expect(tile.sampleLandscape([2, 2])).toEqual([10, 0, 0, 0]);
+  let samples = 0;
+  tile.setLandscape(
+    landscapeFrame(3, [4, 4, 5, 5], () => {
+      samples++;
+      return [160, 0, 0, 0];
+    }),
+  );
+  tile.update(undefined, [4, 4, 5, 5]);
+  gpu.transfers.length = 0;
+  await drain(field, gpu);
+  expect(samples).toBe(128 ** 2);
+  expect(gpu.bytes()).toBe(128 ** 2 * 4);
+  compose(tile, gpu);
+  expect(tile.compositionStats).toMatchObject({
+    canonicalSamples: 0,
+    colourSamples: 128 ** 2,
+  });
+  expect(tile.sampleLandscape([500, 500])).toEqual([160, 0, 0, 0]);
+});
+
+it("restores every encoded landscape pixel when context is lost before its first upload", async () => {
+  const { field, gpu } = setup();
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  tile.setLandscape(
+    landscapeFrame(1, [0, 0, 128, 128], (x, y) => [
+      30 + Math.floor(x / 4),
+      Math.floor(y / 4) % 64,
+      0,
+      0,
+    ]),
+  );
+  tile.update();
+  await prepare(field);
+  gpu.loseContext();
+  field.rebuildAfterContextRestore();
+  await drain(field, gpu);
+  compose(tile, gpu);
+  const call = gpu.render.mock.calls
+    .filter(([request]) => "uLandscape" in request.container.shader.resources)
+    .at(-1)!;
+  const source = (
+    call[0].container.shader.resources as { uLandscape: BufferImageSource }
+  ).uLandscape;
+  expect(source.width).toBe(128);
+  expect(source.height).toBe(128);
+  expectUploaded(gpu, source);
+  expect(tile.sampleLandscape([510, 510])).toEqual([157, 63, 0, 0]);
+});
+
+it("restarts a partial colour pass without damaging the completed numeric basis", async () => {
+  const { field, gpu } = setup();
+  const tile = field.createTile([0, 0, 512, 512], 2);
+  await drain(field, gpu);
+  compose(tile, gpu);
+  tile.setLandscape(landscapeFrame(1, [0, 0, 128, 128], () => [180, 0, 0, 0]));
+  tile.update();
+  await drain(field, gpu);
+  tile.drawDirty(gpu.renderer);
+  expect(tile.needsComposition).toBe(true);
+  tile.cancelPreparation();
+  expect(tile.preparationState().numericCurrent).toBe(true);
+  tile.update();
+  gpu.render.mockClear();
+  await drain(field, gpu);
+  compose(tile, gpu);
+  expect(tile.compositionStats).toMatchObject({
+    canonicalSamples: 0,
+    deltaSamples: 0,
+    colourSamples: 128 ** 2,
+  });
+  expect(
+    gpu.render.mock.calls.every(
+      ([request]) => "uLandscape" in request.container.shader.resources,
+    ),
+  ).toBe(true);
+});
+
+it.each(["height", "overview", "surface"] as const)(
+  "recomputes numeric terrain when a landscape frame also carries a pending %s change",
+  async (dependency) => {
+    const { field, gpu } = setup();
+    const tile = field.createTile([0, 0, 512, 512], 2);
+    tile.setLandscape(landscapeFrame(1, [0, 0, 128, 128], () => [10, 0, 0, 0]));
+    await drain(field, gpu);
+    compose(tile, gpu);
+    tile.setLandscape(landscapeFrame(2, [4, 4, 5, 5], () => [180, 0, 0, 0]));
+    let overview;
+    if (dependency === "height") {
+      field.updateSources([author(0, 100)]);
+      tile.markHeightChanged();
+    } else if (dependency === "overview") {
+      overview = createHeightOverviewTile(2, 0, 0);
+      overview.values.fill(10);
+    } else {
+      tile.setSurface(
+        surfaceFrame({
+          lake: null,
+          lakeLayers: 0,
+          rivers: new Float32Array(),
+          foundations: new Float32Array([
+            60, 60, 20, 10, 1, 0, 10, 35, 0, 36, 0, 0,
+          ]),
+        }),
+      );
+    }
+    tile.update(overview, [4, 4, 5, 5]);
+    gpu.render.mockClear();
+    await drain(field, gpu);
+    compose(tile, gpu);
+    expect(
+      tile.compositionStats.canonicalSamples +
+        tile.compositionStats.deltaSamples,
+    ).toBeGreaterThan(0);
+    expect(
+      gpu.render.mock.calls.some(
+        ([request]) => !("uLandscape" in request.container.shader.resources),
+      ),
+    ).toBe(true);
   },
 );
 

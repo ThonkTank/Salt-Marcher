@@ -1232,8 +1232,15 @@ nicht mehr. Späteres Escape/Blur hebt eine bereits versiegelte Aktion nicht auf
 **Abbruch vor Up:** Bei Höhe beenden Escape, Blur und Pointercancel neue Wirkung.
 Bereits angenommene Beiträge werden im selben begrenzten Abschluss zu einem
 Undo-Schritt erhalten; nur noch nicht angenommene Eingaben verfallen.
-Für abbrechbare Boden-/Landschafts-/Region-/Gewässergesten bleibt die Rücknahme
-auf Vorherwerte nach A05 erhalten; ihre Fortsetzung wird invalidiert.
+Bei Landschaft nimmt nur ausdrückliches Escape vor Up den laufenden Strich
+auf seine Vorherwerte zurück. Fokusverlust, Pointercancel, Navigation und
+Werkzeugwechsel versiegeln den geeigneten Weg und erhalten ihn als einen
+Undo-Schritt. Fehlende Quellen oder eine Arbeitsgrenze beenden die Annahme
+vor dem betroffenen Abschnitt; ein fehlgeschlagener atomarer Arbeitsblock
+lässt bereits materialisierte Abschnitte bestehen. Ungeeignete oder verworfene
+Geometrie wird nach dem Laden nicht nachgeholt. Für die übrigen abbrechbaren
+Boden-/Region-/Gewässergesten bleibt die Rücknahme auf Vorherwerte nach A05
+erhalten; ihre Fortsetzung wird invalidiert.
 Ein bestätigtes Session-Discard invalidiert alte Fortsetzungen erst mit dem
 erfolgreichen Wechsel/Schließen nach A07; ein fehlgeschlagenes Open erhält sie.
 

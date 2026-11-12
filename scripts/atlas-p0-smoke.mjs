@@ -173,7 +173,7 @@ async function normalStart() {
         .getByRole("button", { name: "Hintergrundarbeit starten" })
         .count()) === 0,
     );
-    const diameter = page.getByLabel("Pinselgröße", { exact: true });
+    const diameter = page.getByLabel("Pinselgröße (Pixel)", { exact: true });
     const initialDiameter = await diameter.inputValue();
     await diameter.fill("");
     await diameter.press("Tab");

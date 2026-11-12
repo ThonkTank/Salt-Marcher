@@ -37,6 +37,7 @@ import {
   heightTileSupport,
   intersectsBounds,
   minimumCoarseHeightLevel,
+  minimumCoarseLandscapeLevel,
   type Bounds,
   type HeightPatch,
   type HeightOverviewTile,
@@ -674,6 +675,115 @@ it("requires the actual local draw after numeric data are ready and uploaded", a
     frame: receipt!.frame,
     viewGeneration: receipt!.viewGeneration,
   });
+});
+
+it("invalidates only intersecting landscape display tiles without invalidating their numeric height", async () => {
+  const { world } = await readyRenderer({ width: 512, height: 512 });
+  const area: Bounds = [200, 200, 240, 240];
+  const tiles = [...world["tiles"].values()].map((tile) => ({
+    tile,
+    version: tile.contentVersion,
+    markHeightChanged: vi.spyOn(tile.field, "markHeightChanged"),
+  }));
+  expect(tiles.some(({ tile }) => !intersectsBounds(area, tile.bounds))).toBe(
+    true,
+  );
+  world.updateLandscape(area);
+  for (const { tile, version, markHeightChanged } of tiles) {
+    expect(tile.contentVersion).toBe(
+      version + Number(intersectsBounds(area, tile.bounds)),
+    );
+    expect(markHeightChanged).not.toHaveBeenCalled();
+  }
+  world.invalidate(area);
+  expect(
+    tiles.some(
+      ({ markHeightChanged }) => markHeightChanged.mock.calls.length > 0,
+    ),
+  ).toBe(true);
+});
+
+it("does not redraw a landscape finish marker or an equivalent acknowledged presentation", async () => {
+  const { world, document, frame, field } = await readyRenderer();
+  const bounds = world.sourceBounds();
+  const power = world.presentationPower();
+  const read = {
+    sessionId: document.sessionId,
+    sequence: document.sequence,
+    bounds,
+    power,
+    tiles: [],
+    overviews: [],
+    overviewKeys: landscapeOverviewKeys(bounds, power),
+  };
+  document.acceptLandscapeCoverage(
+    bounds,
+    [],
+    document.sequence,
+    document.sessionId,
+    minimumCoarseLandscapeLevel(power),
+  );
+  world.updateLandscapePresentation(read);
+  for (let step = 0; step < 20 && world.state().queuedTiles > 0; step++)
+    frame();
+  expect(world.state().queuedTiles).toBe(0);
+  const draws = field.draws;
+  const versions = [...world["tiles"].values()].map(
+    (tile) => tile.contentVersion,
+  );
+  world.updateLandscapePresentation(read);
+  world.updateLandscape(bounds, document.sequence, []);
+  expect(
+    [...world["tiles"].values()].map((tile) => tile.contentVersion),
+  ).toEqual(versions);
+  expect(frame()).toBeNull();
+  expect(field.draws).toBe(draws);
+});
+
+it("resumes dirty landscape tiles when an equivalent read restores author-source readiness", async () => {
+  const { world, document, frame, field } = await readyRenderer();
+  const bounds = world.sourceBounds();
+  const power = world.presentationPower();
+  const read = {
+    sessionId: document.sessionId,
+    sequence: document.sequence,
+    bounds,
+    power,
+    tiles: [],
+    overviews: [],
+    overviewKeys: landscapeOverviewKeys(bounds, power),
+  };
+  // Fine presentation ownership can already be current while the independent
+  // author-source coverage needed for the same display tiles is being read.
+  world.updateLandscapePresentation(read);
+  world.updateLandscape(bounds, document.sequence, []);
+  const draws = field.draws;
+  frame();
+  expect(world.isLandscapePresentationReady(bounds, power)).toBe(false);
+  expect(world.state().queuedTiles).toBeGreaterThan(0);
+  expect(world["requestFrame"]).toBe(false);
+  expect(field.draws).toBe(draws);
+
+  document.acceptLandscapeCoverage(
+    bounds,
+    [],
+    document.sequence,
+    document.sessionId,
+    minimumCoarseLandscapeLevel(power),
+  );
+  const versions = [...world["tiles"].values()].map(
+    (tile) => tile.contentVersion,
+  );
+  world.updateLandscapePresentation(read);
+  expect(world.isLandscapePresentationReady(bounds, power)).toBe(true);
+  expect(
+    [...world["tiles"].values()].map((tile) => tile.contentVersion),
+  ).toEqual(versions);
+  for (let step = 0; step < 20 && world.state().queuedTiles > 0; step++)
+    frame();
+  expect(world.state().queuedTiles).toBe(0);
+  expect(field.draws).toBeGreaterThan(draws);
+  expect(world.inspectRegion(world.bounds()).status).toBe("current");
 });
 
 it("waits for GPU completion, keeps submission timestamps, and never queues a second draw", async () => {

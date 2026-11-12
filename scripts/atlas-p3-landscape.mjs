@@ -253,12 +253,230 @@ async function saveAs(session, file) {
   await settled(session.page);
 }
 
+/**
+ * A held stroke through the real controller at two samples per animation frame.
+ * Native Down/Up bracket coalesced PointerEvents so the rate is reproducible
+ * without Playwright round trips throttling it to one event per frame.
+ */
+async function runContinuousLandscape({ launch, out, recordCheck, project }) {
+  const file = join(out, "landscape-continuous.saltatlas");
+  const session = await launch({
+    label: "landscape-continuous",
+    diagnostics: true,
+    project,
+  });
+  const evidence = {
+    purpose:
+      "Continuous native-handler correctness and comparable software-renderer work; no hardware latency acceptance",
+  };
+  try {
+    const { page } = session;
+    await button(page, "Nahansicht");
+    await page.getByLabel("Raster anzeigen").uncheck();
+    await tool(page, "Wald", 16, 75);
+    const path = Array.from({ length: 321 }, (_, i) => [
+      -320 + i * 2.5,
+      80 * Math.sin((i * Math.PI * 2) / 320),
+    ]);
+    const samples = path.filter((_, index) => index % 40 === 0);
+    await readyPointer(page, path[0]);
+    await settled(page);
+    const before = (evidence.before = await stateSnapshot(page, samples));
+    const base = (evidence.base = await capture(
+      session,
+      "continuous-base",
+      samples,
+    ));
+    await page.evaluate(() => {
+      document.querySelector("canvas").addEventListener(
+        "pointerdown",
+        (event) => {
+          window.__atlasLandscapePointer = event.pointerId;
+        },
+        { once: true },
+      );
+    });
+    await page.mouse.down();
+    evidence.stroke = await page.evaluate(async (path) => {
+      const canvas = document.querySelector("canvas");
+      const box = canvas.getBoundingClientRect();
+      const start = window.atlasObserve([], { events: false });
+      const clock = performance.now();
+      let sent = 0;
+      for (let offset = 1; offset < path.length; offset += 2) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const samples = path.slice(offset, offset + 2).map(
+          ([x, y]) =>
+            new PointerEvent("pointermove", {
+              pointerId: window.__atlasLandscapePointer,
+              pointerType: "mouse",
+              isPrimary: true,
+              button: -1,
+              buttons: 1,
+              clientX:
+                box.x +
+                box.width / 2 +
+                (x - start.camera.x) * start.camera.scale,
+              clientY:
+                box.y +
+                box.height / 2 +
+                (y - start.camera.y) * start.camera.scale,
+              bubbles: true,
+            }),
+        );
+        const event = samples.at(-1);
+        Object.defineProperty(event, "getCoalescedEvents", {
+          value: () => samples,
+        });
+        canvas.dispatchEvent(event);
+        sent += samples.length;
+        const state = window.atlasObserve([], { events: false });
+        if (state.state.error || !state.document.active)
+          return {
+            sent,
+            elapsedMs: performance.now() - clock,
+            error: state.state.error,
+            state,
+          };
+      }
+      return {
+        sent,
+        elapsedMs: performance.now() - clock,
+        state: window.atlasObserve([], { sinceEvent: start.eventCount }),
+      };
+    }, path);
+    recordCheck(
+      "landscape: continuous 320-sample stroke crosses negative and positive tile borders without resetting",
+      evidence.stroke.sent === 320 &&
+        !evidence.stroke.error &&
+        evidence.stroke.state.document.active &&
+        evidence.stroke.state.document.revision > before.document.revision,
+      { sent: evidence.stroke.sent, error: evidence.stroke.error },
+    );
+    const paintPasses = evidence.stroke.state.events.filter(
+      (event) => event.kind === "height-terrain",
+    );
+    const work = (evidence.work = Object.fromEntries(
+      [
+        "uploadedBytes",
+        "canonicalSamples",
+        "deltaSamples",
+        "colourSamples",
+        "horizontalSamples",
+        "projectionProducts",
+      ].map((key) => [
+        key,
+        paintPasses.reduce((sum, event) => sum + (event[key] ?? 0), 0),
+      ]),
+    ));
+    recordCheck(
+      "landscape: real GPU colour passes reuse unchanged height projection",
+      work.colourSamples > 0 &&
+        work.canonicalSamples === 0 &&
+        work.deltaSamples === 0 &&
+        work.horizontalSamples === 0 &&
+        work.projectionProducts === 0 &&
+        evidence.stroke.state.droppedEvents === 0,
+      work,
+    );
+    const end = await position(page, path.at(-1));
+    await page.mouse.move(end.x, end.y);
+    await page.mouse.up();
+    await settled(page);
+    const after = (evidence.after = await stateSnapshot(page, samples));
+    recordCheck(
+      "landscape: held stroke preserves its beginning, bends and endpoint as one Undo action",
+      after.document.sequence === before.document.sequence + 1 &&
+        after.document.historyActions === before.document.historyActions + 1 &&
+        after.landscapeDisplay.every((weights) => weights?.[0] > 0),
+    );
+    const changed = (evidence.changed = await capture(
+      session,
+      "continuous-painted",
+      samples,
+    ));
+    recordCheck(
+      "landscape: continuous stroke updates real land pixels while preserving underwater colour",
+      base.pixels.some(
+        (pixel, i) => landPixel(pixel) && !samePixel(pixel, changed.pixels[i]),
+      ) &&
+        base.pixels.every(
+          (pixel, i) =>
+            !waterPixel(pixel) || samePixel(pixel, changed.pixels[i]),
+        ),
+    );
+    await button(page, /Rückgängig/);
+    await settled(page);
+    const undone = (evidence.undone = await stateSnapshot(page, samples));
+    recordCheck(
+      "landscape: one Undo removes the entire continuous stroke",
+      undone.landscapeDisplay.every((weights) =>
+        weights?.every((value) => value === 0),
+      ),
+    );
+    await button(page, /Wiederholen/);
+    await settled(page);
+    const redone = (evidence.redone = await stateSnapshot(page, samples));
+    recordCheck(
+      "landscape: one Redo restores the complete continuous stroke",
+      sameValues(redone.landscapeDisplay, after.landscapeDisplay),
+    );
+    await saveAs(session, file);
+    const saved = (evidence.saved = electronNode([
+      self,
+      "inspect",
+      file,
+      JSON.stringify(samples),
+    ]));
+    const original = electronNode([
+      self,
+      "inspect",
+      project,
+      JSON.stringify(samples),
+    ]);
+    recordCheck(
+      "landscape: continuous stroke saves exact author weights without changing height bytes",
+      sameValues(saved.samples, after.landscapeDisplay) &&
+        saved.heightDigest === original.heightDigest,
+    );
+    recordCheck(
+      "landscape: continuous session has no renderer exception",
+      session.errors.length === 0,
+      session.errors,
+    );
+  } catch (error) {
+    evidence.error = String(error);
+    try {
+      evidence.failure = await stateSnapshot(session.page);
+      evidence.failureEvents = await session.page.evaluate(
+        (sinceEvent) => window.atlasObserve([], { sinceEvent }).events,
+        Math.max(0, evidence.failure.eventCount - 300),
+      );
+    } catch (captureError) {
+      evidence.observationError = String(captureError);
+    }
+    throw error;
+  } finally {
+    await writeFile(
+      join(out, "landscape-continuous-evidence.json"),
+      JSON.stringify(evidence, null, 2),
+    );
+    await session.close();
+  }
+}
+
 export async function runLandscapeScenario({ launch, out, recordCheck }) {
   const fixtures = electronNode([
     join(root, "scripts/atlas-p0-fixture.mjs"),
     "create",
     join(out, "landscape-fixture"),
   ]);
+  await runContinuousLandscape({
+    launch,
+    out,
+    recordCheck,
+    project: fixtures.files.coast,
+  });
   const beforeFile = join(out, "landscape-before-coarse.saltatlas");
   const finalFile = join(out, "landscape-final.saltatlas");
   let session = await launch({

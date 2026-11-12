@@ -134,6 +134,39 @@ export interface LandscapeUpdate {
   patches: LandscapePatch[];
 }
 
+/** Ordinary frame work, independent of the mouse event frequency. */
+export const LANDSCAPE_BATCH_CELL_LIMIT = 16_384;
+export const LANDSCAPE_BATCH_POINT_LIMIT = 64;
+
+function landscapeSegmentArea(
+  brush: Pick<LandscapeBrush, "level" | "radius">,
+  from: Point,
+  to: Point,
+) {
+  const bounds = clipBounds([
+    Math.min(from[0], to[0]) - brush.radius,
+    Math.min(from[1], to[1]) - brush.radius,
+    Math.max(from[0], to[0]) + brush.radius,
+    Math.max(from[1], to[1]) + brush.radius,
+  ]);
+  const step = landscapeSpacing(brush.level);
+  const minX = landscapeCellCoordinate(bounds[0], step);
+  const minY = landscapeCellCoordinate(bounds[1], step);
+  const maxX = Math.max(minX, Math.ceil(bounds[2] / step) - 1);
+  const maxY = Math.max(minY, Math.ceil(bounds[3] / step) - 1);
+  return { bounds, step, minX, minY, maxX, maxY };
+}
+
+/** Conservative cost used before admitting a batch; includes capsule corners. */
+export function landscapeSegmentCellCost(
+  brush: Pick<LandscapeBrush, "level" | "radius">,
+  from: Point,
+  to: Point,
+): number {
+  const area = landscapeSegmentArea(brush, from, to);
+  return (area.maxX - area.minX + 1) * (area.maxY - area.minY + 1);
+}
+
 interface LandscapeGesture {
   brush: LandscapeBrush & { strength: number };
   before: Map<string, LandscapeTile | null>;
@@ -1889,38 +1922,99 @@ export class EditorDocument {
     if (this.landscapeGesture) this.landscapeGesture.sealed = true;
   }
 
-  /**
-   * One bounded geometric segment. The controller owns the queued path; sealed
-   * input may still drain here. Every source is copied once per materialization.
-   */
+  /** The single-segment entry uses the same atomic batch and coverage rules. */
   applyLandscapeSegment(from: Point, to: Point): LandscapeUpdate | null {
+    return this.applyLandscapeSegments([from, to]);
+  }
+
+  /**
+   * Only used after every segment has proved its complete source coverage.
+   * Document sources were validated on admission and are immutable versions;
+   * missing entries here therefore inherit, without per-cell coverage probes.
+   */
+  private prepareLandscapeBatchSampler(
+    bounds: readonly Bounds[],
+    minLevel: number,
+  ): (x: number, y: number) => LandscapeWeights {
+    const batchBounds = bounds.reduce(unionBounds);
+    const levels = new Map<number, Map<number, Map<number, LandscapeTile>>>();
+    for (const { tile } of this.landscapeEntries.values()) {
+      if (!tile || tile.level < minLevel) continue;
+      const support = landscapeTileBounds(tile);
+      if (
+        !intersectsBounds(support, batchBounds) ||
+        !bounds.some((area) => intersectsBounds(support, area))
+      )
+        continue;
+      let rows = levels.get(tile.level);
+      if (!rows) levels.set(tile.level, (rows = new Map()));
+      let row = rows.get(tile.tileY);
+      if (!row) rows.set(tile.tileY, (row = new Map()));
+      row.set(tile.tileX, tile);
+    }
+    const selected = [...levels]
+      .sort(([a], [b]) => a - b)
+      .map(([level, rows]) => ({ step: 2 ** level, rows }));
+    return (x, y) => {
+      for (const { step, rows } of selected) {
+        const cellX = landscapeCellCoordinate(x, step);
+        const cellY = landscapeCellCoordinate(y, step);
+        const tileX = Math.floor(cellX / LANDSCAPE_TILE_SIZE);
+        const tileY = Math.floor(cellY / LANDSCAPE_TILE_SIZE);
+        const tile = rows.get(tileY)?.get(tileX);
+        if (!tile) continue;
+        const index =
+          (cellY - tileY * LANDSCAPE_TILE_SIZE) * LANDSCAPE_TILE_SIZE +
+          cellX -
+          tileX * LANDSCAPE_TILE_SIZE;
+        if (!tile.mask[index]) continue;
+        const offset = index * 4;
+        return [
+          tile.values[offset],
+          tile.values[offset + 1],
+          tile.values[offset + 2],
+          tile.values[offset + 3],
+        ];
+      }
+      return [0, 0, 0, 0];
+    };
+  }
+
+  /**
+   * Complete geometric batches are checked before any mutation. All segments
+   * share the stroke's original values and maximum coverage; each changed tile
+   * is copied once for the whole batch and remains immutable afterwards.
+   */
+  applyLandscapeSegments(points: readonly Point[]): LandscapeUpdate | null {
     const gesture = this.landscapeGesture;
     if (!gesture) throw new Error("Keine aktive Landschaftsgeste.");
-    assertPoint(from);
-    assertPoint(to);
+    if (!points.length || points.length > LANDSCAPE_BATCH_POINT_LIMIT + 1)
+      throw new RangeError(
+        "Ungültige Anzahl Landschaftspunkte im Arbeitsabschnitt.",
+      );
+    points.forEach(assertPoint);
     const brush = gesture.brush;
     if (brush.strength === 0) return null;
-    const bounds = clipBounds([
-      Math.min(from[0], to[0]) - brush.radius,
-      Math.min(from[1], to[1]) - brush.radius,
-      Math.max(from[0], to[0]) + brush.radius,
-      Math.max(from[1], to[1]) + brush.radius,
-    ]);
-    if (!this.isLandscapeReady(bounds, brush.level))
-      throw new SourcesNotReadyError(bounds);
-    const step = landscapeSpacing(brush.level);
-    const minX = landscapeCellCoordinate(bounds[0], step),
-      minY = landscapeCellCoordinate(bounds[1], step);
-    const maxX = Math.max(minX, Math.ceil(bounds[2] / step) - 1),
-      maxY = Math.max(minY, Math.ceil(bounds[3] / step) - 1);
-    if ((maxX - minX + 1) * (maxY - minY + 1) > 400_000)
-      throw new RangeError(
-        "Landschaftssegment überschreitet den begrenzten Arbeitsbereich.",
-      );
-    const dx = to[0] - from[0],
-      dy = to[1] - from[1],
-      length2 = dx * dx + dy * dy;
-    const candidates: {
+    const segments = [];
+    let examined = 0;
+    for (let index = 0; index < Math.max(1, points.length - 1); index++) {
+      const from = points[index];
+      const to = points[Math.min(index + 1, points.length - 1)];
+      const area = landscapeSegmentArea(brush, from, to);
+      if (!this.isLandscapeReady(area.bounds, brush.level))
+        throw new SourcesNotReadyError(area.bounds);
+      examined += (area.maxX - area.minX + 1) * (area.maxY - area.minY + 1);
+      if (examined > 400_000)
+        throw new RangeError(
+          "Landschaftssegment überschreitet den begrenzten Arbeitsbereich.",
+        );
+      segments.push({ ...area, from, to });
+    }
+    const sampleBefore = this.prepareLandscapeBatchSampler(
+      segments.map((segment) => segment.bounds),
+      brush.level,
+    );
+    type Candidate = {
       key: string;
       index: number;
       tileX: number;
@@ -1930,71 +2024,84 @@ export class EditorDocument {
       values: LandscapeWeights;
       changed: boolean;
       bounds: Bounds;
-    }[] = [];
-    const newKeys = new Set<string>();
+    };
+    const candidates = new Map<string, Map<number, Candidate>>();
     let newCells = 0;
-    for (let cy = minY; cy <= maxY; cy++) {
-      const bottom = Math.max(-WORLD_LIMIT, cy * step),
-        top = Math.min(WORLD_LIMIT, (cy + 1) * step);
-      if (bottom >= top) continue;
-      const y = (bottom + top) / 2;
-      for (let cx = minX; cx <= maxX; cx++) {
-        const left = Math.max(-WORLD_LIMIT, cx * step),
-          right = Math.min(WORLD_LIMIT, (cx + 1) * step);
-        if (left >= right) continue;
-        const x = (left + right) / 2;
-        const t = length2
-          ? Math.max(
-              0,
-              Math.min(1, ((x - from[0]) * dx + (y - from[1]) * dy) / length2),
-            )
-          : 0;
-        const distance2 =
-          (x - from[0] - t * dx) ** 2 + (y - from[1] - t * dy) ** 2;
-        if (distance2 >= brush.radius ** 2) continue;
-        // Full inner half-radius reaches every target exactly. The outer ring
-        // uses (1 - (2d/R - 1)^2)^2 and joins both ends with zero derivative.
-        const rim = Math.max(0, (2 * Math.sqrt(distance2)) / brush.radius - 1);
-        const coverage = (1 - rim * rim) ** 2 * brush.strength;
-        if (coverage === 0) continue;
-        const at = landscapeCellAddress(brush.level, x, y);
-        const previous = gesture.cells.get(at.key)?.get(at.index);
-        if (previous && previous.coverage >= coverage) continue;
-        let before = previous?.before;
-        if (!before) {
-          for (let level = brush.level; level <= LANDSCAPE_MAX_LEVEL; level++) {
-            const value = this.readLandscapeCell(level, x, y);
-            if (value === undefined) throw new SourcesNotReadyError(bounds);
-            if (value !== null) {
-              before = value;
-              break;
-            }
-          }
-          before ??= [0, 0, 0, 0];
+    for (const { from, to, step, minX, minY, maxX, maxY } of segments) {
+      const dx = to[0] - from[0];
+      const dy = to[1] - from[1];
+      const length2 = dx * dx + dy * dy;
+      for (let cy = minY; cy <= maxY; cy++) {
+        const bottom = Math.max(-WORLD_LIMIT, cy * step);
+        const top = Math.min(WORLD_LIMIT, (cy + 1) * step);
+        if (bottom >= top) continue;
+        const y = (bottom + top) / 2;
+        for (let cx = minX; cx <= maxX; cx++) {
+          const left = Math.max(-WORLD_LIMIT, cx * step);
+          const right = Math.min(WORLD_LIMIT, (cx + 1) * step);
+          if (left >= right) continue;
+          const x = (left + right) / 2;
+          const t = length2
+            ? Math.max(
+                0,
+                Math.min(
+                  1,
+                  ((x - from[0]) * dx + (y - from[1]) * dy) / length2,
+                ),
+              )
+            : 0;
+          const distance2 =
+            (x - from[0] - t * dx) ** 2 + (y - from[1] - t * dy) ** 2;
+          if (distance2 >= brush.radius ** 2) continue;
+          const rim = Math.max(
+            0,
+            (2 * Math.sqrt(distance2)) / brush.radius - 1,
+          );
+          const coverage = (1 - rim * rim) ** 2 * brush.strength;
+          if (coverage === 0) continue;
+          const at = landscapeCellAddress(brush.level, x, y);
+          const batchCell = candidates.get(at.key)?.get(at.index);
+          const strokeCell = gesture.cells.get(at.key)?.get(at.index);
+          const previous = batchCell ?? strokeCell;
+          if (previous && previous.coverage >= coverage) continue;
+          const before = previous?.before ?? sampleBefore(x, y);
+          const values = blendLandscape(before, brush.weights, coverage);
+          const live = this.landscapeEntries.get(at.key)?.tile;
+          const changed =
+            !live?.mask[at.index] ||
+            values.some(
+              (value, channel) => value !== live.values[at.index * 4 + channel],
+            );
+          if (!changed && !previous) continue;
+          if (!strokeCell && !batchCell) newCells++;
+          if (gesture.cellCount + newCells > this.options.maxGestureCells)
+            throw new RangeError(
+              "Landschaftsaktion überschreitet das Zellbudget; einen kürzeren Strich malen.",
+            );
+          let tileCandidates = candidates.get(at.key);
+          if (!tileCandidates)
+            candidates.set(at.key, (tileCandidates = new Map()));
+          tileCandidates.set(at.index, {
+            ...at,
+            before,
+            coverage,
+            values,
+            changed,
+            bounds: [left, bottom, right, top],
+          });
         }
-        const values = blendLandscape(before, brush.weights, coverage);
-        const live = this.landscapeEntries.get(at.key)?.tile;
-        const changed =
-          !live?.mask[at.index] ||
-          values.some(
-            (value, channel) => value !== live.values[at.index * 4 + channel],
-          );
-        if (!changed && !previous) continue;
-        if (!previous) newCells++;
-        if (gesture.cellCount + newCells > this.options.maxGestureCells)
-          throw new RangeError(
-            "Landschaftsaktion überschreitet das Zellbudget; einen kürzeren Strich malen.",
-          );
-        if (changed && !gesture.before.has(at.key)) newKeys.add(at.key);
-        candidates.push({
-          ...at,
-          before,
-          coverage,
-          values,
-          changed,
-          bounds: [left, bottom, right, top],
-        });
       }
+    }
+    // Budget the final candidates only. An earlier candidate for the same cell
+    // may have been replaced while taking maximum coverage across the batch.
+    const newKeys = new Set<string>();
+    for (const [key, tileCandidates] of candidates) {
+      if (gesture.before.has(key)) continue;
+      for (const candidate of tileCandidates.values())
+        if (candidate.changed) {
+          newKeys.add(key);
+          break;
+        }
     }
     const tileCount = gesture.before.size + newKeys.size;
     if (tileCount > HEIGHT_MAX_ACTION_TILES)
@@ -2024,41 +2131,49 @@ export class EditorDocument {
     const revision = this.revision + 1;
     const patches = new Map<string, LandscapePatch>();
     let dirty: Bounds | null = null;
-    for (const candidate of candidates) {
-      let cells = gesture.cells.get(candidate.key);
-      if (!cells) gesture.cells.set(candidate.key, (cells = new Map()));
-      cells.set(candidate.index, {
-        before: candidate.before,
-        coverage: candidate.coverage,
-      });
-      if (!candidate.changed) continue;
-      const live = this.landscapeEntries.get(candidate.key);
-      if (!gesture.before.has(candidate.key)) {
-        gesture.before.set(candidate.key, live?.tile ?? null);
-        gesture.previousSequences.set(candidate.key, live?.localSequence ?? 0);
-      }
-      let patch = patches.get(candidate.key);
-      if (!patch) {
-        const after = live?.tile
-          ? cloneLandscapeTile(live.tile)
-          : createLandscapeTile(brush.level, candidate.tileX, candidate.tileY);
-        after.revision = revision;
-        patch = { key: candidate.key, before: live?.tile ?? null, after };
-        patches.set(candidate.key, patch);
-        this.landscapeEntries.set(candidate.key, {
-          state: "ready",
-          tile: after,
-          localSequence: this.sequence + 1,
+    for (const tileCandidates of candidates.values())
+      for (const candidate of tileCandidates.values()) {
+        let cells = gesture.cells.get(candidate.key);
+        if (!cells) gesture.cells.set(candidate.key, (cells = new Map()));
+        cells.set(candidate.index, {
+          before: candidate.before,
+          coverage: candidate.coverage,
         });
-        if (!live?.tile) {
-          this.sourceBytes += LANDSCAPE_TILE_BYTES;
-          this.landscapeSourceBytes += LANDSCAPE_TILE_BYTES;
+        if (!candidate.changed) continue;
+        const live = this.landscapeEntries.get(candidate.key);
+        if (!gesture.before.has(candidate.key)) {
+          gesture.before.set(candidate.key, live?.tile ?? null);
+          gesture.previousSequences.set(
+            candidate.key,
+            live?.localSequence ?? 0,
+          );
         }
+        let patch = patches.get(candidate.key);
+        if (!patch) {
+          const after = live?.tile
+            ? cloneLandscapeTile(live.tile)
+            : createLandscapeTile(
+                brush.level,
+                candidate.tileX,
+                candidate.tileY,
+              );
+          after.revision = revision;
+          patch = { key: candidate.key, before: live?.tile ?? null, after };
+          patches.set(candidate.key, patch);
+          this.landscapeEntries.set(candidate.key, {
+            state: "ready",
+            tile: after,
+            localSequence: this.sequence + 1,
+          });
+          if (!live?.tile) {
+            this.sourceBytes += LANDSCAPE_TILE_BYTES;
+            this.landscapeSourceBytes += LANDSCAPE_TILE_BYTES;
+          }
+        }
+        patch.after!.mask[candidate.index] = 1;
+        patch.after!.values.set(candidate.values, candidate.index * 4);
+        dirty = dirty ? unionBounds(dirty, candidate.bounds) : candidate.bounds;
       }
-      patch.after!.mask[candidate.index] = 1;
-      patch.after!.values.set(candidate.values, candidate.index * 4);
-      dirty = dirty ? unionBounds(dirty, candidate.bounds) : candidate.bounds;
-    }
     gesture.cellCount += newCells;
     gesture.retainedBytes = retainedBytes;
     if (!patches.size) return null;
@@ -2874,8 +2989,13 @@ export class EditorDocument {
     return patches;
   }
 
-  /** Owned pending/live overlays for rebasing one immutable store boundary exactly once. */
-  landscapePatchesAfter(sequence: number): LandscapePatch[] {
+  /**
+   * Borrow immutable local versions for a current store read. Filtering precedes
+   * snapshot construction; neither readers nor transport may mutate these arrays.
+   * Maintained presentation tiles consume local updates before ACK, so only a
+   * newly loaded base needs this bounded rebase path.
+   */
+  landscapePatchesAfter(sequence: number, bounds?: Bounds): LandscapePatch[] {
     if (
       !Number.isSafeInteger(sequence) ||
       sequence < this.persistedSequence ||
@@ -2884,24 +3004,26 @@ export class EditorDocument {
       throw new Error(
         "Die gelesene Landschaftsübersicht ist nicht mehr aktuell.",
       );
+    if (bounds) assertBounds(bounds);
+    const relevant = (key: string) =>
+      !bounds ||
+      intersectsBounds(landscapeTileBounds(parseLandscapeTileKey(key)), bounds);
     const patches: LandscapePatch[] = [];
     for (const [pendingSequence, { change }] of this.pending)
       if (pendingSequence > sequence)
         for (const patch of change.patches)
-          if (patch.kind === "landscape")
+          if (patch.kind === "landscape" && relevant(patch.key))
             patches.push({
               key: patch.key,
-              before: patch.before && cloneLandscapeTile(patch.before),
-              after: patch.after && cloneLandscapeTile(patch.after),
+              before: patch.before,
+              after: patch.after,
             });
     for (const [key, before] of this.landscapeGesture?.before ?? []) {
-      const live = this.landscapeEntries.get(key)?.tile;
+      if (!relevant(key)) continue;
       patches.push({
         key,
-        before: before && cloneLandscapeTile(before),
-        after: live?.mask.some((value) => value === 1)
-          ? cloneLandscapeTile(live)
-          : null,
+        before,
+        after: this.landscapeEntries.get(key)?.tile ?? null,
       });
     }
     return patches;

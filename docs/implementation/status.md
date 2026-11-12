@@ -1,135 +1,150 @@
 # Aktueller Stand
 
-Stand: 11. November 2026. **Die V7-artige Bedienoberfläche ist im neuen
-Electron-/Pixi-Editor umgesetzt; der Fachstand bleibt P3.3.** Ausgangspunkt
-ist `30f3c01606faf824551f3716c14560b5b0e4a8b4` auf
-`work/atlas-p0-feasibility`. [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469)
-bleibt Draft. Atlas V7 bleibt der reguläre Tauri-Einstieg mit Format 22;
-der optionale Editor verwendet unverändert Format 27
-(`atlas-p3-derived-water-1`). Frühere P0-Dateien werden nicht migriert.
+Stand: 12. November 2026. **Der Landschaftspinsel im optionalen Electron-/Pixi-Editor
+behält bereits gemalte Strichabschnitte bei Fehlern, verarbeitet Eingaben in
+geometrischen Batches und aktualisiert die Darstellung lokal. Der Fachstand
+bleibt P3.3.** Die vorangehenden Höhen-UI-Änderungen einschließlich Moduserinnerung,
+`[`/`]` und Alt+Mausrad sind enthalten. Eine zusätzliche Leertaste-Ziehen-Geste
+wurde nicht eingeführt. Atlas V7 bleibt der reguläre Tauri-Einstieg mit Format 22;
+der optionale Editor verwendet weiterhin Format 27 (`atlas-p3-derived-water-1`).
 
-## Arbeitsentscheidung
+Die Umsetzung liegt auf dem lokalen Zweig `work/landscape-painting-20261112`,
+Produktcommit `fc92ec7c783ac4f10792d457e6f2a9af2bbcef29`. Ausgangspunkt ist
+`3c6e649` mit den bereits abgeschlossenen Höhen-UI-Änderungen. Der gemeinsame
+Remote-Zweig `work/atlas-p0-feasibility` wurde als `fb6e22e` zurückgelesen;
+[PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
 
-Der ausdrücklich begrenzte Nutzerauftrag übernimmt **nur die UI**, keine
-fehlenden Fachfunktionen. Er aktiviert weder P3.4 noch P4–P9 und ist keine
-Freigabe offener Leistungsnachweise. Der
-[Neubauplan](atlas-rebuild-plan.md) bleibt der einzige Ausführungsplan.
+## Ergebnis und Verhalten
 
-Die bisherige Freigabe der begrenzten R5-Fortsetzung bleibt bestehen.
-Der nächste Fachschritt ist weiterhin P3.4 „Echte Fachkonkurrenz“.
-Vollständige P0-Abnahme und bestandener gemeinsamer P3-Fall bleiben
-Voraussetzungen für P4–P9. Die offene R4-Leistungsabnahme wird durch diesen
-Oberflächenumbau nicht als bestanden gewertet.
+- Bereits materialisierte Landschaft bleibt bei fehlenden Nachbardaten,
+  Kapazitäts- und Projektionsfehlern erhalten, auch nach Pointer-up. Die Aktion
+  bleibt rückgängig machbar und gelangt über den bestehenden Writer in die
+  Arbeitskopie. Ein dauerhaft fehlschlagender GPU-Abschluss blockiert ihre
+  Dokument- und Save-Barriere nicht mehr. GPU-Ressourcen bleiben bis zu ihrem
+  sicheren Abschluss gehalten.
+- Nur ausdrückliches Escape vor Up nimmt den laufenden Strich vollständig zurück.
+  Fokusverlust, Pointercancel, Navigation und Werkzeugwechsel schließen den
+  geeigneten Weg ab. Abgewiesene Bewegung wird nach dem Laden nicht nachgeholt.
+- Der Controller verarbeitet je RAF bis zu 64 Wegabschnitte mit höchstens 16.384
+  konservativ geschätzten Kandidatenzellen. Kollineare Vorwärtsstücke werden nur
+  bei vollständig bekannter gemeinsamer Quellenfläche zusammengefasst; Ecken,
+  Umkehrpunkte und Endpunkt bleiben erhalten. Ein 3×3-Autorenumfeld mit gerichteter
+  Erweiterung auf 4×4 wird vorgeladen. Die begrenzte Eingabeliste enthält offene
+  Geometrie; angenommene Autoren gehören bereits dem Dokument.
+- Pro Batch wird jede geänderte Quellkachel einmal kopiert. Ein privater Sampler
+  indexiert nach vollständiger Bereitschaftsprüfung nur relevante vorhandene
+  Quellen und Stufen. Er prüft nicht für jede Zelle erneut alle fehlenden Stufen.
+- `LandscapeView` übernimmt konkrete unveränderliche Patches und hält lokale
+  Übersichten nach ACK aktuell. `HeightField` kodiert und überträgt bei passender
+  Versionsabstammung nur geänderte Texelbereiche. Reine Farbänderungen verwenden
+  einen vollständigen kompatiblen GPU-Höhenstand weiter. Ein erfolgreicher Read
+  weckt wartende Darstellungsarbeit auch bei unverändertem Cacheinhalt.
 
-## Oberfläche und unveränderte Grenzen
+Geometrie, Zieldichte, feinster Besitzer, explizite Lichtung, Wasser-Maskierung
+und genau ein Undo-Schritt pro verändertem Strich bleiben erhalten. History,
+Dateiformat und ein einziger geordneter Writer werden weiterverwendet. Es wurde
+kein zweites Dokument oder werkzeugeigenes Schreibjournal eingeführt.
 
-`src/editor/main.tsx` bindet weiterhin genau einen `EditorController` an
-dasselbe Canvas. `EditorChrome.tsx` enthält Kopfzeile, Werkzeugleiste,
-Kartennavigation und Status; `EditorPanels.tsx` enthält die vorhandenen
-Werkzeug- und Oberflächenfelder. Diese Komponenten importieren keine
-V7-Controller, Clients oder Fachmodelle. React hält nur Feldentwürfe;
-wirksame Einstellungen und Kartenaktionen verbleiben im vorhandenen Controller.
+## Nachweis am endgültigen Produktstand
 
-Die bisherige linke Sammelleiste ist durch eine schmale Werkzeugleiste links,
-eine feste kontextbezogene Eigenschaftenspalte rechts und die Karte dazwischen
-ersetzt. Kopfzeile und Status haben reservierte Flächen. Bei kleineren Fenstern
-werden die Kopfzeile zweizeilig und die Seitenleisten unabhängig scrollbar.
-Werkzeugwechsel tauschen weder das Canvas noch dessen direkten Elternknoten aus.
+Der saubere Build gehört zu `fc92ec7`. Produktquellhash (`product-inputs-v1`):
+`811ae283f5bd19ad1fc95b61c802caf9d5dfdadb81a2f17b7617bb25a8cdf682`.
+Der Hash wurde aus den aktuellen Produktdateien erneut berechnet und stimmt mit
+`desktop-dist/build.json` überein. Der nachfolgende Abschlusscommit ändert nur
+dieses Statusdokument.
 
-Dateien, Undo/Redo, sieben vorhandene Werkzeugmodi, Zahlenfelder, Raster,
-Ansichtsvorgaben, Koordinatennavigation, Gewässerszene, Fehler-/Recoveryanzeigen
-und der bestehende Updater behalten ihre bisherigen Aktionen. Ein zusätzlicher
-Maßstabsbalken ist ausschließlich eine Anzeige aus dem Kameramaßstab.
-Straßen-, Fluss-, Gewässer-, Boden-, Regionen- und Innenraumwerkzeuge sowie
-noch fehlende Höhen-/Gebäudeeinstellungen sind sichtbar deaktiviert.
-„Einpassen“ ist ebenfalls deaktiviert; ein nicht vorhandener Befehl wird
-nicht durch eine andere Kamerafunktion vorgetäuscht.
+| Prüfung                                          | Ergebnis                                                                                       |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `npm run build:atlas-p0`                         | PASS; Editor-TypeScript, Vite, Desktopbundles und echte Electron-/SQLite-ABI-Probe             |
+| `npm run test:atlas-p0 -- --reporter dot`        | **1.020/1.020 PASS**, 32 Dateien                                                               |
+| `npm run typecheck:p0-tools`                     | PASS                                                                                           |
+| Echte SQLite-Storetests                          | **26/26 PASS**, einschließlich atomarer Landschaftsänderung, Replay, Snapshot und Wiederöffnen |
+| Normaler Desktop-Smoke am endgültigen Build      | **103/103 PASS**: Start/Datei 13, Landschaft 35, Häuser 29, Gewässer 26                        |
+| Format, JavaScript-Syntax und `git diff --check` | PASS                                                                                           |
 
-`EditorController`, Modell, Renderer, Session, IPC, Updater, Dateiformat und
-V7-Startpfad wurden nicht verändert. Keine neuen Fachaktionen, keine
-Kompatibilitätsschicht, keine zusätzliche Zustandsverwaltung und keine neuen
-Abhängigkeiten.
+Die Landschaftsprüfung enthält jetzt einen gehaltenen Weg mit 320 Bewegungssamples,
+zwei Samples pro RAF, über positive und negative Kachelgrenzen. Sie prüft
+Anfang, Kurven und Endpunkt, wirkliche Canvaspixel, gemeinsames Undo/Redo und
+unabhängig gelesene gespeicherte Autorenwerte. Der vorhandene Fall prüft zusätzlich
+feine Lichtung über grobem Wald, spätere grobe Änderungen, Escape, Save/Open und
+einen frischen Prozess ohne Diagnosebindung. Die Höhenbytes bleiben identisch.
+Die neuen Screenshots wurden visuell geprüft.
 
-## Aktueller UI-Nachweis
+**Negative Kontrolle:** Derselbe neue Dauermal-Prüfer scheiterte am unveränderten
+Ausgangsbuild `3c6e649` nach 142 Samples mit der bisherigen Bereitschaftsfehlermeldung.
+Der aktive Landschaftsbestand war danach vollständig zurückgenommen, ohne
+History-Aktion. Am endgültigen Build bestehen alle 320 Samples und der vollständige
+Undo-/Redo-/Save-Ablauf. Der Prüfer ist Bestandteil des bestehenden Paket-Smokes.
 
-Der neue Prüfer `scripts/atlas-editor-ui-smoke.mjs` ist nach dem vorhandenen
-normalen Produktsmoke in `scripts/check-atlas-p0-package.mjs` eingebunden.
-Ein Vorschau-Paket muss damit beide Prüfungen bestehen. Der Prüfer bedient
-die echte Oberfläche; Beobachtungen sind ausschließlich lesend.
+Während der Integration wurden zwei weitere konkrete Übergänge korrigiert und
+regressionsgeprüft: vollständige Texturwiederherstellung nach Kontextverlust
+zwischen Kodierung und erstem Upload sowie das fehlende Aufwecken des Renderers
+nach einem Undo-Nachladen. Der native Undo-Fall war vor diesem Wake-up-Fix nach
+30 Sekunden noch auf dem vorherigen Bildstand; derselbe Fall besteht jetzt im
+vollständigen 103er-Lauf. Keine Prüfung wurde abgeschaltet oder zeitlich gelockert.
 
-**Lokal: 40/40 Prüfungen bestanden.** Geprüft wurden Dreispaltenanordnung,
-deaktivierte Werkzeuge, alle vorhandenen Modusbindungen, unverändertes Canvas
-und Kamera bei Werkzeugwechseln, Enter-/Blur-Übernahme mit Einheitenumrechnung,
-Landschafts- und Hausfelder, Koordinaten, Raster, Mausradzoom, Verschieben,
-eine tatsächliche Höhenaktion mit Undo/Redo, tatsächliches Speichern, der
-Update-Dialog sowie 900×620-Fenstergröße ohne horizontal abgeschnittene
-Werkzeugtexte. Screenshots wurden bei 1280×960 und 900×620 geprüft.
+Gezielte Controllerprüfungen decken außerdem 1.000 kollineare Samples vor einem
+RAF, 192 Kurvensamples in zwölf RAFs, kalte Nachbarn, Kapazitätsfehler nach Up,
+Projektionsfehler, dauerhaft fehlschlagendes GPU-Polling mit verzögerter
+Speicherquittung sowie frühere Striche und Save-/History-Barrieren ab.
 
-Eine Negativkontrolle blendete ausschließlich den rechten Inspector per CSS
-aus. Der unveränderte Prüfer scheiterte an seiner ersten Layoutprüfung mit
-Exit 1. Nach Entfernen dieses Fehlers bestanden erneut **40/40** Prüfungen.
-TypeScript-Transpilation der geänderten TSX-Dateien, JavaScript-Syntaxprüfung
-und Formatprüfung der geänderten Dateien bestanden ebenfalls.
+## Gemessene Arbeit und Grenzen
 
-**Beweisgrenze:** Die lokale Umgebung konnte GitHub/npm nicht direkt auflösen.
-Deshalb wurden die geänderten TSX-Dateien mit dem verfügbaren TypeScript-Compiler
-transpiliert und in einer isolierten Kopie des veröffentlichten Pakets von
-`66f11cb5046182283569941d18bca7b93d7b3a56` mit dessen tatsächlichem React,
-Controller, Pixi-Renderer und SQLite-Prozess ausgeführt. Nur UI-Einstieg und CSS
-wurden ersetzt. Der lokale Start nutzte Xvfb/X11 und Softwaregrafik; der
-übliche Headless-Ozone-Start erhielt hier keinen WebGL-Kontext. Diese
-Umgebungsanpassung ist nicht Teil des Produktcodes. Die Formatprüfung verwendete
-Prettier `3.11.0-dev`, nicht die im Repository gepinnte Installation.
+Vergleich gegen `3c6e649`: identischer Weg aus 32 Segmenten, Radius 8, Autorenstufe 0,
+sechs Aufwärmrunden und 21 abwechselnde Messrunden je Fall. Gemessen wird die
+summierte Modellarbeit der alten Einzelsegment-API gegenüber dem neuen Batch.
+Endgültige Masken-/Gewichte-Hashes, Quellen- und Historybytes, Zell-/Kachelzahl
+und eine History-Aktion stimmen in jeder Vergleichsrunde exakt überein.
 
-Dies ist ein nativer **UI-Integrationsnachweis**, kein sauberer vollständiger
-Quellbuild, keine vollständige Typprüfung und kein neu gebautes Release.
-Die Buildidentität in den lokalen Berichten bezeichnet deshalb den zugrunde
-liegenden veröffentlichten Kern, nicht einen vollständig neu gebauten UI-Commit.
-Der exakte neue Commit benötigt weiterhin den normalen CI- und Paketlauf.
-Die bestehende Produktsmoke-Suite wurde lokal nicht vollständig neu ausgeführt.
-Es wird keine neue Performance- oder Hardwarequalifikation behauptet.
+| Modellfall                       | Alter Median | Neuer Median |
+| -------------------------------- | ------------ | ------------ |
+| Leere, vollständig bekannte Welt | 128,75 ms    | 13,50 ms     |
+| Vererbung gröberer Landschaft    | 26,37 ms     | 11,88 ms     |
+| Bereits lokal bemalte Quellen    | 12,41 ms     | 13,00 ms     |
 
-## Veröffentlichter Ausgangsstand
+Das belegt etwa 9,5× beziehungsweise 2,2× schnellere Modellarbeit in den ersten
+beiden Fällen; im dritten Fall ist kein Geschwindigkeitsgewinn belegt. Die Werte
+sind keine Eingabe-zu-Bild-Zeiten und keine pauschale Beschleunigung der Anwendung.
+Im endgültigen nativen Dauermal-Fall wurden tatsächlich Farbpasses ausgeführt,
+**ohne kanonische oder inkrementelle Höhenprojektion, horizontale Projektion oder
+Projektionsprodukte**. Übertragen wurden 291.492 Bytes Landschaftsdaten im
+beobachteten Zeichenintervall; die partiellen Uploads sind zusätzlich am echten
+Uploader-Aufruf regressionsgeprüft.
 
-Der zuletzt in diesem Auftrag bestätigte veröffentlichte Stand ist
-**0.3.2-43101913532.1**, Programmcommit
-[`66f11cb5046182283569941d18bca7b93d7b3a56`](https://github.com/ThonkTank/Salt-Marcher/commit/66f11cb5046182283569941d18bca7b93d7b3a56),
-Produktquellhash
-`faba5c44e5b953ddb4b420b42e136b60c350fab4e96a840c322d417219accecd`.
-Der [Vorschau-Lauf 43101913532](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43101913532)
-bestand einschließlich Veröffentlichung: Typprüfung, 35 Updaterfälle,
-6 Releasefälle, 7 native Netzfälle, 2 RPM-Fälle, 95 normale Paketprüfungen
-und 11 Update-Dialog-/IPC-Prüfungen. Diese Zahlen gehören zu diesem
-**alten** Programmstand, nicht zum neuen UI-Umbau.
+Der Desktoplauf verwendet echte Electron-/Pixi-/SQLite-Pfade mit Softwaregrafik.
+Seine 160 beobachteten Zeichenframes hatten CPU-p95 11,1 ms und Intervall-p95
+33,4 ms. Das ist **keine bestandene native 8-/20-ms- oder Hardwareabnahme**.
+Der CPU-Projektionsfallback bleibt korrekt, berechnet bei Landschaftsänderungen
+aber weiterhin vollständig; die reine Farbwiederverwendung setzt unterstützte
+numerische GPU-Ziele und geeignete Höhenwerte voraus. Die bestehenden Speicher-
+und Aktionsgrenzen bleiben erhalten; ein Überlauf erhält den gemalten Anfang.
+Ein zusätzlicher Langstrich-Spill oder zweiter Speicherpfad wurde nicht eingeführt.
 
-Der Kanal [atlas-preview](https://github.com/ThonkTank/Salt-Marcher/releases/tag/atlas-preview)
-wird erst nach einem erfolgreichen neuen Paket-/Updaterlauf ersetzt. Der
-UI-Commit allein belegt weder einen neuen Installer noch dessen Veröffentlichung.
-Ältere Binärdateien bleiben für laufende Downloads erhalten. Reguläre Releases
-und der V7-Einstieg bleiben getrennt.
+Lokale Nachweise liegen ignoriert unter `src-tauri/target/diagnostics/`:
+`landscape-final-verified/`, `landscape-batch-review/` sowie die ersten
+Integrationsläufe. Die negative Kontrolle liegt im separaten Baseline-Worktree
+unter `src-tauri/target/diagnostics/landscape-negative-control/`.
 
-## Offene Abnahmen und bekannte Grenzen
+## Übertragung und nächste Übergabe
 
-Die letzte vollständige Höhen-GPU-Reihe am P3.2-Stand bleibt **FAIL, 3/6**.
-Der R4-Haltebefund und die native Hardware-/20-ms-Eingabe-zu-Präsentation-Abnahme
-bleiben offen. Die früheren P3.3-Nachweise von `0feacd1` (947 Editortests,
-29 Storefälle und 202 vollständige Paketprüfungen) sind keine erneuten
-Nachweise für diesen UI-Stand.
+Der Nutzer hat Push und Veröffentlichung am 12. November ausdrücklich
+freigegeben. Die neue Electron-Vorschau erhält Version **0.3.3**; geändert
+werden ausschließlich die Paketversion und die beiden Root-Versionsfelder
+der Lockdatei. Die oben nachgewiesene Programmlogik bleibt identisch. Der
+Versionswechsel ändert den Produktquellhash; der endgültige Paket- und
+Veröffentlichungsnachweis wird an den neuen Build gebunden.
 
-Die tatsächliche Fedora-DNF-/Polkit-Installation über den In-App-Updater wurde
-in der bisherigen Prüfumgebung nicht ausgeführt. Die manuelle Erstinstallation
-von 0.3.1 wurde vom Nutzer bestätigt. Der damalige Live-Feedabruf im
-Electron-Prozess scheiterte mit `net::ERR_EMPTY_RESPONSE`, während `curl`
-denselben Feed lesen konnte. Unabhängige native Netzwerkaufrufe reproduzierten
-den Fehler; seine Ursache bleibt offen. Kontrollierte Netzwerk-/Prozesstests
-ersetzen weder diesen Live-Nachweis noch eine tatsächliche Systeminstallation.
+Der geprüfte Stand einschließlich der vorherigen Höhen-UI-Commits wird in
+`work/atlas-p0-feasibility` übernommen. Der vorhandene Workflow muss das
+tatsächliche RPM/ZIP und den gepackten Update-Dialog erfolgreich prüfen,
+bevor der Vorschaukanal aktualisiert wird. Die Veröffentlichung ist an diesem
+Vorbereitungsstand noch ausstehend.
 
-Ein früherer lokaler Landschafts-Paketsmoke hatte einen Bereitschaftstimeout,
-der auch am vorausgehenden Paket reproduzierbar war. Ein gezielter 27/27-Lauf
-und der erfolgreiche veröffentlichte CI-Smoke machten diesen Fehlversuch
-nicht rückwirkend erfolgreich; eine behobene Ursache ist nicht nachgewiesen.
-
-P3.3 bleibt eine vorbereitete editierbare Gewässerszene mit bestätigten
-Wasserautoren, aktuellem Geländeclip und lokalen Fundamentableitungen.
-„Gewässer an Gelände anpassen“ bleibt deaktiviert; vollständige Werkzeuge
-gehören weiterhin zu P7. Der UI-Umbau erweitert diesen Fachumfang nicht.
+Der letzte vollständige Höhen-GPU-Referenzlauf aus P3.2 bleibt historisch
+**FAIL, 3/6**; R4-Halten und die native Hardware-/Eingabelatenzabnahme bleiben offen.
+Der frühere sporadische Gewässer-Timeout ist durch diesen erfolgreichen Lauf
+nicht kausal erklärt. Live-Feedfehler `net::ERR_EMPTY_RESPONSE` und eine wirkliche
+Fedora-DNF-/Polkit-Installation bleiben getrennte offene Nachweise. Diese
+Landschaftskorrektur aktiviert keine weiteren V7-Funktionen oder P4–P9-Schritte.
+Der nächste Fachschritt bleibt **P3.4 „Echte Fachkonkurrenz“** im einzigen
+[Neubauplan](atlas-rebuild-plan.md).

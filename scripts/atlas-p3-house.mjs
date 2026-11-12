@@ -8,6 +8,7 @@ import { captureCanvas } from "./atlas-p0-desktop.mjs";
 import {
   button,
   brush,
+  heightMode,
   capture,
   exact,
   position,
@@ -492,9 +493,8 @@ export async function runHouseScenario({ launch, out, recordCheck }) {
       { before: beforeColdRead, after: afterColdRead },
     );
 
-    await button(page, /Anheben/);
     await brush(page, 128, 10000);
-    await button(page, /Absenken/);
+    await heightMode(page, "lower");
     await pointer(page, [moved.x, moved.y]);
     await page.mouse.down();
     await page.waitForTimeout(150);

@@ -219,6 +219,27 @@ h2 {
   font-size: 11px;
   color: #a3ad9f;
 }
+.height-settings .tool-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.height-settings .field {
+  margin: 0;
+}
+.height-settings .field > span {
+  font-size: 13px;
+}
+.height-settings .tool-fields > small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #aeb5a9;
+}
+.height-settings .height-contours {
+  font-size: 13px;
+  color: #aeb5a9;
+}
 input[type="number"],
 select {
   width: 100%;

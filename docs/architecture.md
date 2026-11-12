@@ -516,6 +516,15 @@ fehlendes Quellen-, History- oder Speicherbudget vor der Wirkungsannahme auffäl
 React hält nur noch nicht übernommene Feldtexte; Undo, Saved, Writing, Finishing, Loading und
 Warteanzeige werden aus den Besitzern abgeleitet.
 
+`EditorChrome` gruppiert Anheben und Absenken unter einem Höhenwerkzeug;
+`EditorPanels` zeigt die vorhandenen Modi und Größenangaben in der V7-Anordnung.
+Der Controller hält den zuletzt gewählten Höhenmodus auch außerhalb dieses
+Werkzeugs. Die Größen-Gesten `[`/`]` und Alt+Mausrad rufen denselben
+`setBrush`-Pfad wie das Zahlenfeld auf, ausschließlich ohne aktive Pointergeste.
+Der Cursor folgt der wirksamen Größe sofort; laufende Striche behalten ihren
+fixierten Radius. Höhenwirkung, Quellenfreigabe und Abschluss folgen weiterhin
+dem vorhandenen Dokument-/Rendererpfad.
+
 Main und Preload besitzen Fenster, native Dialoge und die typisierte IPC-Brücke.
 Der SQLite-Store liegt im Utility-Prozess. Context Isolation und Sandbox bleiben
 aktiv; der Renderer hat weder Node-Integration noch SQL-Zugriff.
@@ -620,16 +629,32 @@ Der Controller führt den Landschaftsstrich als Variante desselben Eingabezustan
 Der geometrische Pinsel erreicht seine Zielwerte in der inneren Radiushälfte;
 im äußeren Ring fällt die Wirkung mit `[1 − (2d/R − 1)²]²` auf null ab.
 Je Zelle zählt die höchste Wirkung desselben Strichs, nicht die Ereigniszahl.
-Jeder neue Wegabschnitt wird vor dem Einreihen auf sichtbare Grundlage und
-bekannte Quellen geprüft. Die aufgenommene Grundlage wird erweitert, die
-Quellen des Wegs bleiben gehalten; seine umschließende Retentionsfläche löst
-keine zusätzlichen Bereichsreads aus. Höchstens 127 offene Punkte lassen Platz
-für Up. Je RAF übernimmt das Dokument einen begrenzten geometrischen Abschnitt.
-Up versiegelt, der letzte Abschnitt schließt dieselbe Dokumentaktion ab.
-History und Dateiaktionen warten auf deren Barriere. Vor Up restaurieren
-Escape, Fokus-/Pointerverlust und Ansichtwechsel die gehaltenen Vorherwerte
-über lokale Invalidierung, ohne History- oder Storeeintrag. Nach Up kann ein
-solcher Eingabewechsel den versiegelten Abschluss nicht widerrufen.
+Jeder neue Wegabschnitt benötigt sichtbare Grundlage und bekannte Quellen.
+Ein kachelbündiges 3×3-Autorenumfeld wird vorgeladen und in Bewegungsrichtung
+auf höchstens 4×4 Kacheln erweitert. Retention hält dieses Umfeld und die
+Quellen des geeigneten Wegs; sie ersetzt keinen Bereitschaftsnachweis.
+
+Die Eingabe hält höchstens 127 noch nicht materialisierte Punkte plus den
+reservierten Up-Endpunkt. Diese Geometrie ist noch keine Dokumentänderung.
+Je RAF übernimmt `applyLandscapeSegments` atomar höchstens 64 Wegabschnitte
+mit zusammen höchstens 16.384 konservativ geschätzten Kandidatenzellen.
+Lange Strecken werden geometrisch geteilt; nur exakt kollineare Vorwärtsstücke
+mit vollständig bekannter gemeinsamer Quellenfläche werden zusammengefasst.
+Ecken, Umkehrpunkte und Endpunkt bleiben erhalten. Das Dokument prüft alle
+Ressourcen vor der Mutation, verwendet die höchste Zellwirkung bezogen auf
+den Strichanfang und kopiert jede geänderte Quellkachel einmal pro Batch.
+Nach der vollständigen Bereitschaftsprüfung indexiert ein privater Sampler nur
+betroffene residente Quellen und belegte Stufen. Bereits validierte Quellen
+werden weder pro Zelle erneut geprüft noch über alle leeren Stufen gesucht.
+
+Fehlende Bereitschaft oder eine volle Eingabe beenden die weitere Annahme und
+versiegeln den geeigneten Weg. Schlägt eine spätere Materialisierung oder
+Projektion fehl, bleiben bereits materialisierte Autoren erhalten; die noch
+nicht materialisierte Restgeometrie wird nicht später nachgeholt. Tatsächliche
+Änderungen erzeugen einen gemeinsamen History-/Pendingeintrag. Nur ausdrückliches
+Escape vor Up restauriert die gehaltenen Vorherwerte ohne diesen Eintrag. Fokus-/Pointerverlust,
+Ansicht- und Werkzeugwechsel versiegeln dagegen den Weg. Up beendet die Eingabe;
+History und Dateiaktionen warten auf den gemeinsamen Aktionsabschluss.
 
 `readLandscapeRegion` lädt selektiv die gewählte Autorenstufe und gröbere Stufen.
 `readLandscapePresentation` liefert gröbere Autoren und numerische Übersichten
@@ -641,19 +666,29 @@ die reine Zusammensetzung; `landscape-store.ts` Codec, begrenzten Übersichtscac
 und räumliche Indizes. Autoren und Übersichten werden in derselben
 SQLite-Transaktion auf denselben Sequenzstand gebracht.
 
-`LandscapeView` ist ein begrenzter Darstellungscache unveränderlicher Basisreads
-und eingefrorener Eingaben. Lokale Patches werden auf die gelesene Basis
-projiziert. Fehlt beim Undo eine benötigte Vererbung, wird eine aktuelle
-Storeübersicht angefordert; fremde Feinautoren werden dafür nicht nachgeladen.
-Überholte Reads und fehlende Ergebnisse bleiben unbekannt. Ein Frame hält seine
-Quellen bis zur Zeichnung; neu gestartete Vorbereitung verwendet dieselbe
-Arbeitsübersicht und ihren Fortschritt erneut. Alle gehaltenen Puffer zählen
-zum Darstellungsbudget, auch Pendingpuffer noch ohne fertigen Frame.
+`LandscapeView` ist ein begrenzter aktueller Darstellungscache. Exakte lokale
+Vorher-/Nachherpatches führen seine feinen Übersichten unmittelbar fort;
+Autorenquellen werden unveränderlich vom Dokument geliehen. Bereits eingefrorene
+Frames behalten ihre Puffer, neue Frames erhalten Version und Dirtyrechteck.
+Der Abschluss eines bereits materialisierten Strichs verändert keine Pixel.
+Eine Speicherquittung entwertet den bekannten lokalen Stand nicht und verlangt
+keine erneute Projektion des gesamten Strichs. Fehlt beim Undo eine benötigte
+Vererbung, wird eine aktuelle Storeübersicht angefordert; fehlende Daten werden
+nicht durch Leere ersetzt. Überholte Reads dürfen keinen neueren lokalen Stand
+überschreiben. Gehaltene Basis-, Frame- und Quellpuffer zählen gemeinsam zum
+Darstellungsbudget.
 
 `HeightField` bereitet Landschaftsgewichte innerhalb desselben RAF-Budgets vor.
 Die gemeinsame Farbkomposition mischt die Flächendeckung und maskiert sie an
-der tatsächlich zusammengesetzten Wasseroberfläche. Der CPU-Ausnahmeweg liefert
-Farbe und Landmaske aus derselben kanonischen Höhenrechnung; bei lokalen
+der tatsächlich zusammengesetzten Wasseroberfläche. Reine Landschaftsänderungen
+entwerten nur die Farbe. Bei passendem vollständig berechnetem GPU-Höhenstand werden
+nur betroffene Gewichtstexelbereiche hochgeladen und der zugehörige Farbbereich
+neu komponiert; Höhenprojektion und numerische Basis bleiben erhalten. Änderungen
+an Höhe, Höhenübersicht oder Wasser benötigen weiterhin den numerischen Pfad.
+Der CPU-Ausnahmeweg liefert Farbe und Landmaske aus derselben kanonischen
+Höhenrechnung. Er berechnet bei Landschaftsänderungen weiterhin die Projektion
+neu; die reine Farbwiederverwendung setzt unterstützte numerische GPU-Ziele
+und einen dafür geeigneten Höhenbereich voraus. Bei lokalen
 Gewässern und Fundamenten kommen absolute Hi/Lo-Höhenpaare für denselben
 Oberflächen-Farbpass hinzu. Upload, Komposition
 und GPU-Abschluss belegen die vorhandenen Grafikplätze; Landschaft erhält keine
@@ -864,8 +899,8 @@ Der Eingabezustand unterscheidet idle, blocked, active, finishing und den
 gegebenenfalls versiegelten Landschaftsstrich. Beim Höhenpinsel reservieren
 Down und Move zulässige Arbeit; Up reserviert seinen tatsächlichen Endpunkt.
 Landschaft prüft Quellen und sichtbare Grundlage vor der Wegannahme und
-Abschnitts- sowie Speicherbudgets vor der Mutation. Up versiegelt in beiden
-Fällen die Eingabe vor Handler-Rückkehr. Die Autorenfortsetzung gehört
+Batch- sowie Speicherbudgets vor der atomaren Dokumentübernahme. Up versiegelt
+in beiden Fällen die Eingabe vor Handler-Rückkehr. Die Autorenfortsetzung gehört
 weiterhin derselben Dokumentaktion. Ihr Status ist sichtbar.
 
 Der einzige Frameablauf ist gerichtet:
@@ -874,7 +909,7 @@ Der einzige Frameablauf ist gerichtet:
    Wartezeit prüfen und vollständige passende Rückmeldung übernehmen.
 2. Den nächsten fehlenden Quellenread starten.
 3. Für Höhen ein kausales Haltefenster annehmen; höchstens eine begrenzte
-   Autorenscheibe als Höhenzeitfenster oder Landschaftsabschnitt materialisieren.
+   Autorenscheibe als Höhenzeitfenster oder Landschaftsbatch materialisieren.
 4. Priorisierte Quellen und Übersichten in kleinen Schritten übernehmen und
    lokale Gewässer-/Fundamentableitungen begrenzt fortsetzen. Erst vollständige
    Abhängigkeiten erlauben die jeweilige Bestätigung.
@@ -1055,9 +1090,11 @@ Gewässerquellen einschließlich ihrer vollständigen Inhaltsabhängigkeit gehö
 zu einem Dateistand. Alte P0-Formate werden ohne Migration abgewiesen; V7 behält
 seinen getrennten Dateivertrag.
 
-Eine abgeschlossene Geste erzeugt einen angenommenen `ChangeSet`. History und
-Pendingjournal teilen unveränderliche Vorher-/Nachherpuffer; Liveautoren bleiben
-getrennt. Leser dürfen die geliehenen Puffer weder verändern noch transferieren.
+Eine abgeschlossene Geste bündelt ihre übernommenen Autoren in einem `ChangeSet`.
+History, Pendingjournal und Leser teilen unveränderliche Vorher-/Nachherpuffer.
+Die Livekarte hält die aktuelle Version; spätere Eingriffe erzeugen eine Kopie
+statt eine bereits geteilte Version zu verändern. Leser dürfen die geliehenen
+Puffer weder verändern noch transferieren.
 Datenkopien für einen ausdrücklich übertragbaren Snapshot bleiben notwendig.
 `historyBytes` und `pendingBytes` sind getrennte logische Budgetgrößen und keine
 addierbare Messung physisch gemeinsam genutzten Speichers.

@@ -173,6 +173,11 @@ in der gepinnten Electron-Laufzeit und führt bei unpassender ABI
 | `npm run make:atlas-p0`                                                                      | RPM-/ZIP-Artefakte erzeugen; RPM benötigt die Paketbauwerkzeuge.                                                                                                   |
 | `npm run check:atlas-p0:package`                                                             | Paket bauen, ASAR-Inhalt prüfen und den ausgelieferten Einstieg mit Dateirundlauf starten.                                                                         |
 
+Die Werkzeugoberfläche lässt sich nach dem Build gezielt mit
+`node scripts/atlas-editor-ui-smoke.mjs` prüfen. Der Lauf bedient die echte
+Desktopoberfläche einschließlich Höhenmodi, Größen-Gesten, Zahlenfeldern,
+History und Dateiaktionen; er ist ebenfalls Teil der Paketprüfung.
+
 Die Runner schreiben nach jedem Szenario Ergebnisse unter
 `artifacts/atlas-rebuild/runs/`; der Laufindex erhält fehlgeschlagene und noch
 nicht ausgeführte Fälle. Weitere Optionen nach `--`:
@@ -211,8 +216,13 @@ Der normale Smoke enthält außerdem P3.1: grober Wald, feine Lichtung, erneute
 grobe Änderung, Undo/Redo und sichtbarer Escape-Abbruch, echte Dateisicherung,
 Neu/Open und ein frischer Prozess ohne Diagnosemodus. Landschaftspixel und
 unabhängig gelesene Autorenwerte werden gemeinsam geprüft; die Höhenquellen
-und feinen Ausnahmen müssen unverändert bleiben. `--only landscape` führt
-diesen bestehenden Fall gezielt aus. P3.2 ergänzt denselben Smoke um Hausplatzierung,
+und feinen Ausnahmen müssen unverändert bleiben. Ein durchgehend gehaltener
+Strich liefert außerdem 320 Bewegungssamples mit zwei Samples je RAF und
+überschreitet positive sowie negative Kachelgrenzen. Tatsächliche Landschaftspixel,
+Anfang, Kurven und Endpunkt, ein gemeinsamer Undo-/Redo-Schritt und die gespeicherten
+Autorenwerte werden geprüft. `--only landscape` führt diese Fälle gezielt aus.
+Sie belegen Funktion und Inhalt; der Lauf ist keine native Leistungsabnahme.
+P3.2 ergänzt denselben Smoke um Hausplatzierung,
 Drehung, exakte Auswahl, sichtbaren Drag und Abbruch, gemeinsame History,
 kaltes räumliches Laden sowie Save/Neu/Open und einen frischen Prozess.
 `--only house` führt diesen Hausfall gezielt aus. Die Pixel- und Dateiprüfung

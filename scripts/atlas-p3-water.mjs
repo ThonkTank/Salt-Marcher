@@ -8,6 +8,7 @@ import { captureCanvas } from "./atlas-p0-desktop.mjs";
 import {
   button,
   brush,
+  heightMode,
   capture,
   exact,
   landPixel,
@@ -351,9 +352,8 @@ async function click(page, point) {
 }
 
 async function terrainClick(page, kind, rate) {
-  await button(page, /Anheben/);
   await brush(page, 512, rate);
-  await button(page, kind === "raise" ? /Anheben/ : /Absenken/);
+  await heightMode(page, kind);
   await settled(page);
   return click(page, strokePoint);
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   applyTestBrush,
   beginTestBrush,
@@ -13,6 +13,7 @@ import {
   WORLD_LIMIT,
   createLandscapeTile,
   landscapeCellAddress,
+  landscapeSegmentCellCost,
   parseLandscapeTileKey,
   prepareLandscapeSampler,
   validateLandscapeTile,
@@ -28,6 +29,181 @@ const LOCAL: Bounds = [0, 0, 64, 64];
 const CLEAR: LandscapeWeights = [0, 0, 0, 0];
 const FOREST: LandscapeWeights = [180, 0, 0, 0];
 const POINT: Point = [2.5, 2.5];
+
+describe("landscape geometric batches", () => {
+  it("proves source coverage once per segment and samples only the known batch sources", () => {
+    const doc = loaded([full(4, [60, 40, 20, 0])]);
+    const ready = vi.spyOn(doc, "isLandscapeReady");
+    const scalar = vi.spyOn(doc, "readLandscapeCell");
+    const sourceState = vi.spyOn(doc, "landscapeSourceState");
+    doc.beginLandscapeGesture({ level: 0, radius: 8, weights: FOREST });
+    const path: Point[] = Array.from({ length: 33 }, (_, i) => [
+      12.5 + i * 8,
+      12.5,
+    ]);
+    doc.applyLandscapeSegments(path);
+    expect(doc.metrics.gestureCells).toBeGreaterThan(3000);
+    expect(ready).toHaveBeenCalledTimes(path.length - 1);
+    expect(scalar).not.toHaveBeenCalled();
+    expect(sourceState).not.toHaveBeenCalled();
+    for (const point of path)
+      expect(doc.sampleLandscape(...point)).toEqual(FOREST);
+  });
+
+  it("keeps explicit zero owners and inherited weights across a batch's tile crossing", () => {
+    const zero = createLandscapeTile(0, 0, 0);
+    zero.mask[4095] = 1;
+    const local = createLandscapeTile(0, 1, 1);
+    local.mask[0] = 1;
+    local.values.set([60, 40, 20, 0]);
+    const doc = loaded([full(1, [40, 80, 0, 0]), zero, local]);
+    doc.beginLandscapeGesture({
+      level: 0,
+      radius: 0.49,
+      weights: FOREST,
+      strength: 0.5,
+    });
+    doc.applyLandscapeSegments([
+      [63.5, 63.5],
+      [64.5, 64.5],
+      [65.5, 64.5],
+    ]);
+    expect(doc.sampleLandscape(63.5, 63.5)).toEqual([90, 0, 0, 0]);
+    expect(doc.sampleLandscape(64.5, 64.5)).toEqual([120, 20, 10, 0]);
+    expect(doc.sampleLandscape(65.5, 64.5)).toEqual([110, 40, 0, 0]);
+    doc.finishLandscapeGesture();
+    doc.undo();
+    expect(doc.sampleLandscape(63.5, 63.5)).toEqual(CLEAR);
+    expect(doc.sampleLandscape(64.5, 64.5)).toEqual([60, 40, 20, 0]);
+    expect(doc.sampleLandscape(65.5, 64.5)).toEqual([40, 80, 0, 0]);
+  });
+
+  it("does not infer empty sources for an unknown later segment of the batch", () => {
+    const doc = new EditorDocument("incomplete-batch", {
+      empty: true,
+      landscapeEmpty: false,
+    });
+    doc.acceptLandscapeCoverage(LOCAL, []);
+    doc.beginLandscapeGesture({ level: 0, radius: 0.49, weights: FOREST });
+    expect(() =>
+      doc.applyLandscapeSegments([POINT, [3.5, 2.5], [65.5, 2.5]]),
+    ).toThrow(SourcesNotReadyError);
+    expect(doc.metrics.gestureCells).toBe(0);
+    expect(doc.metrics.landscapeSourceBytes).toBe(0);
+    expect(doc.sampleLandscape(...POINT)).toEqual(CLEAR);
+  });
+
+  it("keeps a bent path across positive and negative tile boundaries", () => {
+    const doc = loaded();
+    doc.beginLandscapeGesture({ level: 0, radius: 2, weights: FOREST });
+    const path: Point[] = [
+      [-8.5, -8.5],
+      [65.5, -8.5],
+      [65.5, 65.5],
+      [-8.5, 65.5],
+    ];
+    const update = doc.applyLandscapeSegments(path)!;
+    for (const point of [
+      ...path,
+      [-0.5, -8.5],
+      [0.5, -8.5],
+      [63.5, -8.5],
+      [64.5, -8.5],
+      [65.5, 0.5],
+      [32.5, 65.5],
+    ] as Point[])
+      expect(doc.sampleLandscape(...point)).toEqual(FOREST);
+    // Joining only the first/last or newest pointer positions would paint these.
+    expect(doc.sampleLandscape(-8.5, 32.5)).toEqual(CLEAR);
+    expect(doc.sampleLandscape(32.5, 32.5)).toEqual(CLEAR);
+    expect(new Set(update.patches.map((patch) => patch.key)).size).toBe(
+      update.patches.length,
+    );
+    const change = doc.finishLandscapeGesture()!;
+    expect(doc.metrics.historyActions).toBe(1);
+    doc.undo();
+    for (const point of path)
+      expect(doc.sampleLandscape(...point)).toEqual(CLEAR);
+    doc.redo();
+    for (const point of path)
+      expect(doc.sampleLandscape(...point)).toEqual(FOREST);
+    expect(change.patches.length).toBe(update.patches.length);
+  });
+
+  it("preserves soft-edge density across batch boundaries and revisits", () => {
+    const docs = [
+      loaded([full(4, [60, 40, 20, 0])]),
+      loaded([full(4, [60, 40, 20, 0])]),
+    ];
+    const path: Point[] = [
+      [8.5, 8.5],
+      [24.5, 8.5],
+      [24.5, 24.5],
+      [8.5, 24.5],
+      [8.5, 8.5],
+      [24.5, 8.5],
+    ];
+    for (const doc of docs)
+      doc.beginLandscapeGesture({
+        level: 0,
+        radius: 8,
+        weights: [0, 0, 180, 0],
+      });
+    docs[0].applyLandscapeSegments(path);
+    for (let index = 1; index < path.length; index++)
+      docs[1].applyLandscapeSegments([path[index - 1], path[index]]);
+    for (let y = 0.5; y < 34; y++)
+      for (let x = 0.5; x < 34; x++)
+        expect(docs[0].sampleLandscape(x, y)).toEqual(
+          docs[1].sampleLandscape(x, y),
+        );
+    const edge = docs[0].sampleLandscape(16.5, 14.5);
+    docs[0].applyLandscapeSegments(path);
+    expect(docs[0].sampleLandscape(16.5, 14.5)).toEqual(edge);
+    for (const doc of docs) {
+      doc.finishLandscapeGesture();
+      expect(doc.metrics.historyActions).toBe(1);
+      doc.undo();
+      expect(doc.sampleLandscape(16.5, 14.5)).toEqual([60, 40, 20, 0]);
+    }
+  });
+
+  it("rejects an entire over-budget batch without losing a completed prefix", () => {
+    const doc = loaded([], { maxGestureCells: 2 });
+    doc.beginLandscapeGesture({ level: 0, radius: 0.49, weights: FOREST });
+    doc.applyLandscapeSegments([POINT]);
+    const before = doc.metrics;
+    expect(() =>
+      doc.applyLandscapeSegments([
+        [3.5, 2.5],
+        [4.5, 2.5],
+      ]),
+    ).toThrow(/Zellbudget/);
+    expect(doc.sampleLandscape(...POINT)).toEqual(FOREST);
+    expect(doc.sampleLandscape(3.5, 2.5)).toEqual(CLEAR);
+    expect(doc.sampleLandscape(4.5, 2.5)).toEqual(CLEAR);
+    expect(doc.metrics.gestureCells).toBe(before.gestureCells);
+    doc.finishLandscapeGesture();
+    expect(doc.metrics.historyActions).toBe(1);
+  });
+
+  it("borrows only relevant immutable tile versions for a newly read display base", () => {
+    const doc = loaded();
+    doc.beginLandscapeGesture({ level: 0, radius: 0.49, weights: FOREST });
+    doc.applyLandscapeSegments([POINT]);
+    doc.applyLandscapeSegments([[128.5, 2.5]]);
+    const relevant = doc.landscapePatchesAfter(0, LOCAL);
+    expect(relevant).toHaveLength(1);
+    expect(relevant[0].after).toBe(doc.landscapeSources(LOCAL)[0]);
+    const original = relevant[0].after!.values.slice();
+    doc.applyLandscapeSegments([[4.5, 2.5]]);
+    expect(relevant[0].after!.values).toEqual(original);
+    expect(doc.landscapePatchesAfter(0, [256, 256, 320, 320])).toEqual([]);
+    expect(
+      landscapeSegmentCellCost({ level: 0, radius: 0.49 }, POINT, POINT),
+    ).toBe(1);
+  });
+});
 
 function full(level: number, weights: LandscapeWeights, tileX = 0, tileY = 0) {
   const tile = createLandscapeTile(level, tileX, tileY);

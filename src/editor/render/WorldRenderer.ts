@@ -14,6 +14,7 @@ import {
   type HeightTile,
   type Point,
   type LandscapeWeights,
+  type LandscapePatch,
 } from "../model";
 import {
   HEIGHT_OVERVIEW_BYTES,
@@ -506,13 +507,21 @@ export class WorldRenderer {
   }
 
   updateLandscapePresentation(read: LandscapePresentationRead): void {
-    this.landscape.accept(read);
-    this.invalidateTiles(read.bounds, !this.document.active);
+    for (const bounds of this.landscape.accept(read))
+      this.invalidateTiles(bounds, !this.document.active, undefined, false);
+    // An equivalent fine-ownership cache may still have been waiting for the
+    // document's coarse source coverage. Wake its existing dirty work even when
+    // this read requires no further pixel invalidation.
+    this.requestFrame = true;
   }
 
-  updateLandscape(bounds: Bounds, sequence?: number): void {
-    this.landscape.changed(sequence);
-    this.invalidateTiles(bounds);
+  updateLandscape(
+    bounds: Bounds,
+    sequence?: number,
+    patches?: readonly LandscapePatch[],
+  ): void {
+    for (const changed of this.landscape.changed(bounds, sequence, patches))
+      this.invalidateTiles(changed, false, undefined, false);
   }
 
   /**
@@ -1324,6 +1333,7 @@ export class WorldRenderer {
     bounds: Bounds,
     sourcesChanged = false,
     sourceLevel?: number,
+    heightChanged = true,
   ): void {
     for (const tile of this.tiles.values()) {
       if (
@@ -1334,7 +1344,7 @@ export class WorldRenderer {
       if (!intersectsBounds(tile.bounds, bounds)) continue;
       const rect = pixelRect(tile, bounds);
       if (rect[0] >= rect[2] || rect[1] >= rect[3]) continue;
-      if (!sourcesChanged && !this.sourcesFrozen)
+      if (heightChanged && !sourcesChanged && !this.sourcesFrozen)
         tile.field.markHeightChanged();
       if (sourcesChanged) tile.foundationVersion++;
       tile.contentVersion++;

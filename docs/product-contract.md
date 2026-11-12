@@ -1133,12 +1133,34 @@ die Berechnung verwendet Fuß und Sekunden. Straßen, vollständiger Hausbau,
 Innenräume, Regionen sowie Werkzeuge zum Erstellen oder Anpassen von Gewässern
 gehören weiter zur V7-Anwendung und sind im P0-Fenster nicht verfügbar.
 
+Das Werkzeug **Höhen** verwendet die V7-Anordnung: **Pinselmodus**,
+**Pinselgröße (Pixel)**, Weltdurchmesser und Höhenraster, anschließend
+**Höhenänderung (m/s)**. Anheben und Absenken sind aktiv; die übrigen
+V7-Modi und Höhenlinien sind sichtbar deaktiviert. Der zuletzt gewählte
+Höhenmodus bleibt beim Wechsel zu anderen Werkzeugen erhalten. Die
+Größenangaben folgen der aktuellen Kamera und Autorenstufe, metrisch mit
+höchstens drei signifikanten Stellen und ab einem Kilometer in Kilometern.
+
+Im Höhenwerkzeug vergrößern `]` und Alt+Mausrad nach oben den Durchmesser um
+den Faktor 1,1; `[` und Alt+Mausrad nach unten verkleinern ihn entsprechend.
+Das Ergebnis wird auf ganze Pixel gerundet und auf 8–512 begrenzt. Diese
+Gesten ändern weder die Kamera noch einen laufenden Strich; während einer
+aktiven oder noch abzuschließenden Pointergeste bleiben sie ohne Wirkung.
+Fokussierte Zahlenfelder behalten ihre eigene Tastaturbedienung. Die
+Größenkurzbefehle berücksichtigen AltGraph-Tastaturen. Eine zusätzliche
+Leertaste-Ziehen-Geste wird nicht angeboten. Die zeitabhängige Wirkung beim
+Halten und langsamen Ziehen bleibt die unten beschriebene P0-Wirkung.
+
 Numerische Einstellungen müssen endlich sein. Pinselgröße und Stärke werden
 auf ihre wirksamen Grenzen begrenzt: 8–512 Bildschirmpixel für Höhe,
 8–128 für Landschaft und 0,03048–3.048 Meter pro Sekunde Höhenrate.
 Landschaftsdichte bleibt bei 0–100 Prozent. Hausmaße und Fundamentparameter
 müssen ihre unten angegebenen Grenzen einhalten; ungültige Werte werden mit
 sichtbarem Fehler abgewiesen und nicht als neue Autoren übernommen.
+
+Zahlenfelder werden beim Verlassen des Felds oder Enter übernommen;
+Escape verwirft den noch nicht übernommenen Text. Ein direkter Kartenklick
+übernimmt das fokussierte Zahlenfeld vor Beginn des Strichs.
 
 Eine neue P0-Welt ist Ozean mit natürlicher Höhe −100 Fuß und Meeresspiegel 0.
 Die natürliche Oberfläche entsteht aus der Summe relativer Höhenfelder mit
@@ -1284,13 +1306,23 @@ Undo/Redo und Speichern/Wiederöffnen. Der Pinsel beginnt nur auf sichtbarer,
 lokal bereiter Darstellung mit den nötigen Quellen. Geladene Übersicht und
 beliebige exakte Punktabfrage bleiben unterschiedliche Bereitschaftsbelege.
 
-Der angenommene Weg wird begrenzt fortgesetzt. Loslassen versiegelt den
-Endpunkt; der vollständige Strich erzeugt genau einen gemeinsamen Undo-Schritt.
-Escape, Fokusverlust, Pointercancel sowie Ansicht- oder Werkzeugwechsel vor dem
-Loslassen nehmen den laufenden Landschaftsstrich vollständig zurück. Nach dem
-Versiegeln läuft der angenommene Weg auch bei späterem Escape oder Fokusverlust
-vollständig zu Ende. Speichern und History warten auf den Abschluss. Eine
-übergroße Aktion wird verständlich abgewiesen, statt Teile unbemerkt zu verlieren.
+Ein bereiter Kachelübergang unterbricht den Strich nicht. Benötigte Quellen im
+nahen Umfeld werden vorgeladen; tatsächlich unbekannte oder noch nicht sichtbare
+Bereiche bleiben gesperrt. Trifft der Pinsel auf einen solchen Bereich oder eine
+Arbeitsgrenze, stoppt die weitere Annahme mit sichtbarem Hinweis. Der bereits
+gemalte Teil bleibt erhalten. Abgewiesene Bewegung wird nach dem Laden nicht
+nachgeholt; zum Weitermalen ist ein neuer Druck erforderlich.
+
+Loslassen versiegelt den Endpunkt. Ein erhaltener Strich mit tatsächlichen
+Änderungen erzeugt genau einen gemeinsamen Undo-Schritt; Speichern und History
+warten auf seinen Abschluss.
+Nur ausdrückliches Escape vor dem Loslassen nimmt den gesamten laufenden
+Strich zurück. Fokusverlust, Pointercancel sowie Ansicht- oder Werkzeugwechsel
+beenden die Eingabe und erhalten den Strich. Nach dem Versiegeln kann auch
+Escape ihn nicht mehr zurücknehmen. Ein Fehler während der weiteren Berechnung
+oder Darstellung löscht keine bereits übernommenen Landschaftsänderungen und
+keine früheren Striche. Der erhaltene Stand bleibt rückgängig machbar und kann
+nach erfolgreicher Speicherung wieder geöffnet werden.
 
 Die Darstellung zeigt die vier Deckungen als gemischte Flächen. Wasser blendet
 sie aus, ohne ihre Autoren zu löschen; erneutes Anheben kann sie wieder sichtbar

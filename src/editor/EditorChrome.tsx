@@ -98,11 +98,12 @@ export function ToolRail({
     mode: EditorState["mode"],
     icon: string,
     label: string,
+    pressed = state?.mode === mode,
   ) => (
     <button
       key={mode}
       disabled={!state || state.fileAction || state.recovering}
-      aria-pressed={state?.mode === mode}
+      aria-pressed={pressed}
       onClick={() => onMode(mode)}
     >
       <span aria-hidden="true">{icon}</span>
@@ -124,11 +125,12 @@ export function ToolRail({
     <aside className="atlas-tools tool-list" aria-label="Werkzeuge">
       <p className="eyebrow">WELT GESTALTEN</p>
       {modeButton("select", "↖", "Haus auswählen")}
-      <div className="tool-group" role="group" aria-label="Höhen">
-        <h2>Höhen</h2>
-        {modeButton("raise", "↗", "Anheben")}
-        {modeButton("lower", "↘", "Absenken")}
-      </div>
+      {modeButton(
+        state?.heightMode ?? "raise",
+        "▵",
+        "Höhen",
+        state?.mode === "raise" || state?.mode === "lower",
+      )}
       <div
         className="tool-group"
         role="group"

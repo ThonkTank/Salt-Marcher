@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   AtlasDesktop,
   CommitRequest,
+  ReadLandscapeRegionRequest,
   ProjectInfo,
   SaveRequest,
 } from "./bridge";
@@ -12,6 +13,12 @@ import {
   intersectsBounds,
   type Bounds,
   type HouseHeader,
+  type Point,
+  type LandscapeTile,
+  landscapeTileBounds,
+  LANDSCAPE_BATCH_CELL_LIMIT,
+  LANDSCAPE_BATCH_POINT_LIMIT,
+  landscapeSegmentCellCost,
 } from "./model";
 
 // Only presentation is substituted. DOM handlers, RAF draining, the document,
@@ -183,6 +190,7 @@ async function readyController(houses: HouseHeader[] = []) {
   const unexpectedRead = async () => {
     throw new Error("The empty, resident test document needs no source read");
   };
+  const storedLandscape = new Map<string, LandscapeTile>();
   const bridge = {
     diagnostics: false,
     onFileAction: vi.fn((handler: typeof fileAction) => {
@@ -192,7 +200,15 @@ async function readyController(houses: HouseHeader[] = []) {
     status: async () => info,
     readRegion: vi.fn(unexpectedRead),
     readPresentation: vi.fn(unexpectedRead),
-    readLandscapeRegion: vi.fn(unexpectedRead),
+    readLandscapeRegion: vi.fn(async (request: ReadLandscapeRegionRequest) => ({
+      ...request,
+      sequence: info.sequence,
+      tiles: [...storedLandscape.values()].filter(
+        (tile) =>
+          tile.level >= request.minLevel &&
+          intersectsBounds(landscapeTileBounds(tile), request.bounds),
+      ),
+    })),
     readLandscapePresentation: vi.fn(unexpectedRead),
     readHouseRegion: vi.fn(
       async (request: { sessionId: string; bounds: Bounds }) => ({
@@ -206,6 +222,11 @@ async function readyController(houses: HouseHeader[] = []) {
     readWaterRegion: vi.fn(unexpectedRead),
     commit: vi.fn(async (request: CommitRequest) => {
       info.sequence = request.sequence;
+      for (const patch of request.patches)
+        if (patch.kind === "landscape") {
+          if (patch.after) storedLandscape.set(patch.key, patch.after);
+          else storedLandscape.delete(patch.key);
+        }
       return {
         sessionId: request.sessionId,
         sequence: request.sequence,
@@ -252,15 +273,16 @@ async function readyController(houses: HouseHeader[] = []) {
     frames.clear();
     for (const callback of pending) callback(now);
   };
-  const pointer = (type: string, x = 0, y = 0) => {
-    const event = new Event(type);
-    Object.assign(event, {
-      button: 0,
-      pointerId: 1,
-      clientX: 128 + x * 0.25,
-      clientY: 128 + y * 0.25,
-      getCoalescedEvents: () => [],
-    });
+  const pointer = (type: string, x = 0, y = 0, coalesced: Point[] = []) => {
+    const sample = (point: Point) =>
+      Object.assign(new Event(type), {
+        button: 0,
+        pointerId: 1,
+        clientX: 128 + point[0] * 0.25,
+        clientY: 128 + point[1] * 0.25,
+      });
+    const event = sample([x, y]);
+    Object.assign(event, { getCoalescedEvents: () => coalesced.map(sample) });
     Object.defineProperty(event, "timeStamp", { value: now });
     canvas.dispatchEvent(event);
   };
@@ -270,6 +292,7 @@ async function readyController(houses: HouseHeader[] = []) {
         Object.assign(new Event("keydown"), { key: "Escape" }),
       );
     else if (reason === "blur") window.dispatchEvent(new Event("blur"));
+    else if (reason === "cancel") pointer("pointercancel");
     else if (reason === "tool-change") controller.setMode("clearing");
     else if (reason === "resize") resized();
     else if (reason === "visibility") {
@@ -278,7 +301,7 @@ async function readyController(houses: HouseHeader[] = []) {
     } else throw new Error(`Unknown test interruption: ${reason}`);
   };
   const drain = async () => {
-    for (let step = 0; step < 10; step++) {
+    for (let step = 0; step < 40; step++) {
       frame();
       await settle();
       if (!doc.active && !controller.state.writing) return;
@@ -563,25 +586,44 @@ describe("house gestures through the shared controller and writer", () => {
 });
 
 describe("landscape input completion through the actual controller", () => {
-  it.each(["escape", "blur"])(
-    "%s before Up rolls back materialized cells and queued geometry",
+  it("explicit Escape before Up rolls back the active stroke", async () => {
+    const test = await readyController();
+    test.pointer("pointerdown");
+    test.frame();
+    expect(test.controller.state.error).toBeNull();
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    test.pointer("pointermove", 48);
+    test.interrupt("escape");
+    expect(test.doc.active).toBe(false);
+    expect(test.doc.finishing).toBe(false);
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
+    test.pointer("pointerup", 96);
+    await test.drain();
+    expect(test.doc.sampleLandscape(48, 0)).toEqual(CLEAR);
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+    expect(test.doc.sequence).toBe(0);
+    expect(test.doc.metrics.historyActions).toBe(0);
+    expect(test.bridge.commit).not.toHaveBeenCalled();
+    expect(test.controller.state.error).toBeNull();
+  });
+
+  it.each(["blur", "cancel", "tool-change", "resize", "visibility"])(
+    "%s before Up preserves accepted painting and seals eligible geometry",
     async (reason) => {
       const test = await readyController();
       test.pointer("pointerdown");
       test.frame();
-      expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
       test.pointer("pointermove", 48);
       test.interrupt(reason);
-      expect(test.doc.active).toBe(false);
-      expect(test.doc.finishing).toBe(false);
-      expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
+      expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+      expect(test.doc.finishing).toBe(true);
       test.pointer("pointerup", 96);
       await test.drain();
-      expect(test.doc.sampleLandscape(48, 0)).toEqual(CLEAR);
+      expect(test.doc.sampleLandscape(48, 0)).toEqual(FOREST);
       expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
-      expect(test.doc.sequence).toBe(0);
-      expect(test.doc.metrics.historyActions).toBe(0);
-      expect(test.bridge.commit).not.toHaveBeenCalled();
+      expect(test.doc.sequence).toBe(1);
+      expect(test.doc.metrics.historyActions).toBe(1);
+      expect(test.bridge.commit).toHaveBeenCalledTimes(1);
       expect(test.controller.state.error).toBeNull();
     },
   );
@@ -604,9 +646,6 @@ describe("landscape input completion through the actual controller", () => {
       expect(test.doc.finishing).toBe(true);
       test.frame();
       expect(test.doc.sampleLandscape(48, 0)).toEqual(FOREST);
-      expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
-      expect(test.doc.sequence).toBe(0);
-      test.frame();
       await settle();
       expect(test.doc.sampleLandscape(96, 0)).toEqual(FOREST);
       expect(test.doc.active).toBe(false);
@@ -645,8 +684,325 @@ describe("landscape input completion through the actual controller", () => {
     expect(test.controller.state.error).toBeNull();
   });
 
+  it("keeps a thousand collinear input samples without an event-rate backlog", async () => {
+    const test = await readyController();
+    const materialize = vi.spyOn(test.doc, "applyLandscapeSegments");
+    test.pointer("pointerdown");
+    for (let step = 1; step <= 1000; step++)
+      test.pointer("pointermove", step * 0.4);
+    test.pointer("pointerup", 400);
+    expect(test.controller.state.error).toBeNull();
+    await test.drain();
+    expect(materialize).toHaveBeenCalledTimes(1);
+    for (const x of [0, 64, 128, 256, 400])
+      expect(test.doc.sampleLandscape(x, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(200, 40)).toEqual(CLEAR);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+    expect(test.controller.state.error).toBeNull();
+  });
+
+  it("drains high-rate coalesced curves in bounded batches while retaining corners and the terminal point", async () => {
+    const test = await readyController();
+    const materialize = vi.spyOn(test.doc, "applyLandscapeSegments");
+    const brush = test.controller.currentLandscapeBrush();
+    const points: Point[] = [];
+    test.pointer("pointerdown");
+    test.frame();
+    for (let frame = 0; frame < 12; frame++) {
+      const samples: Point[] = Array.from({ length: 16 }, (_, index) => {
+        const ordinal = frame * 16 + index + 1;
+        return [ordinal * 1.8, ordinal % 2 ? 24 : -24];
+      });
+      points.push(...samples);
+      const last = samples.at(-1)!;
+      test.pointer("pointermove", last[0], last[1], samples);
+      test.frame();
+      await settle();
+      expect(test.controller.state.error).toBeNull();
+      expect(test.doc.sampleLandscape(...last)).toEqual(FOREST);
+    }
+    // Coalesced samples need not contain the dispatch event's final location.
+    test.pointer("pointermove", 400, 48, [
+      [360, -24],
+      [380, 24],
+    ]);
+    test.pointer("pointerup", 416, 64);
+    await test.drain();
+    for (const point of [...points, [380, 24], [400, 48], [416, 64]] as Point[])
+      expect(test.doc.sampleLandscape(...point)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(200, 96)).toEqual(CLEAR);
+    expect(materialize.mock.calls.some(([path]) => path.length > 3)).toBe(true);
+    for (const [path] of materialize.mock.calls) {
+      expect(path.length).toBeLessThanOrEqual(LANDSCAPE_BATCH_POINT_LIMIT + 1);
+      const cells = path
+        .slice(1)
+        .reduce(
+          (sum, point, index) =>
+            sum + landscapeSegmentCellCost(brush, path[index], point),
+          0,
+        );
+      expect(cells).toBeLessThanOrEqual(LANDSCAPE_BATCH_CELL_LIMIT);
+    }
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("splits a long diagonal into bounded work without changing its footprint or endpoint", async () => {
+    const test = await readyController();
+    const materialize = vi.spyOn(test.doc, "applyLandscapeSegments");
+    const brush = test.controller.currentLandscapeBrush();
+    test.pointer("pointerdown");
+    test.pointer("pointerup", 400, 400);
+    await test.drain();
+    expect(materialize.mock.calls.length).toBeGreaterThan(1);
+    for (const [path] of materialize.mock.calls) {
+      const cost = path
+        .slice(1)
+        .reduce(
+          (sum, point, index) =>
+            sum + landscapeSegmentCellCost(brush, path[index], point),
+          0,
+        );
+      expect(cost).toBeLessThanOrEqual(LANDSCAPE_BATCH_CELL_LIMIT);
+    }
+    for (const x of [0, 64, 128, 256, 400])
+      expect(test.doc.sampleLandscape(x, x)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(100, 200)).toEqual(CLEAR);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.controller.state.error).toBeNull();
+  });
+
+  it("does not turn a ready diagonal corridor into a larger unavailable source rectangle", async () => {
+    const test = await readyController();
+    const brush = test.controller.currentLandscapeBrush();
+    test.pointer("pointerdown");
+    test.frame();
+    test.doc.retainLandscapeSources([
+      { bounds: [-16, -16, 16, 16], minLevel: brush.level },
+    ]);
+    const points: Point[] = [];
+    for (let value = 8; value <= 160; value += 8) {
+      test.doc.acceptLandscapeCoverage(
+        [value - 24, value - 24, value + 16, value + 16],
+        [],
+        0,
+        test.doc.sessionId,
+        brush.level,
+      );
+      points.push([value, value]);
+    }
+    expect(test.doc.isLandscapeReady([-16, -16, 176, 176], brush.level)).toBe(
+      false,
+    );
+    test.pointer("pointermove", 160, 160, points);
+    test.pointer("pointerup", 160, 160);
+    await test.drain();
+    expect(test.controller.state.error).toBeNull();
+    for (const point of [
+      [0, 0],
+      [64, 64],
+      [128, 128],
+      [160, 160],
+    ] as Point[])
+      expect(test.doc.readLandscapeCell(brush.level, ...point)).toEqual(FOREST);
+    expect(test.doc.metrics.historyActions).toBe(1);
+  });
+
+  it("pressure seals eligible geometry without erasing its materialized prefix or replaying rejected movement", async () => {
+    const test = await readyController();
+    test.pointer("pointerdown");
+    test.frame();
+    for (let index = 0; index < 160; index++)
+      test.pointer("pointermove", index % 2 ? -48 : 48);
+    expect(test.controller.state.error).toMatch(/Arbeitsgrenze/);
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    test.pointer("pointerup", 200);
+    await test.drain();
+    for (const x of [-48, 0, 48])
+      expect(test.doc.sampleLandscape(x, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(200, 0)).toEqual(CLEAR);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+    await test.controller.save();
+    expect(test.bridge.saveProject).toHaveBeenCalledWith(
+      expect.objectContaining({ sequence: 1 }),
+    );
+  });
+
+  it("a failed batch after Up keeps prior strokes and the materialized prefix through Save and Undo", async () => {
+    const test = await readyController();
+    test.pointer("pointerdown", -180);
+    test.pointer("pointerup", -180);
+    await test.drain();
+    test.pointer("pointerdown");
+    test.frame();
+    test.pointer("pointermove", 48);
+    test.pointer("pointerup", 96);
+    vi.spyOn(test.doc, "applyLandscapeSegments").mockImplementationOnce(() => {
+      throw new RangeError("Injected source capacity failure");
+    });
+    await test.drain();
+    expect(test.controller.state.error).toMatch(/source capacity failure/);
+    expect(test.doc.sampleLandscape(-180, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+    expect(test.doc.sequence).toBe(2);
+    expect(test.doc.metrics.historyActions).toBe(2);
+    await test.controller.save();
+    expect(test.bridge.saveProject).toHaveBeenCalledWith(
+      expect.objectContaining({ sequence: 2 }),
+    );
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
+    expect(test.doc.sampleLandscape(-180, 0)).toEqual(FOREST);
+    test.controller.redo();
+    await test.drain();
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+  });
+
+  it("a landscape projection failure cannot erase a successfully materialized batch", async () => {
+    const test = await readyController();
+    test.pointer("pointerdown");
+    test.frame();
+    test.pointer("pointerup", 96);
+    vi.spyOn(test.world, "updateLandscape").mockImplementationOnce(() => {
+      throw new Error("Injected presentation failure");
+    });
+    await test.drain();
+    expect(test.controller.state.error).toMatch(/presentation failure/);
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(FOREST);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+  });
+
+  it("a permanently failed GPU fence releases the sealed action and Save barrier while retaining its painted prefix", async () => {
+    const test = await readyController();
+    test.pointer("pointerdown");
+    test.frame();
+    test.pointer("pointermove", 48);
+    test.pointer("pointerup", 96);
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    expect(test.doc.finishing).toBe(true);
+    const reset = vi.spyOn(test.world, "reset");
+    const poll = vi
+      .spyOn(test.world, "pollCompletion")
+      .mockImplementation(() => {
+        throw new Error("Permanent WAIT_FAILED");
+      });
+    let acknowledge!: () => void;
+    const commit = test.bridge.commit.getMockImplementation()!;
+    test.bridge.commit.mockImplementationOnce(async (request) => {
+      const receipt = await commit(request);
+      return new Promise((resolve) => {
+        acknowledge = () => resolve(receipt);
+      });
+    });
+    let saved = false;
+    const saving = test.controller.save().then(() => {
+      saved = true;
+    });
+    await settle();
+    expect(test.bridge.saveProject).not.toHaveBeenCalled();
+    test.frame();
+    await settle();
+    expect(test.doc.active).toBe(false);
+    expect(test.doc.finishing).toBe(false);
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
+    expect(test.doc.sampleLandscape(48, 0)).toEqual(CLEAR);
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+    expect(test.doc.metrics.historyActions).toBe(1);
+    expect(test.doc.pendingChanges()).toHaveLength(1);
+    expect(test.bridge.commit).toHaveBeenCalledTimes(1);
+    expect(test.bridge.saveProject).not.toHaveBeenCalled();
+    expect(saved).toBe(false);
+    // Repeated failures cannot resurrect the tail, re-commit, or replace more
+    // renderer fields. The existing reset path retains the outstanding fences.
+    test.frame();
+    test.frame();
+    await settle();
+    expect(poll).toHaveBeenCalledTimes(3);
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(test.doc.pendingChanges()).toHaveLength(1);
+    expect(test.controller.state.error).toBe("Permanent WAIT_FAILED");
+    acknowledge();
+    await saving;
+    expect(saved).toBe(true);
+    expect(test.bridge.saveProject).toHaveBeenCalledExactlyOnceWith({
+      sessionId: test.doc.sessionId,
+      sequence: 1,
+      saveAs: false,
+    });
+    expect(test.doc.pendingChanges()).toEqual([]);
+    test.controller.undo();
+    await test.drain();
+    expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
+    expect(test.doc.sequence).toBe(2);
+    expect(test.doc.canRedo).toBe(true);
+    expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+  });
+
+  it("prefetches and retains a bounded author neighborhood across a warm source-tile boundary", async () => {
+    const test = await readyController();
+    test.doc.retainLandscapeSources([
+      { bounds: [-32, -32, 32, 32], minLevel: 0 },
+    ]);
+    test.pointer("pointermove", 48);
+    test.frame();
+    await settle();
+    const request = test.bridge.readLandscapeRegion.mock.calls.at(-1)![0];
+    const span = 64 * 2 ** request.minLevel;
+    expect(request.bounds[0]).toBeLessThan(0);
+    expect(request.bounds[2]).toBeGreaterThan(128);
+    expect(request.bounds[2] - request.bounds[0]).toBeLessThanOrEqual(span * 4);
+    expect(request.bounds[3] - request.bounds[1]).toBeLessThanOrEqual(span * 4);
+    expect(
+      test.doc.isLandscapeReady([160, -16, 192, 16], request.minLevel),
+    ).toBe(true);
+    test.pointer("pointerdown", 48);
+    test.frame();
+    test.pointer("pointermove", 128);
+    test.frame();
+    test.pointer("pointerup", 176);
+    await test.drain();
+    for (const x of [48, 96, 128, 176])
+      expect(test.doc.readLandscapeCell(request.minLevel, x, 0)).toEqual(
+        FOREST,
+      );
+    expect(test.controller.state.error).toBeNull();
+  });
+
+  it("a cold source boundary keeps the accepted prefix and never paints the rejected gap after loading", async () => {
+    const test = await readyController();
+    const level = test.controller.currentLandscapeBrush().level;
+    test.pointer("pointerdown");
+    test.frame();
+    test.doc.retainLandscapeSources([
+      { bounds: [-32, -32, 32, 32], minLevel: 0 },
+    ]);
+    test.pointer("pointermove", 128);
+    test.pointer("pointerup", 128);
+    await test.drain();
+    expect(test.controller.state.error).toMatch(/noch nicht bereit/);
+    expect(test.doc.readLandscapeCell(level, 0, 0)).toEqual(FOREST);
+    expect(test.doc.readLandscapeCell(level, 64, 0)).toBeNull();
+    expect(test.doc.readLandscapeCell(level, 128, 0)).toBeNull();
+    test.pointer("pointerdown", 128);
+    test.pointer("pointerup", 128);
+    await test.drain();
+    expect(test.doc.readLandscapeCell(level, 128, 0)).toEqual(FOREST);
+    expect(test.doc.readLandscapeCell(level, 64, 0)).toBeNull();
+    expect(test.doc.metrics.historyActions).toBe(2);
+  });
+
   it.each(["move-then-up", "terminal-up"])(
-    "%s rejects unavailable terrain before accepting the endpoint",
+    "%s rejects unavailable terrain while preserving the accepted prefix",
     async (ending) => {
       const test = await readyController();
       test.pointer("pointerdown");
@@ -657,12 +1013,19 @@ describe("landscape input completion through the actual controller", () => {
       test.pointer("pointerup", 96);
       await test.drain();
       expect(test.doc.active).toBe(false);
-      expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
+      expect(test.doc.sampleLandscape(0, 0)).toEqual(FOREST);
       expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
-      expect(test.doc.sequence).toBe(0);
-      expect(test.doc.metrics.historyActions).toBe(0);
-      expect(test.bridge.commit).not.toHaveBeenCalled();
+      expect(test.doc.sequence).toBe(1);
+      expect(test.doc.metrics.historyActions).toBe(1);
+      expect(test.bridge.commit).toHaveBeenCalledTimes(1);
       expect(test.controller.state.error).toMatch(/noch nicht bereit/);
+      test.world.inspectionStatus = "current";
+      test.pointer("pointermove", 96);
+      await test.drain();
+      expect(test.doc.sampleLandscape(96, 0)).toEqual(CLEAR);
+      test.controller.undo();
+      await test.drain();
+      expect(test.doc.sampleLandscape(0, 0)).toEqual(CLEAR);
     },
   );
 
@@ -743,10 +1106,6 @@ describe("landscape input completion through the actual controller", () => {
     await settle();
     expect(saved).toBe(false);
     expect(test.bridge.commit).not.toHaveBeenCalled();
-    expect(test.bridge.saveProject).not.toHaveBeenCalled();
-    test.frame();
-    await settle();
-    expect(test.doc.finishing).toBe(true);
     expect(test.bridge.saveProject).not.toHaveBeenCalled();
     test.frame();
     await settle();

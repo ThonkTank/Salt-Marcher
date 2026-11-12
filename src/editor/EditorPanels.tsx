@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { EditorState } from "./EditorController";
 import type { HouseHeader } from "./model";
 import type { EditorAction } from "./EditorChrome";
@@ -15,18 +15,19 @@ function NumberField({
 }: {
   label: string;
   value: number;
-  unit: string;
+  unit?: string;
   min: number;
   max: number;
   step?: number | "any";
   onCommit: (value: number) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const cancelled = useRef(false);
   return (
     <label className="field">
       <span>
         {label}
-        <small>{unit}</small>
+        {unit && <small>{unit}</small>}
       </span>
       <input
         aria-label={label}
@@ -37,14 +38,124 @@ function NumberField({
         value={draft ?? value}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={() => {
-          if (draft !== null && draft.trim() !== "") onCommit(Number(draft));
+          if (!cancelled.current && draft !== null && draft.trim() !== "")
+            onCommit(Number(draft));
+          cancelled.current = false;
           setDraft(null);
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
+          if (event.key !== "Enter" && event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          cancelled.current = event.key === "Escape";
+          event.currentTarget.blur();
         }}
       />
     </label>
+  );
+}
+
+const heightModes = [
+  ["land", "Land"],
+  ["sea", "Meer"],
+  ["mountains", "Bergkette"],
+  ["hills", "Hügel"],
+  ["canyon", "Schlucht"],
+  ["raise", "Anheben"],
+  ["lower", "Absenken"],
+  ["smooth", "Glätten"],
+  ["flatten", "Einebnen"],
+] as const;
+const distanceFormat = new Intl.NumberFormat("de-DE", {
+  maximumSignificantDigits: 3,
+});
+function brushDistance(feet: number) {
+  const metres = feet * 0.3048;
+  return metres >= 1000
+    ? `${distanceFormat.format(metres / 1000)} km`
+    : `${distanceFormat.format(metres)} m`;
+}
+
+function HeightSettings({
+  state,
+  action,
+}: {
+  state: EditorState | null;
+  action: EditorAction;
+}) {
+  const diameter = state ? state.diameter / state.scale : null;
+  const spacing = state ? 5 * 2 ** state.level : null;
+  return (
+    <>
+      <label className="field">
+        <span>Pinselmodus</span>
+        <select
+          aria-label="Pinselmodus"
+          value={state?.heightMode ?? "raise"}
+          onChange={(event) => {
+            const mode = event.target.value;
+            if (mode === "raise" || mode === "lower")
+              action((editor) => editor.setMode(mode));
+          }}
+        >
+          {heightModes.map(([mode, label]) => (
+            <option
+              key={mode}
+              value={mode}
+              disabled={mode !== "raise" && mode !== "lower"}
+            >
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <NumberField
+        label="Pinselgröße (Pixel)"
+        step={1}
+        min={8}
+        max={512}
+        value={state?.diameter ?? 80}
+        onCommit={(value) =>
+          action((editor) => editor.setBrush(value, editor.amount))
+        }
+      />
+      {diameter !== null && spacing !== null && (
+        <>
+          <small>
+            Durchmesser: {brushDistance(diameter)} · Höhenraster:{" "}
+            {brushDistance(spacing)}
+          </small>
+          {diameter < spacing && (
+            <small>
+              Kleine Pinsel können zwischen den Rasterpunkten ohne Höhenänderung
+              bleiben. Pinsel vergrößern oder den Strich versetzen.
+            </small>
+          )}
+        </>
+      )}
+      <NumberField
+        label="Höhenänderung (m/s)"
+        min={0.03048}
+        max={3048}
+        step="any"
+        value={Number(((state?.amount ?? 20) * 0.3048).toPrecision(15))}
+        onCommit={(value) =>
+          action((editor) => editor.setBrush(editor.diameter, value / 0.3048))
+        }
+      />
+      <label className="check height-contours">
+        <input type="checkbox" disabled aria-describedby="height-unavailable" />
+        Höhenlinien
+      </label>
+      <small id="height-unavailable">
+        Ausgegraute Pinselmodi und Höhenlinien sind noch nicht verfügbar.
+      </small>
+      <small>
+        Ziehen: Direkt malen · Loslassen / Escape: Strich beenden · Rückgängig:
+        Strich entfernen
+      </small>
+      <small>Halten vertieft weiter. [ / ] oder Alt+Mausrad: Pinselgröße</small>
+    </>
   );
 }
 
@@ -56,6 +167,7 @@ export function ToolSettings({
   action: EditorAction;
 }) {
   const mode = state?.mode ?? "raise";
+  const height = mode === "raise" || mode === "lower";
   const landscape = mode === "forest" || mode === "clearing";
   const houseMode = mode === "house" || mode === "select";
   const selectedHouse = mode === "select" ? state?.selectedHouse : null;
@@ -69,27 +181,36 @@ export function ToolSettings({
       selectedHouse?.foundationTransition ?? state?.foundationTransition ?? 10,
   };
   return (
-    <section className="atlas-settings" aria-label="Werkzeugeinstellungen">
-      <p className="eyebrow">
-        {mode === "select" ? "AUSWAHL" : "WERKZEUGEINSTELLUNGEN"}
-      </p>
-      <h1>
-        {houseMode
-          ? mode === "house"
-            ? "Haus platzieren"
-            : "Eigenschaften"
-          : landscape
-            ? "Landschaft"
-            : mode === "pan"
-              ? "Navigation"
-              : "Höhen"}
-      </h1>
+    <section
+      className={`atlas-settings${height ? " height-settings" : ""}`}
+      aria-label="Werkzeugeinstellungen"
+    >
+      {height ? (
+        <h2>Höhen</h2>
+      ) : (
+        <>
+          <p className="eyebrow">
+            {mode === "select" ? "AUSWAHL" : "WERKZEUGEINSTELLUNGEN"}
+          </p>
+          <h1>
+            {houseMode
+              ? mode === "house"
+                ? "Haus platzieren"
+                : "Eigenschaften"
+              : landscape
+                ? "Landschaft"
+                : "Navigation"}
+          </h1>
+        </>
+      )}
       <fieldset
         className="tool-fields"
         disabled={!state || state.fileAction || state.recovering}
       >
         <legend className="visually-hidden">Aktuelles Werkzeug</legend>
-        {houseMode ? (
+        {height ? (
+          <HeightSettings state={state} action={action} />
+        ) : houseMode ? (
           <>
             <p className="hint">
               {mode === "house"
@@ -145,101 +266,64 @@ export function ToolSettings({
               <button disabled>Objekt löschen</button>
             </details>
           </>
-        ) : (
+        ) : landscape ? (
           <>
             <NumberField
               label="Pinselgröße"
               unit="px"
               step={1}
               min={8}
-              max={landscape ? 128 : 512}
+              max={128}
               value={state?.diameter ?? 80}
               onCommit={(value) =>
                 action((editor) => editor.setBrush(value, editor.amount))
               }
             />
-            {landscape ? (
-              <>
-                <label className="field">
-                  <span>Landschaft</span>
-                  <select
-                    aria-label="Landschaft"
-                    value={state?.landscapeKind ?? 0}
-                    disabled={mode === "clearing"}
-                    onChange={(event) =>
-                      action((editor) =>
-                        editor.setLandscape(
-                          Number(event.target.value),
-                          editor.state.landscapeDensity,
-                        ),
-                      )
-                    }
-                  >
-                    {landscapeNames.map((name, index) => (
-                      <option key={name} value={index}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {mode === "forest" ? (
-                  <NumberField
-                    label="Landschaftsdichte"
-                    unit="%"
-                    step={1}
-                    min={0}
-                    max={100}
-                    value={state?.landscapeDensity ?? 100}
-                    onCommit={(value) =>
-                      action((editor) =>
-                        editor.setLandscape(editor.state.landscapeKind, value),
-                      )
-                    }
-                  />
-                ) : (
-                  <p className="hint">
-                    Feine Lichtungen bleiben bei späteren groben Waldänderungen
-                    frei.
-                  </p>
-                )}
-              </>
+            <label className="field">
+              <span>Landschaft</span>
+              <select
+                aria-label="Landschaft"
+                value={state?.landscapeKind ?? 0}
+                disabled={mode === "clearing"}
+                onChange={(event) =>
+                  action((editor) =>
+                    editor.setLandscape(
+                      Number(event.target.value),
+                      editor.state.landscapeDensity,
+                    ),
+                  )
+                }
+              >
+                {landscapeNames.map((name, index) => (
+                  <option key={name} value={index}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {mode === "forest" ? (
+              <NumberField
+                label="Landschaftsdichte"
+                unit="%"
+                step={1}
+                min={0}
+                max={100}
+                value={state?.landscapeDensity ?? 100}
+                onCommit={(value) =>
+                  action((editor) =>
+                    editor.setLandscape(editor.state.landscapeKind, value),
+                  )
+                }
+              />
             ) : (
-              <>
-                <NumberField
-                  label="Pinselstärke"
-                  unit="m/s"
-                  min={0.03048}
-                  max={3048}
-                  step={1}
-                  value={+((state?.amount ?? 20) * 0.3048).toFixed(3)}
-                  onCommit={(value) =>
-                    action((editor) =>
-                      editor.setBrush(editor.diameter, value / 0.3048),
-                    )
-                  }
-                />
-                <details className="future-options">
-                  <summary>Weitere Höhenwerkzeuge</summary>
-                  <p className="hint">
-                    Diese Werkzeuge sind noch nicht angebunden.
-                  </p>
-                  {[
-                    "Land",
-                    "Meer",
-                    "Glätten",
-                    "Einebnen",
-                    "Bergkette",
-                    "Hügel",
-                    "Schlucht",
-                  ].map((name) => (
-                    <button key={name} disabled>
-                      {name}
-                    </button>
-                  ))}
-                </details>
-              </>
+              <p className="hint">
+                Feine Lichtungen bleiben bei späteren groben Waldänderungen
+                frei.
+              </p>
             )}
           </>
+        ) : (
+          <p className="hint">Ziehen: Ansicht verschieben · Mausrad: Zoomen</p>
         )}
       </fieldset>
     </section>

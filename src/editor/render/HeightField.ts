@@ -184,6 +184,14 @@ function intersectRect(a: RasterRect, b: RasterRect): RasterRect {
     Math.max(y0, Math.min(a[3], b[3])),
   ];
 }
+function mergeRect(a: RasterRect, b: RasterRect): RasterRect {
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.max(a[2], b[2]),
+    Math.max(a[3], b[3]),
+  ];
+}
 
 /** One numeric atlas and its bounded transfers, shared by dependent tiles only. */
 class AtlasTransport {
@@ -336,9 +344,10 @@ export class HeightFieldTile {
   private foundationCount = 0;
   private landscapeFrame: LandscapeFrame | null = null;
   private landscapeEncoded: LandscapeFrame | null = null;
-  private landscapeDirty = true;
+  /** Encoded revisions can overtake an upload; keep their combined change area. */
+  private landscapeUploadRect: RasterRect | null = [0, 0, 1, 1];
   /** Texture encoding/upload does not prove that the colour target was drawn. */
-  private landscapeColourDirty = false;
+  private landscapeColourRect: RasterRect | null = null;
   private fallbackLandDirty = true;
   private shader: Shader;
   private horizontalShader: Shader;
@@ -373,7 +382,7 @@ export class HeightFieldTile {
   private fallbackReady = false;
   private fallbackError: Error | null = null;
   private sourceSizes = new Map<HeightAtlasSource, readonly [number, number]>();
-  private mode: "canonical" | "live" | "capture" = "canonical";
+  private mode: "canonical" | "live" | "capture" | "colour" = "canonical";
   private numericValid = false;
   // Source changes may leave a perfectly displayed preceding state, but that H
   // must not be paired with C from the new state during a cheap basis capture.
@@ -671,7 +680,7 @@ export class HeightFieldTile {
     this.fallbackReady = false;
     this.fallbackError = null;
     this.stepReady = false;
-    if (this.drawStarted && this.compositionDirty) {
+    if (this.drawStarted && this.compositionDirty && this.mode !== "colour") {
       this.numericValid = false;
       this.numericCurrent = false;
       this.basisValid = false;
@@ -684,7 +693,10 @@ export class HeightFieldTile {
     if (this.disposed || !this.compositionDirty) return false;
     this.preparationSteps++;
     if (this.fallbackError) throw this.fallbackError;
-    if (!this.preparation && (!this.descriptor || this.restartPreparation)) {
+    if (
+      !this.preparation &&
+      ((!this.descriptor && this.mode !== "colour") || this.restartPreparation)
+    ) {
       this.preparation = this.prepare(false, [...WHOLE]);
       this.restartPreparation = false;
     }
@@ -882,13 +894,30 @@ export class HeightFieldTile {
     if (this.landscapeFrame !== this.landscapeEncoded) {
       this.preparationPhase = "landscape";
       const frame = this.landscapeFrame;
-      const values = new Uint8Array(frame ? SIZE * SIZE * 4 : 4);
+      const previous = this.landscapeEncoded;
+      const incremental = Boolean(
+        frame &&
+        previous &&
+        frame.key === previous.key &&
+        frame.previousVersion === previous.version &&
+        this.landscapeSource.resource.byteLength === SIZE * SIZE * 4,
+      );
+      const changed: RasterRect = incremental
+        ? intersectRect(WHOLE, [...frame!.dirty])
+        : frame
+          ? [...WHOLE]
+          : [0, 0, 1, 1];
+      // Never mutate a buffer still used by the previous encoded frame while
+      // this bounded preparation can yield or be cancelled.
+      const values = incremental
+        ? (this.landscapeSource.resource as Uint8Array).slice()
+        : new Uint8Array(frame ? SIZE * SIZE * 4 : 4);
       if (frame) {
         const sample = yield* frame.prepare();
         const spacing = 2 ** this.power;
-        for (let y = 0; y < SIZE; y++) {
+        for (let y = changed[1]; y < changed[3]; y++) {
           const worldY = this.bounds[1] + (y + 0.5) * spacing;
-          for (let x = 0; x < SIZE; x++) {
+          for (let x = changed[0]; x < changed[2]; x++) {
             const worldX = this.bounds[0] + (x + 0.5) * spacing;
             if (
               Math.abs(worldX) <= 100_000_000 &&
@@ -907,9 +936,40 @@ export class HeightFieldTile {
       );
       this.colourShader.resources.heightUniforms.uniforms.uHasLandscape =
         Number(frame !== null);
-      this.landscapeDirty = true;
-      this.landscapeColourDirty = true;
+      this.landscapeUploadRect =
+        incremental && this.landscapeUploadRect
+          ? mergeRect(this.landscapeUploadRect, changed)
+          : changed;
+      const colourRect = frame ? changed : WHOLE;
+      this.landscapeColourRect = this.landscapeColourRect
+        ? mergeRect(this.landscapeColourRect, colourRect)
+        : [...colourRect];
       this.landscapeEncoded = frame;
+    }
+    // Landscape edits only recolour a compatible, complete numeric target.
+    // Pending height, overview or water changes must use the numerical path.
+    // Keep basis metadata untouched: a colour pass is not a basis transfer.
+    if (
+      this.landscapeColourRect &&
+      this.numericValid &&
+      this.numericCurrent &&
+      !this.surfaceColourDirty &&
+      !forceOverview &&
+      this.overviewEncoded === this.overview
+    ) {
+      this.mode = "colour";
+      this.rect = intersectRect(
+        WHOLE,
+        mergeRect(rect, this.landscapeColourRect),
+      );
+      this.operationRect = [...this.rect];
+      this.nextRow = this.operationRect[1];
+      this.horizontalSamples = 0;
+      this.colourShader.resources.uHeights = this.currentIsBasis
+        ? this.basis.source
+        : this.numeric.source;
+      this.preparationPhase = "colour";
+      return;
     }
     this.preparationPhase = "overview";
     if (forceOverview || this.overviewEncoded !== this.overview) {
@@ -982,7 +1042,7 @@ export class HeightFieldTile {
         !this.basisValid &&
         this.numericValid &&
         this.numericCurrent &&
-        !this.landscapeColourDirty &&
+        !this.landscapeColourRect &&
         !this.surfaceColourDirty &&
         this.numericDepth < MAX_HEIGHT_BASIS_TRANSFERS &&
         this.admitsBasis(
@@ -1144,7 +1204,6 @@ export class HeightFieldTile {
   }
 
   private prepareStrip(): void {
-    if (!this.descriptor) return;
     this.stepRect = [
       this.operationRect[0],
       this.nextRow,
@@ -1155,6 +1214,13 @@ export class HeightFieldTile {
       ),
     ];
     this.projectionRect = intersectRect(this.stepRect, this.rect);
+    if (this.mode === "colour") {
+      this.horizontalSamples = 0;
+      this.stepReady = true;
+      this.preparationPhase = "strip-ready";
+      return;
+    }
+    if (!this.descriptor) return;
     const projection = createHeightProjection(
       this.descriptor,
       this.axes,
@@ -1273,10 +1339,16 @@ export class HeightFieldTile {
       source: HeightAtlasSource,
       needed: boolean,
       done: () => void,
+      rect?: RasterRect,
     ) => {
       const values = source.resource as Float32Array | Uint8Array;
-      if (!needed || bytes + values.byteLength > maxBytes) return;
       const size = this.sourceSizes.get(source);
+      const width = size?.[0] ?? source.width;
+      const height = size?.[1] ?? source.height;
+      const transferBytes = rect
+        ? (area(rect) * values.byteLength) / (width * height)
+        : values.byteLength;
+      if (!needed || bytes + transferBytes > maxBytes) return;
       if (size) {
         if (source.width !== size[0] || source.height !== size[1])
           this.field.markGpuWork();
@@ -1284,8 +1356,16 @@ export class HeightFieldTile {
         this.sourceSizes.delete(source);
       }
       this.field.initSource(source);
-      source.uploadRange(0, source.width * source.height);
-      bytes += values.byteLength;
+      if (!rect) source.uploadRange(0, source.width * source.height);
+      else if (rect[0] === 0 && rect[2] === source.width)
+        source.uploadRange(rect[1] * source.width, rect[3] * source.width);
+      else
+        for (let y = rect[1]; y < rect[3]; y++)
+          source.uploadRange(
+            y * source.width + rect[0],
+            y * source.width + rect[2],
+          );
+      bytes += transferBytes;
       done();
     };
     upload(this.descriptorSource, this.dirty, () => {
@@ -1303,9 +1383,14 @@ export class HeightFieldTile {
     upload(this.fallbackLandSource, this.fallbackLandDirty, () => {
       this.fallbackLandDirty = false;
     });
-    upload(this.landscapeSource, this.landscapeDirty, () => {
-      this.landscapeDirty = false;
-    });
+    upload(
+      this.landscapeSource,
+      this.landscapeUploadRect !== null,
+      () => {
+        this.landscapeUploadRect = null;
+      },
+      this.landscapeUploadRect ?? undefined,
+    );
     upload(this.fallbackHeightSource, this.fallbackHeightDirty, () => {
       this.fallbackHeightDirty = false;
     });
@@ -1330,20 +1415,28 @@ export class HeightFieldTile {
       this.weightsDirty =
       this.fallbackDirty =
       this.fallbackLandDirty =
-      this.landscapeDirty =
       this.fallbackHeightDirty =
       this.surfaceLakeDirty =
       this.surfaceRiverDirty =
       this.surfaceFoundationDirty =
         true;
+    const landscapeSize = this.sourceSizes.get(this.landscapeSource);
+    this.landscapeUploadRect = [
+      0,
+      0,
+      landscapeSize?.[0] ?? this.landscapeSource.width,
+      landscapeSize?.[1] ?? this.landscapeSource.height,
+    ];
     this.update(undefined, WHOLE);
   }
   get uploadReady(): boolean {
     return (
-      this.descriptor !== null &&
+      (this.mode === "colour" || this.descriptor !== null) &&
       this.stepReady &&
       !this.pendingUploadBytes &&
-      (this.fallback || this.field.authors.ready(this.descriptor.pages))
+      (this.mode === "colour" ||
+        this.fallback ||
+        this.field.authors.ready(this.descriptor!.pages))
     );
   }
   get needsPreparation(): boolean {
@@ -1383,7 +1476,7 @@ export class HeightFieldTile {
     return this.descriptor?.levelCount ?? 0;
   }
   private get projectionProducts(): number {
-    return this.fallback
+    return this.fallback || this.mode === "colour"
       ? 0
       : 4 *
           (this.horizontalSamples +
@@ -1428,7 +1521,7 @@ export class HeightFieldTile {
       projectionProducts: this.projectionProducts,
     };
     this.drawStarted = true;
-    if (!this.fallback) {
+    if (!this.fallback && this.mode !== "colour") {
       // Resizing an existing GPU target is itself terrain work, never preparation.
       this.horizontal.resize(SIZE, this.horizontalRows);
       this.allocatedHorizontalRows = this.horizontalRows;
@@ -1469,8 +1562,14 @@ export class HeightFieldTile {
     this.compositionStats = stats;
     if (!complete) return samples;
     if (this.mode !== "capture") {
-      this.landscapeColourDirty = false;
+      this.landscapeColourRect = null;
       this.surfaceColourDirty = false;
+    }
+    if (this.mode === "colour") {
+      this.preparedVersion = this.preparationVersion;
+      this.compositionDirty = false;
+      this.drawStarted = false;
+      return samples;
     }
     this.numericValid = !this.fallback;
     this.numericCurrent = true;
@@ -1504,7 +1603,7 @@ export class HeightFieldTile {
       (this.fallbackLandDirty
         ? this.fallbackLandSource.resource.byteLength
         : 0) +
-      (this.landscapeDirty ? this.landscapeSource.resource.byteLength : 0) +
+      (this.landscapeUploadRect ? area(this.landscapeUploadRect) * 4 : 0) +
       (this.fallbackHeightDirty
         ? this.fallbackHeightSource.resource.byteLength
         : 0) +

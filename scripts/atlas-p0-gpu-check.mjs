@@ -516,7 +516,10 @@ async function run(directory) {
       const beforePreparation = await stateSnapshot(page);
       if (kind === "raise" || kind === "lower") {
         await brush(page, diameter, 4000);
-        if (kind === "lower") await button(page, /Absenken/);
+        if (kind === "lower")
+          await page
+            .getByLabel("Pinselmodus", { exact: true })
+            .selectOption("lower");
         const at = await position(page, point);
         await page.mouse.move(at.x, at.y);
         await settled();
