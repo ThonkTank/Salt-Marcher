@@ -66,7 +66,7 @@ Werkzeuge, Gesten und Dateiabläufe stehen im [Produktvertrag](docs/product-cont
 | `npm run format`             | Prettier und rustfmt anwenden.                                               |
 | `npm run contracts:generate` | Transportverträge nach Rust-Typänderungen neu erzeugen.                      |
 
-Einzelprüfungen: `npm run contracts:check`, `npm run typecheck`, `npm test`,
+Einzelprüfungen: `npm run check:architecture`, `npm run contracts:check`, `npm run typecheck`, `npm test`,
 `npm run test:rust`, `npm run check:rust`, `npm run format:check`,
 `npm run build:web` und `npm run test:e2e -- terrain-live.spec.ts`.
 `src/atlas/generated/` wird ausschließlich aus Rust erzeugt.
