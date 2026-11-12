@@ -13,6 +13,8 @@ import {
   exact,
   landPixel,
   position,
+  navigateTo,
+  setRangeValue,
   stateSnapshot,
   storeActivityPosition,
   waitForSaveCompletion,
@@ -420,7 +422,16 @@ export async function runWaterScenario({ launch, out, recordCheck }) {
   try {
     const { page } = session;
     const prior = await stateSnapshot(page);
-    await button(page, "Gewässerszene öffnen");
+    const sceneButton = page.getByRole("button", {
+      name: "Gewässerszene öffnen",
+      exact: true,
+    });
+    if (!(await sceneButton.isVisible()))
+      await page
+        .getByRole("region", { name: "Gewässer und Fundamente", exact: true })
+        .locator("summary")
+        .click();
+    await sceneButton.click();
     await settled(page, prior.sessionId);
     await button(page, "Nahansicht");
     await page.getByLabel("Raster anzeigen").uncheck();
@@ -501,8 +512,7 @@ export async function runWaterScenario({ launch, out, recordCheck }) {
     // transition untouched. A later terrain edit supplies the visible change.
     await button(page, /Haus auswählen$/);
     await click(page, [132, 55]);
-    await page.getByLabel("Fundamenthöhe", { exact: true }).fill("30.48");
-    await page.getByLabel("Fundamenthöhe", { exact: true }).press("Enter");
+    await setRangeValue(page, "Fundamenthöhe", 30.48);
     await settled(page);
     await click(page, [-500, -300]);
     const configured = (evidence.configured = await settled(page));
@@ -694,6 +704,8 @@ export async function runWaterScenario({ launch, out, recordCheck }) {
     const beforeColdRead = await page.evaluate(() =>
       window.atlasDesktop.metrics(),
     );
+    await navigateTo(page, [initial.camera.x, initial.camera.y]);
+    await page.getByText("Zu Koordinaten", { exact: true }).click();
     await button(page, "Nahansicht");
     const cold = (evidence.cold = await settled(page));
     const afterColdRead = await page.evaluate(() =>

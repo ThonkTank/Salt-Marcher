@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { launchAtlasDesktop } from "./atlas-p0-desktop.mjs";
+import { editRangeValue, setRangeValue } from "./atlas-p0-interactions.mjs";
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -65,6 +66,21 @@ const waitForDiameter = (value) =>
       window.atlasObserve([], { events: false }).state.diameter === value,
     value,
   );
+
+// Drive the native range with real pointer input. Fractional targets deliberately
+// avoid relying on a product-specific conversion or an exact thumb width.
+async function dragRange(label, from, to, duringDrag) {
+  const slider = page.getByRole("slider", { name: label, exact: true });
+  await slider.scrollIntoViewIfNeeded();
+  const box = await slider.boundingBox();
+  assert.ok(box, `${label}: slider has bounds`);
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width * from, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * to, y, { steps: 8 });
+  if (duringDrag) await duringDrag();
+  await page.mouse.up();
+}
 
 try {
   await ready();
@@ -144,6 +160,13 @@ try {
           (await page
             .getByLabel("Höhenänderung (m/s)", { exact: true })
             .count()) === 0,
+      );
+    if (mode === "select")
+      check(
+        "empty selection explains the next action without phantom house properties",
+        (await page
+          .getByText("Kein Haus ausgewählt", { exact: true })
+          .isVisible()) && (await page.getByRole("slider").count()) === 0,
       );
   }
   check(
@@ -227,31 +250,104 @@ try {
   );
   check(
     "unavailable contours are visibly disabled",
-    (await page.getByLabel("Höhenlinien", { exact: true }).isVisible()) &&
-      (await page.getByLabel("Höhenlinien", { exact: true }).isDisabled()),
+    (await page
+      .getByRole("checkbox", { name: "Höhenlinien", exact: true })
+      .isVisible()) &&
+      (await page
+        .getByRole("checkbox", { name: "Höhenlinien", exact: true })
+        .isDisabled()),
   );
   await heightMode("raise");
-  await diameter().fill("120");
-  await diameter().press("Enter");
+  check(
+    "height settings expose native sliders instead of numeric steppers",
+    (await page.getByRole("slider").count()) === 2 &&
+      (await page.locator('.atlas-settings input[type="number"]').count()) ===
+        0,
+  );
+  const beforeSlider = await state();
+  await dragRange("Pinselgröße (Pixel)", 0.2, 0.65, async () => {
+    const current = await state();
+    check(
+      "brush slider updates the next brush while dragging",
+      current.state.diameter > 250 && current.state.diameter < 400,
+    );
+    check(
+      "brush slider does not create terrain or history",
+      current.document.revision === beforeSlider.document.revision &&
+        current.document.historyActions ===
+          beforeSlider.document.historyActions,
+    );
+  });
+  await diameter().focus();
+  await diameter().press("Home");
+  check(
+    "brush slider Home reaches the minimum",
+    (await state()).state.diameter === 8,
+  );
+  await diameter().press("End");
+  check(
+    "brush slider End reaches the maximum",
+    (await state()).state.diameter === 512,
+  );
+  await setRangeValue(page, "Pinselgröße (Pixel)", 120);
   check(
     "brush diameter commits on Enter",
     (await state()).state.diameter === 120,
   );
-  await diameter().fill("240");
-  await diameter().press("Escape");
+  await diameter().press("ArrowRight");
+  check(
+    "brush slider supports one-pixel keyboard increments",
+    (await state()).state.diameter === 121,
+  );
+  await diameter().press("ArrowLeft");
+  const diameterDraft = await editRangeValue(page, "Pinselgröße (Pixel)");
+  await diameterDraft.fill("240");
+  await diameterDraft.press("Escape");
   check(
     "Escape discards the diameter draft",
     (await state()).state.diameter === 120 &&
       (await diameter().inputValue()) === "120",
   );
-  await diameter().focus();
+  await editRangeValue(page, "Pinselgröße (Pixel)");
   await page.keyboard.press("]");
   check(
     "brush shortcuts do not change a focused number field",
     (await state()).state.diameter === 120,
   );
-  await diameter().press("Escape");
-  await page.getByLabel("Höhenänderung (m/s)", { exact: true }).fill("3.048");
+  await diameterDraft.press("Escape");
+  const invalidDraft = await editRangeValue(page, "Pinselgröße (Pixel)");
+  await invalidDraft.fill("999");
+  await invalidDraft.press("Enter");
+  check(
+    "out-of-range precision input explains the error and keeps the valid brush",
+    (await invalidDraft.getAttribute("aria-invalid")) === "true" &&
+      (await state()).state.diameter === 120,
+  );
+  await invalidDraft.press("Escape");
+  const strength = page.getByRole("slider", {
+    name: "Höhenänderung (m/s)",
+    exact: true,
+  });
+  await strength.focus();
+  await strength.press("Home");
+  check(
+    "height-rate slider preserves the fine lower bound",
+    Math.abs((await state()).state.amount - 0.1) < 1e-9,
+  );
+  await strength.press("End");
+  check(
+    "height-rate slider preserves the full upper bound",
+    (await state()).state.amount === 10000,
+  );
+  await dragRange("Höhenänderung (m/s)", 0.2, 0.5);
+  check(
+    "height-rate slider makes moderate values accessible across the full range",
+    (await state()).state.amount > 10 &&
+      (await state()).state.amount < 100 &&
+      /m\/s/.test(await strength.getAttribute("aria-valuetext")),
+  );
+  const strengthDraft = await editRangeValue(page, "Höhenänderung (m/s)");
+  await strengthDraft.fill("3,048");
   await page.getByLabel("Pinselmodus", { exact: true }).click();
   await page.getByLabel("Pinselmodus", { exact: true }).selectOption("lower");
   check(
@@ -264,7 +360,12 @@ try {
       "Pinselgröße (Pixel)",
       "Höhenänderung (m/s)",
       "Höhenlinien",
-    ].map((label) => page.getByLabel(label, { exact: true }).boundingBox()),
+    ].map((label) =>
+      (label === "Höhenlinien"
+        ? page.getByRole("checkbox", { name: label, exact: true })
+        : page.getByLabel(label, { exact: true })
+      ).boundingBox(),
+    ),
   );
   check(
     "height controls retain the previous top-to-bottom order",
@@ -272,19 +373,44 @@ try {
       (box, index) => box && (index === 0 || box.y > heightFields[index - 1].y),
     ),
   );
-  const brushInfo = page.getByText(/^Durchmesser: .* · Höhenraster:/);
+  const brushInfo = page.getByRole("group", {
+    name: "Pinselmaße",
+    exact: true,
+  });
   check(
     "world diameter and height grid are visible",
-    await brushInfo.isVisible(),
+    (await brushInfo.isVisible()) &&
+      /Weltdurchmesser/.test(await brushInfo.textContent()) &&
+      /Höhenraster/.test(await brushInfo.textContent()),
   );
   await click("Wald");
   await page.getByLabel("Landschaft", { exact: true }).selectOption("2");
-  await page.getByLabel("Landschaftsdichte", { exact: true }).fill("40");
-  await page.getByLabel("Landschaftsdichte", { exact: true }).press("Enter");
+  await setRangeValue(page, "Landschaftsdichte", 40);
   check(
     "landscape controls retain their controller bindings",
     (await state()).state.landscapeKind === 2 &&
       (await state()).state.landscapeDensity === 40,
+  );
+  await dragRange("Landschaftsdichte", 0.4, 0.75, async () => {
+    check(
+      "landscape density slider updates the setting during drag",
+      (await state()).state.landscapeDensity > 60 &&
+        (await state()).state.landscapeDensity < 90,
+    );
+  });
+  await page
+    .getByRole("slider", { name: "Landschaftsdichte", exact: true })
+    .press("Home");
+  check(
+    "landscape slider retains zero density",
+    (await state()).state.landscapeDensity === 0,
+  );
+  await page
+    .getByRole("slider", { name: "Landschaftsdichte", exact: true })
+    .press("End");
+  check(
+    "landscape slider retains full density",
+    (await state()).state.landscapeDensity === 100,
   );
   await click("Lichtung");
   check(
@@ -292,8 +418,7 @@ try {
     await page.getByLabel("Landschaft", { exact: true }).isDisabled(),
   );
   await click("Haus platzieren");
-  await page.getByLabel("Hausbreite", { exact: true }).fill("18.288");
-  await page.getByLabel("Hausbreite", { exact: true }).press("Enter");
+  await setRangeValue(page, "Hausbreite", 18.288);
   check(
     "house controls retain metric conversion",
     Math.abs((await state()).state.houseWidth - 60) < 1e-9,
@@ -308,6 +433,24 @@ try {
     "coordinate navigation uses the existing camera command",
     Math.abs((await state()).camera.x - 40) < 1e-9 &&
       Math.abs((await state()).camera.y + 20) < 1e-9,
+  );
+  await page.getByLabel("Ziel X").fill("123");
+  await page.getByLabel("Ziel Y").fill("456");
+  await click("Regionsansicht");
+  await ready();
+  check(
+    "view presets retain the current centre and ignore unsubmitted coordinate drafts",
+    Math.abs((await state()).camera.x - 40) < 1e-9 &&
+      Math.abs((await state()).camera.y + 20) < 1e-9 &&
+      (await state()).camera.scale === 0.025,
+  );
+  await click("Nahansicht");
+  await ready();
+  check(
+    "returning to near view changes only scale",
+    Math.abs((await state()).camera.x - 40) < 1e-9 &&
+      Math.abs((await state()).camera.y + 20) < 1e-9 &&
+      (await state()).camera.scale === 0.25,
   );
   await page.getByText("Zu Koordinaten", { exact: true }).click();
   await page.getByLabel("Raster anzeigen").uncheck();
@@ -338,24 +481,21 @@ try {
   await page.keyboard.up("Alt");
   assert.deepEqual((await state()).camera, beforeZoom);
   check("Alt-wheel resizes the brush without zooming or moving the map", true);
-  await diameter().fill("512");
-  await diameter().press("Enter");
+  await setRangeValue(page, "Pinselgröße (Pixel)", 512);
   await page.locator("canvas").focus();
   await page.keyboard.press("]");
   check(
     "brush enlargement retains the existing maximum",
     (await state()).state.diameter === 512,
   );
-  await diameter().fill("8");
-  await diameter().press("Enter");
+  await setRangeValue(page, "Pinselgröße (Pixel)", 8);
   await page.locator("canvas").focus();
   await page.keyboard.press("[");
   check(
     "brush reduction retains the existing minimum",
     (await state()).state.diameter === 8,
   );
-  await diameter().fill("120");
-  await diameter().press("Enter");
+  await setRangeValue(page, "Pinselgröße (Pixel)", 120);
   check(
     "brush setting gestures leave document content and history unchanged",
     (await state()).document.revision === beforeGestures.document.revision &&
@@ -363,6 +503,12 @@ try {
       (await state()).state.canUndo === beforeGestures.state.canUndo,
   );
   const infoBeforeZoom = await brushInfo.textContent();
+  // Opening an exact-value editor is a real click in the inspector. Restore
+  // the intended wheel target before checking the canvas zoom anchor.
+  await page.mouse.move(
+    navigationBox.x + navigationBox.width / 2,
+    navigationBox.y + navigationBox.height / 2,
+  );
   await page.mouse.wheel(0, -160);
   await page.waitForFunction(
     (scale) => window.atlasObserve([], { events: false }).camera.scale > scale,
@@ -405,7 +551,7 @@ try {
   assert.equal(typeof heightBefore, "number", "pre-stroke height is known");
   // Keep the current author level: a level change correctly requires a fresh
   // visible foundation and another press, which is not a field-commit failure.
-  await diameter().fill("108");
+  await (await editRangeValue(page, "Pinselgröße (Pixel)")).fill("108");
   check(
     "number field remains a draft before the canvas press",
     (await state()).state.diameter === 120,
@@ -497,6 +643,90 @@ try {
     "lowering changes terrain and Escape keeps the completed stroke",
     (await sampleHeight(point)) < heightAfter && (await state()).state.canUndo,
   );
+
+  await page.screenshot({ path: join(out, "height-sliders.png") });
+  await click("Haus platzieren");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForFunction(() => {
+    const snapshot = window.atlasObserve([], { events: false });
+    if (snapshot.state.error) throw new Error(snapshot.state.error);
+    return snapshot.readiness.ready;
+  });
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForFunction(() => {
+    const snapshot = window.atlasObserve([], { events: false });
+    return snapshot.houses.headers.length === 1 && !snapshot.state.writing;
+  });
+  await click("Haus auswählen");
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForFunction(() =>
+    Boolean(window.atlasObserve([], { events: false }).state.selectedHouse),
+  );
+  const beforeHouseSlider = await state();
+  const originalRotation = beforeHouseSlider.state.selectedHouse.rotation;
+  await dragRange("Hausdrehung", 0.15, 0.6, async () => {
+    const dragging = await state();
+    check(
+      "selected-house slider previews its value without writing on every movement",
+      dragging.state.selectedHouse.rotation === originalRotation &&
+        dragging.document.historyActions ===
+          beforeHouseSlider.document.historyActions &&
+        dragging.document.sequence === beforeHouseSlider.document.sequence &&
+        Number(
+          await page
+            .getByRole("slider", { name: "Hausdrehung", exact: true })
+            .getAttribute("aria-valuenow"),
+        ) > 180,
+    );
+  });
+  await page.waitForFunction((rotation) => {
+    const snapshot = window.atlasObserve([], { events: false });
+    if (snapshot.state.error) throw new Error(snapshot.state.error);
+    return (
+      snapshot.state.selectedHouse?.rotation !== rotation &&
+      !snapshot.state.writing
+    );
+  }, originalRotation);
+  const afterHouseSlider = await state();
+  check(
+    "one house-slider drag creates exactly one document action",
+    afterHouseSlider.document.historyActions ===
+      beforeHouseSlider.document.historyActions + 1 &&
+      afterHouseSlider.document.sequence ===
+        beforeHouseSlider.document.sequence + 1,
+  );
+  await click(/Rückgängig/);
+  await page.waitForFunction(
+    (rotation) =>
+      window.atlasObserve([], { events: false }).state.selectedHouse
+        ?.rotation === rotation,
+    originalRotation,
+  );
+  check("one Undo restores the complete house rotation", true);
+  await click(/Wiederholen/);
+  await page.waitForFunction(
+    (rotation) =>
+      window.atlasObserve([], { events: false }).state.selectedHouse
+        ?.rotation === rotation,
+    afterHouseSlider.state.selectedHouse.rotation,
+  );
+  check("one Redo restores the complete house rotation", true);
+  const beforeCancelledHouseSlider = await state();
+  await dragRange("Hausdrehung", 0.6, 0.3, async () => {
+    await page.keyboard.press("Escape");
+  });
+  const afterCancelledHouseSlider = await state();
+  check(
+    "Escape cancels an uncommitted house-slider drag",
+    afterCancelledHouseSlider.state.selectedHouse.rotation ===
+      beforeCancelledHouseSlider.state.selectedHouse.rotation &&
+      afterCancelledHouseSlider.document.sequence ===
+        beforeCancelledHouseSlider.document.sequence &&
+      afterCancelledHouseSlider.document.historyActions ===
+        beforeCancelledHouseSlider.document.historyActions,
+  );
+  await page.screenshot({ path: join(out, "house-sliders.png") });
+  await heightMode("lower");
   await click("Speichern");
   await page.waitForFunction(
     () => window.atlasObserve([], { events: false }).state.saved,

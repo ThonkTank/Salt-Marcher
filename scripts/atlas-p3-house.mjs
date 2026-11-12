@@ -12,6 +12,8 @@ import {
   capture,
   exact,
   position,
+  navigateTo,
+  setRangeValue,
   stateSnapshot,
   storeActivityPosition,
   waitForSaveCompletion,
@@ -152,8 +154,7 @@ async function settled(page, previousSessionId) {
 }
 
 async function number(page, label, value) {
-  await page.getByLabel(label, { exact: true }).fill(String(value));
-  await page.getByLabel(label, { exact: true }).press("Enter");
+  await setRangeValue(page, label, value);
   await settled(page);
 }
 
@@ -477,6 +478,8 @@ export async function runHouseScenario({ launch, out, recordCheck }) {
     const beforeColdRead = await page.evaluate(() =>
       window.atlasDesktop.metrics(),
     );
+    await navigateTo(page, [initial.camera.x, initial.camera.y]);
+    await page.getByText("Zu Koordinaten", { exact: true }).click();
     await button(page, "Nahansicht");
     const cold = (evidence.cold = await settled(page));
     const afterColdRead = await page.evaluate(() =>

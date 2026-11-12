@@ -11,6 +11,7 @@ import {
   heightMode,
   landPixel,
   position,
+  setRangeValue,
   stateSnapshot,
   waterPixel,
 } from "./atlas-p0-interactions.mjs";
@@ -157,10 +158,7 @@ export async function runCoastScenario({ launch, out, recordCheck }) {
   try {
     const { page } = session;
     await heightMode(page, "land");
-    await page.getByLabel("Pinselgröße (Pixel)", { exact: true }).fill("80");
-    await page
-      .getByLabel("Pinselgröße (Pixel)", { exact: true })
-      .press("Enter");
+    await setRangeValue(page, "Pinselgröße (Pixel)", 80);
     await page.getByLabel("Küstenform", { exact: true }).selectOption("round");
     await page.getByLabel("Raster anzeigen").uncheck();
     await settled(page);

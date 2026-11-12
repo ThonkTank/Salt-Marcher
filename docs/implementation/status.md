@@ -1,89 +1,88 @@
 # Aktueller Stand
 
-Stand: 12. November 2026. **Land und Meer sind im Höhenwerkzeug des optionalen
-Electron-/Pixi-Editors wieder verfügbar**, einschließlich runder und gekräuselter
-Küste. Ausgangspunkt dieser Änderung ist `a5ede609` auf dem bestehenden
-Draft-PR [#1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469).
-Der enthaltene Fachstand bleibt P3.3; die zusätzliche Werkzeugfunktion aktiviert
-keinen weiteren Neubau-Planschritt.
+Stand: 12. November 2026. **Die Oberfläche des optionalen Electron-/Pixi-Editors
+ist weiter an die V7-Bedienung angepasst: einheitliche Werkzeugpanels, native
+Regler mit genauer Werteingabe und übersichtlichere Eigenschaften.** Die zuvor
+auf dem Vorschauzweig veröffentlichte Land-/Meer-Änderung `51a379f` ist vollständig
+enthalten. Der Fachstand bleibt P3.3; diese Überarbeitung aktiviert keinen
+weiteren Neubau-Planschritt. [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469)
+bleibt Draft.
 
 ## Ergebnis und Verhalten
 
-- Höhen bietet Land, Meer, Anheben und Absenken. Küstenform und Rauheit stehen
-  bei Land/Meer anstelle der zeitabhängigen Höhenrate. Moduserinnerung und
-  Größen-Gesten gelten für alle vier Modi.
-- Land hebt die bearbeitete Basis im Inneren auf mindestens +10 Fuß, Meer senkt
-  auf höchstens −10 Fuß. Höhere beziehungsweise tiefere Werte bleiben erhalten.
-  Halten und erneutes Übermalen derselben Geometrie verstärken die Küste nicht.
-- Der räumliche V7-Auftrag wird in das additive Höhenmodell übersetzt:
-  Grundhöhe, gröbere Beiträge und eigener Kontrollwert bestimmen den Zielauftrag.
-  Feinere additive Autoren bleiben unverändert und tragen weiterhin zum sichtbaren
-  Relief bei. Küstenform, Raster und Radius sind je Strich eingefroren.
-- Land/Meer und Landschaft teilen die begrenzte Eingabe, Quellenhaltung und
-  den Aktionsabschluss. Höhenpatches, History, geordneter Writer und Dateisnapshot
-  bleiben gemeinsam. Ein späterer Fehler nimmt bereits gemalte Küste nicht zurück.
-- Der 512-Pixel-Küstenpinsel ist auch an ungünstigen Rasterstufen abgedeckt:
-  300.000 Kandidaten pro Batch und ein getrenntes Budget von 400.000 geänderten
-  Küstenkontrollen. Das C1-Zeitpinselbudget bleibt bei 100.000. Kachelpuffer und
-  die vorhandene regelmäßige Höhenabtastung vermeiden Objekte und erneute
-  Punktsampler-Aufbereitung je Kontrollwert.
+- Pinselgrößen, Höhenrate, Küstenrauheit, Landschaftsdichte, Hausbreite/-tiefe,
+  Drehung und Fundamentparameter verwenden ein gemeinsames Reglerformat mit
+  sichtbarem Wert und Einheit. Höhenrate und Hausmaße sind logarithmisch
+  verteilt, damit auch kleine Werte erreichbar bleiben.
+- Ein Klick auf den Wert öffnet eine genaue Eingabe mit Punkt oder Komma.
+  Enter/Blur übernimmt gültige Werte; Escape oder eine leere Eingabe erhält
+  den vorherigen Wert. Ungültige Eingaben zeigen einen lokalen Fehler.
+  Koordinaten bleiben direkte Zahlenfelder.
+- Pinsel- und Landschaftseinstellungen werden während der Bedienung wirksam.
+  Hausregler halten einen lokalen Entwurf und übernehmen ihn einmal beim
+  Loslassen beziehungsweise Abschluss der Tastenbedienung. Eine veränderte
+  ausgewählte Hausgeometrie bleibt eine Undo-Aktion; Escape verwirft den Entwurf.
+- Alle Werkzeuge verwenden denselben Titel- und Feldaufbau. Abmessungen und
+  Fundament sind getrennt. Ohne Hausauswahl erscheint ein echter Leerzustand.
+  Nebeninformationen sind einklappbar; Gewässerbestand und neue Ableitungswarnungen
+  öffnen den zugehörigen Bereich. Die Karte erhält wechselnde kurze Bedienhinweise.
+- Einheitliche SVG-Symbole und kurze Werkzeugnamen vermeiden uneinheitliche
+  Text-/Emoji-Icons. Auch bei 900 × 620 Pixeln bleiben Beschriftungen vollständig
+  und die Karte nutzbar. Fokusmarkierungen und native Regler-Tastaturbedienung
+  sind vorhanden.
+- Nah-, Regions- und Weltansicht ändern nur den Maßstab am aktuellen Mittelpunkt.
+  Nicht übernommene X-/Y-Eingaben beeinflussen diese Ansichtswahl nicht.
+  Die bestehende Kamera und der vorhandene Navigationspfad bleiben zuständig.
+- Land/Meer einschließlich runder/gekräuselter Küste, Moduserinnerung und
+  Größen-Gesten bleiben erhalten. Die Küstenrauheit verwendet ebenfalls den
+  gemeinsamen Regler. Die unterschiedlichen Escape-Regeln von Höhen/Küste und
+  Landschaft stehen in der jeweiligen Hilfe.
 
-## Nachweis am aktuellen Produktstand
+## Nachweis am endgültigen Produktstand
 
-Der geprüfte Produktquellhash (`product-inputs-v1`) lautet:
+Produktquellhash (`product-inputs-v1`):
 
-`62ef2433878d2405b0e9cd263a2fd14ada91379080ff2f9a05d400526586e327`
+`72e603e62eb44b35ca49340ad355e3dd3d7372adb4762ab96cd7fc11af3f4fbf`
 
-Die Desktopprüfungen liefen auf dem daraus gebauten Entwicklungsprogramm mit
-echtem Electron, Pixi und SQLite. Der lokale Build trägt noch den Ausgangscommit
-und `dirty: true`; der Quellhash bindet ihn an die unten geprüften Produktdateien.
-Ein Paket-/Releasebeleg wird daraus nicht abgeleitet.
+Der Hash wurde aus den endgültigen Produktdateien unabhängig neu berechnet;
+Desktopbuild und beide nativen Prüfberichte enthalten genau diesen Stand.
+Die Prüfungen verwenden echtes Electron, Pixi und SQLite mit Softwaregrafik.
+Der Entwicklungsbuild trägt den damaligen Zwischencommit mit `dirty: true`;
+der Quellhash bindet die Nachweise an den abschließend versionierten Inhalt.
 
-| Prüfung                                                        | Ergebnis                                                                          |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| TypeScript und `build:atlas-p0`                                | PASS                                                                              |
-| Vollständige Editor-Testreihe                                  | **1.053/1.053 PASS**                                                              |
-| Darin Küstenmodell                                             | **26/26 PASS**                                                                    |
-| Darin gemeinsamer Controller, Gesten und Writer                | **49/49 PASS**                                                                    |
-| Echte Werkzeugoberfläche                                       | **66/66 PASS**                                                                    |
-| Echte Land-/Meer-Integration                                   | **18/18 PASS**                                                                    |
-| Gesamter normaler Desktop-Smoke                                | **121/121 PASS**: Start/Datei 13, Küste 18, Landschaft 35, Häuser 29, Gewässer 26 |
-| Format der geänderten Code-/Testdateien und `git diff --check` | PASS                                                                              |
+| Prüfung                                                    | Ergebnis                                                                          |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `npm run typecheck` und `npm run build:atlas-p0`           | PASS                                                                              |
+| Gemeinsamer Controller, Gesten und Writer                  | **49/49 PASS**                                                                    |
+| Native Bedienoberfläche                                    | **87/87 PASS**                                                                    |
+| Normaler Desktop-Smoke                                     | **121/121 PASS**: Start/Datei 13, Küste 18, Landschaft 35, Häuser 29, Gewässer 26 |
+| Visuelle Prüfung                                           | Höhen-, Küsten- und Hauspanel sowie Desktop-/900-×-620-Ansicht geprüft            |
+| Format geänderter Code-/Testdateien und `git diff --check` | PASS                                                                              |
 
-Die Küstenintegration prüft wirkliche Land-/Wasserpixel nach abgeschlossenem
-GPU-Frame, positive und negative Kachelgrenzen, den vollständigen Strich in einem
-Undo-Schritt, Land und Meer jeweils mit Undo/Redo, unabhängig rekonstruierte
-SQLite-Autorenwerte sowie Speichern, Neu/Öffnen und einen normalen Prozessneustart
-ohne Diagnosezugriff. Modell- und Controllertests ergänzen unter anderem
-Mehrskaligkeit, Kräuselung, Weltgrenzen, Wiederholungen, kalte Quellen,
-Dateibarrieren und erhaltene Änderungen nach Projektions-/Budgetfehlern.
+Die UI-Prüfung bedient echte Regler per Maus und Tastatur, prüft Grenzen und
+logarithmische Werte, genaue Eingabe, Abbruch und ungültige Werte. Sie kontrolliert
+unveränderte Dokumente bei Werkzeugeinstellungen, eine Hausänderung pro Drag
+mit Undo/Redo, den erhaltenen Kartenausschnitt, Größen-Gesten, tatsächliche
+Höhenwirkung, Speichern und das bestehende Updatefenster.
 
-Eine isolierte Gegenprobe meldet für bereits gemaltes Land fälschlich weiterhin
-−100 Fuß. Der unveränderte zentrale Küsten-Smoke schlägt an der Höhenprüfung fehl,
-setzt `passed: false` und endet mit Exitcode 1. Die produktiven Dateien und der
-normale Prüfbuild bleiben dabei unverändert.
+Der normale Smoke ergänzt echte Land-/Wasserpixel, lange Landschaftsstriche,
+Haus-/Fundamentänderungen, kalte Rückkehr nach Navigation und unabhängig
+geprüfte Dateirundläufe bis zum frischen Prozess. Die Testhelfer bedienen die
+neue genaue Werteingabe und trennen Koordinatensprünge ausdrücklich von der
+Ansichtswahl. Bestehende Inhalts-, Zeit- und History-Erwartungen wurden nicht
+abgesenkt. Nachweise liegen ignoriert unter
+`src-tauri/target/diagnostics/ui-refinement/ui-verified/` und `normal-verified/`.
 
-Detaillierte Belege liegen ignoriert unter
-`src-tauri/target/diagnostics/height-land-sea/`: `final-ui/`, `final-coast/`,
-`final-normal/` und `negative-control/`. Ein während der Modellüberarbeitung
-erzeugter Zwischenbuild scheiterte im vorläufigen Küsten-Smoke; er ist unter
-`preliminary-coast/` erhalten und kein Abschlussbeleg. Die Prüfungen oben beziehen
-sich auf den anschließend vollständig neu gebauten, identischen Produktstand.
+## Vorschau und offene Abnahmen
 
-## Vorschau und weiterhin offene Abnahmen
-
-Der bisher veröffentlichte Vorschau-Release ist **0.3.3-43128826913.1** von
-[66d3f69](https://github.com/ThonkTank/Salt-Marcher/commit/66d3f6904e75347bad8579e5a8a17decd6650701).
-Er enthält die vorausgehende Landschaftskorrektur. Änderungen am Vorschauzweig
-starten den vorhandenen RPM-/ZIP-Prüf- und Veröffentlichungsworkflow; ein neuer
-Release wird erst nach dessen erfolgreichem Abschluss als verfügbar bezeichnet.
+Die lokale UI- und Funktionsabnahme ist abgeschlossen. Ein Paket-/Releasebeleg
+für diese UI-Änderung wird erst nach erfolgreichem Abschluss des vorhandenen
+Vorschauworkflows behauptet. Dessen Paketprüfung enthält dieselben UI- und
+normalen Smoke-Fälle; Veröffentlichung und Updatekanal bleiben unverändert.
 
 Die letzte vollständige Höhen-GPU-Referenzreihe aus P3.2 bleibt historisch
 **FAIL, 3/6**. R4-Halten, native Hardware-/Eingabelatenzabnahme, der frühere
-Electron-Live-Feedfehler `net::ERR_EMPTY_RESPONSE` und eine tatsächliche
-Fedora-DNF-/Polkit-Installation werden durch diese Funktionsprüfung nicht neu
-abgenommen. Die gemeinsame Editorprüfung ersetzt auch keinen vollständigen
-Repository-/V7-Baseline-Lauf.
-
-Der nächste Fachschritt bleibt **P3.4 „Echte Fachkonkurrenz“** im einzigen
-[Neubauplan](atlas-rebuild-plan.md).
+Electron-Live-Feedfehler und eine tatsächliche Fedora-DNF-/Polkit-Installation
+werden durch diese UI-Prüfung nicht neu abgenommen. Sie ersetzt keinen
+vollständigen Repository-/V7-Baseline-Lauf. Der nächste Fachschritt bleibt
+**P3.4 „Echte Fachkonkurrenz“** im einzigen [Neubauplan](atlas-rebuild-plan.md).

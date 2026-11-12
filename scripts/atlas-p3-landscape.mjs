@@ -11,6 +11,7 @@ import {
   capture,
   landPixel,
   position,
+  setRangeValue,
   stateSnapshot,
   storeActivityPosition,
   waitForSaveCompletion,
@@ -154,16 +155,12 @@ async function settled(page) {
 async function tool(page, name, diameter, density) {
   // Icons are part of the accessible name, as with the existing height tools.
   await button(page, new RegExp(`${name}$`));
-  await page.getByLabel("Pinselgröße", { exact: true }).fill(String(diameter));
-  await page.getByLabel("Pinselgröße", { exact: true }).press("Enter");
+  await setRangeValue(page, "Pinselgröße", diameter);
   if (name === "Wald") {
     await page
       .getByLabel("Landschaft", { exact: true })
       .selectOption({ label: "Wald" });
-    await page
-      .getByLabel("Landschaftsdichte", { exact: true })
-      .fill(String(density));
-    await page.getByLabel("Landschaftsdichte", { exact: true }).press("Enter");
+    await setRangeValue(page, "Landschaftsdichte", density);
   }
 }
 

@@ -513,7 +513,7 @@ es übernimmt validierte Geometrie und begrenzte Zeitaufträge. Annahmebedingung
 C1-Konto und Quellen-/Arbeitsreserve liegen gemeinsam im Dokument, damit ein
 fehlendes Quellen-, History- oder Speicherbudget vor der Wirkungsannahme auffällt.
 `brush.ts` bleibt eine reine Zustandsentscheidung, keine Werkzeug-Servicehierarchie.
-React hält nur noch nicht übernommene Feldtexte; Undo, Saved, Writing, Finishing, Loading und
+React hält nur noch nicht übernommene Feldtexte und Reglerentwürfe; Undo, Saved, Writing, Finishing, Loading und
 Warteanzeige werden aus den Besitzern abgeleitet.
 
 `EditorChrome` gruppiert Land, Meer, Anheben und Absenken unter einem
@@ -521,12 +521,23 @@ Höhenwerkzeug;
 `EditorPanels` zeigt die vorhandenen Modi und Größenangaben in der V7-Anordnung.
 Der Controller hält den zuletzt gewählten Höhenmodus auch außerhalb dieses
 Werkzeugs. Die Größen-Gesten `[`/`]` und Alt+Mausrad rufen denselben
-`setBrush`-Pfad wie das Zahlenfeld auf, ausschließlich ohne aktive Pointergeste.
+`setBrush`-Pfad wie der Größenregler auf, ausschließlich ohne aktive Pointergeste.
 Der Cursor folgt der wirksamen Größe sofort; laufende Striche behalten ihren
 fixierten Radius. Höhenwirkung, Quellenfreigabe und Abschluss folgen dem
 gemeinsamen Dokument-/Rendererpfad. Land/Meer und Landschaft teilen die begrenzte räumliche
 Eingabe mit eingefrorenem Pinsel, vollständiger Polylinie, Quellenhaltung und
 geordnetem Abschluss. Land/Meer verwendet keine zeitabhängige Dosis.
+
+`RangeField` stellt Einstellungen als native Regler mit metrischem Wert und
+optionalem Präzisionsfeld dar. Die logarithmische Zuordnung für Höhenrate und
+Hausmaße gehört ausschließlich zur UI. Pinsel- und Landschaftseinstellungen
+werden direkt wirksam; Hausregler halten bis Pointer-up, Key-up oder Blur
+einen lokalen Entwurf und rufen `setHouseSettings` genau einmal auf. Dadurch
+bleiben History und Persistenz beim bestehenden Controllerpfad. Eine leere
+Hausauswahl zeigt keine Änderungen an Platzierungsvorgaben an. Der ergänzende
+Gewässerbereich ist ohne Bestand geschlossen; lokale Ableitungen und Warnungen
+öffnen ihn. Ansichtsvorgaben ändern über `setViewScale` nur den Maßstab der
+bestehenden Kamera, während `goTo` die ausdrückliche Koordinatennavigation bleibt.
 
 Main und Preload besitzen Fenster, native Dialoge und die typisierte IPC-Brücke.
 Der SQLite-Store liegt im Utility-Prozess. Context Isolation und Sandbox bleiben

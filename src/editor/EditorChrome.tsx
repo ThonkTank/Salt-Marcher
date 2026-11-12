@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { EditorController, EditorState } from "./EditorController";
 import { PreviewUpdates } from "./PreviewUpdates";
+import { EditorIcon, type EditorIconName } from "./EditorIcon";
 
 export type EditorAction = (
   operation: (editor: EditorController) => void | Promise<void>,
@@ -56,15 +57,17 @@ export function EditorHeader({
       <nav className="history" aria-label="Verlauf">
         <button
           disabled={unavailable || !state?.canUndo}
+          title="Rückgängig (Strg+Z)"
           onClick={() => action((e) => e.undo())}
         >
-          ↶ Rückgängig
+          <EditorIcon name="undo" /> Rückgängig
         </button>
         <button
           disabled={unavailable || !state?.canRedo}
+          title="Wiederholen (Strg+Umschalt+Z)"
           onClick={() => action((e) => e.redo())}
         >
-          ↷ Wiederholen
+          <EditorIcon name="redo" /> Wiederholen
         </button>
       </nav>
       <PreviewUpdates />
@@ -73,18 +76,18 @@ export function EditorHeader({
 }
 
 const unavailableTools = [
-  ["↝", "Straße"],
-  ["≋", "Fluss"],
-  ["≈", "Gewässer"],
-  ["▧", "Boden"],
-  ["⚑", "Regionen"],
+  ["road", "Straße"],
+  ["river", "Fluss"],
+  ["water", "Gewässer"],
+  ["ground", "Boden"],
+  ["region", "Regionen"],
 ] as const;
 const interiorTools = [
-  ["▱", "Raum"],
-  ["⌫", "Radieren"],
-  ["⇥", "Zuweisen"],
-  ["⊓", "Tür"],
-  ["▥", "Treppe"],
+  ["room", "Raum"],
+  ["erase", "Radieren"],
+  ["assign", "Zuweisen"],
+  ["door", "Tür"],
+  ["stairs", "Treppe"],
 ] as const;
 
 export function ToolRail({
@@ -96,38 +99,51 @@ export function ToolRail({
 }) {
   const modeButton = (
     mode: EditorState["mode"],
-    icon: string,
+    icon: EditorIconName,
     label: string,
     pressed = state?.mode === mode,
+    shortLabel = label,
   ) => (
     <button
       key={mode}
+      aria-label={label}
+      title={label}
       disabled={!state || state.fileAction || state.recovering}
       aria-pressed={pressed}
       onClick={() => onMode(mode)}
     >
-      <span aria-hidden="true">{icon}</span>
-      <span>{label}</span>
+      <EditorIcon name={icon} />
+      <span>{shortLabel}</span>
     </button>
   );
-  const unavailableButton = ([icon, label]: readonly [string, string]) => (
+  const unavailableButton = ([icon, label]: readonly [
+    EditorIconName,
+    string,
+  ]) => (
     <button
       key={label}
       disabled
-      title="Im neuen Editor noch nicht verfügbar"
+      aria-label={label}
+      title={`${label}: im neuen Editor noch nicht verfügbar`}
       aria-describedby="unavailable-tools-note"
     >
-      <span aria-hidden="true">{icon}</span>
+      <EditorIcon name={icon} />
       <span>{label}</span>
     </button>
   );
   return (
     <aside className="atlas-tools tool-list" aria-label="Werkzeuge">
       <p className="eyebrow">WELT GESTALTEN</p>
-      {modeButton("select", "↖", "Haus auswählen")}
+      {modeButton(
+        "select",
+        "select",
+        "Haus auswählen",
+        state?.mode === "select",
+        "Auswahl",
+      )}
       {modeButton(
         state?.heightMode ?? "raise",
-        "▵",
+        "height",
         "Höhen",
         state?.mode === "land" ||
           state?.mode === "sea" ||
@@ -140,11 +156,21 @@ export function ToolRail({
         aria-label="Landschaftswerkzeuge"
       >
         <h2>Landschaft</h2>
-        {modeButton("forest", "♣", landscapeNames[state?.landscapeKind ?? 0])}
-        {modeButton("clearing", "○", "Lichtung")}
+        {modeButton(
+          "forest",
+          "forest",
+          landscapeNames[state?.landscapeKind ?? 0],
+        )}
+        {modeButton("clearing", "clearing", "Lichtung")}
       </div>
-      {modeButton("house", "⌂", "Haus platzieren")}
-      {modeButton("pan", "✥", "Verschieben")}
+      {modeButton(
+        "house",
+        "house",
+        "Haus platzieren",
+        state?.mode === "house",
+        "Haus",
+      )}
+      {modeButton("pan", "pan", "Verschieben")}
       <div
         className="tool-group"
         role="group"
@@ -158,7 +184,7 @@ export function ToolRail({
         {interiorTools.map(unavailableButton)}
       </details>
       <p id="unavailable-tools-note" className="hint">
-        Deaktivierte Werkzeuge sind noch nicht angebunden.
+        Weitere Werkzeuge folgen.
       </p>
     </aside>
   );
@@ -200,19 +226,28 @@ export function MapNavigation({
       <div className="view-buttons">
         <button
           disabled={!state}
-          onClick={(e) => navigate(e.nativeEvent, 0.25)}
+          aria-pressed={state?.scale === 0.25}
+          onClick={(e) =>
+            action((editor) => editor.setViewScale(e.nativeEvent, 0.25))
+          }
         >
           Nahansicht
         </button>
         <button
           disabled={!state}
-          onClick={(e) => navigate(e.nativeEvent, 0.025)}
+          aria-pressed={state?.scale === 0.025}
+          onClick={(e) =>
+            action((editor) => editor.setViewScale(e.nativeEvent, 0.025))
+          }
         >
           Regionsansicht
         </button>
         <button
           disabled={!state}
-          onClick={(e) => navigate(e.nativeEvent, 0.000002)}
+          aria-pressed={state?.scale === 0.000002}
+          onClick={(e) =>
+            action((editor) => editor.setViewScale(e.nativeEvent, 0.000002))
+          }
         >
           Weltansicht
         </button>
@@ -285,6 +320,19 @@ export function EditorStatus({ state }: { state: EditorState | null }) {
         title={state?.message}
       >
         {state?.message ?? "Editor startet …"}
+      </span>
+      <span className="tool-hint">
+        {mode === "pan"
+          ? "Ziehen: Verschieben · Mausrad: Zoom"
+          : mode === "house"
+            ? "Klicken oder ziehen: Haus platzieren"
+            : mode === "select"
+              ? "Haus anklicken · Ziehen: Verschieben · Escape: Abbrechen"
+              : landscape
+                ? "Ziehen: Malen · Escape: Strich verwerfen"
+                : mode === "land" || mode === "sea"
+                  ? "Ziehen: Küste malen · [ / ]: Pinselgröße"
+                  : "Ziehen oder halten: Höhen malen · [ / ]: Pinselgröße"}
       </span>
       <span className="grid-status">
         {state

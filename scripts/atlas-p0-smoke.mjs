@@ -6,7 +6,9 @@ import {
   button,
   brush,
   exact,
+  editRangeValue,
   position,
+  setRangeValue,
   snapshot,
   stateSnapshot,
   capture,
@@ -176,14 +178,14 @@ async function normalStart() {
     );
     const diameter = page.getByLabel("Pinselgröße (Pixel)", { exact: true });
     const initialDiameter = await diameter.inputValue();
-    await diameter.fill("");
-    await diameter.press("Tab");
+    const draft = await editRangeValue(page, "Pinselgröße (Pixel)");
+    await draft.fill("");
+    await draft.press("Tab");
     recordCheck(
       "normal: empty numeric draft restores value",
       (await diameter.inputValue()) === initialDiameter,
     );
-    await diameter.fill("128");
-    await diameter.press("Enter");
+    await setRangeValue(page, "Pinselgröße (Pixel)", 128);
     recordCheck(
       "normal: numeric Enter commits value",
       (await diameter.inputValue()) === "128",

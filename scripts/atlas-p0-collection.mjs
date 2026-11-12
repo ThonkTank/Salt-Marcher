@@ -167,6 +167,8 @@ async function verifyStrokeContent(
 
 async function collectWarm(context, session, spec, scenario) {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, spec.coarse ? "Regionsansicht" : "Nahansicht");
   await brush(page, spec.diameter, spec.amount);
   await exact(page, 5000);
@@ -323,7 +325,10 @@ async function reopen(page) {
 }
 
 async function prepareTarget(page, target) {
-  if ((await page.locator("details").getAttribute("open")) === null)
+  if (
+    (await page.locator("details.coordinate-menu").getAttribute("open")) ===
+    null
+  )
     await page.getByText("Zu Koordinaten", { exact: true }).click();
   await page
     .getByLabel("Ziel X", { exact: true })

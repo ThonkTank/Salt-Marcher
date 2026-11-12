@@ -78,15 +78,26 @@ export async function heightMode(page, mode) {
   await page.getByLabel("Pinselmodus", { exact: true }).selectOption(mode);
 }
 
+/** Open the slider's ordinary precision editor, without mutating application state. */
+export async function editRangeValue(page, label) {
+  const field = page.getByRole("textbox", {
+    name: `${label} – genauer Wert`,
+    exact: true,
+  });
+  if (!(await field.isVisible())) await button(page, `${label} genau eingeben`);
+  return field;
+}
+
+export async function setRangeValue(page, label, value) {
+  const field = await editRangeValue(page, label);
+  await field.fill(String(value));
+  await field.press("Enter");
+}
+
 export async function brush(page, diameter, rateFeetPerSecond) {
   await heightMode(page, "raise");
-  await page
-    .getByLabel("Pinselgröße (Pixel)", { exact: true })
-    .fill(String(diameter));
-  await page
-    .getByLabel("Höhenänderung (m/s)", { exact: true })
-    .fill(String(rateFeetPerSecond * 0.3048));
-  await page.getByLabel("Höhenänderung (m/s)", { exact: true }).press("Enter");
+  await setRangeValue(page, "Pinselgröße (Pixel)", diameter);
+  await setRangeValue(page, "Höhenänderung (m/s)", rateFeetPerSecond * 0.3048);
 }
 export async function exact(page, timeout = 20_000) {
   await page.waitForFunction(
@@ -150,6 +161,8 @@ const inputCutoff = (o) =>
 /** Wheel success is checked independently of pan, at a fixed coastal pixel. */
 export async function zoomAndPan(session, prefix = "navigation") {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   await exact(page);
@@ -245,6 +258,8 @@ export async function zoomAndPan(session, prefix = "navigation") {
 /** Two genuine terrain changes must be visible while the same button remains held. */
 export async function heldStroke(session, prefix = "held-stroke") {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   // Functional land/water oracle, separate from the unchanged timed M03 path.
@@ -413,6 +428,8 @@ export async function brushDoseBehavior(
   { diameter = 128, prefix = "" } = {},
 ) {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   const rateFtPerSecond = 1000;
@@ -541,6 +558,8 @@ export async function brushDoseBehavior(
 /** A sustained real 512-pixel stroke, with a separate unpaced pixel-content replay. */
 async function sustainedLargeStroke(session) {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   await brush(page, 512, 4000);
@@ -714,6 +733,8 @@ async function sustainedLargeStroke(session) {
 /** Different author levels must compose immediately, including after Undo/Redo. */
 async function consecutiveAuthorLevels(session) {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   await exact(page);
@@ -898,6 +919,8 @@ export async function largeBrushBehavior(session) {
 /** Real bent input: the corner must change while the straight shortcut stays intact. */
 export async function curvedStroke(session) {
   const { page } = session;
+  await navigateTo(page, [0, 0]);
+  await page.getByText("Zu Koordinaten", { exact: true }).click();
   await button(page, "Nahansicht");
   await page.getByLabel("Raster anzeigen").uncheck();
   await brush(page, 16, 4000);
@@ -965,7 +988,7 @@ export async function curvedStroke(session) {
 
 /** Ordinary native UI navigation; readiness is observed, never assigned by tests. */
 export async function navigateTo(page, point) {
-  const details = page.locator("details");
+  const details = page.locator("details.coordinate-menu");
   if ((await details.getAttribute("open")) === null)
     await page.getByText("Zu Koordinaten", { exact: true }).click();
   await page

@@ -23,6 +23,9 @@ button {
   padding: 7px 9px;
   border-radius: 5px;
   cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
 }
 button:hover:not(:disabled) {
   background: #383b3b;
@@ -43,8 +46,8 @@ canvas:focus-visible {
 }
 .atlas-shell {
   display: grid;
-  grid-template-columns: 116px minmax(0, 1fr) 280px;
-  grid-template-rows: 50px minmax(0, 1fr) 38px;
+  grid-template-columns: 128px minmax(0, 1fr) 296px;
+  grid-template-rows: 54px minmax(0, 1fr) 38px;
   grid-template-areas: "header header header" "tools map panel" "status status status";
   height: 100dvh;
   min-width: 720px;
@@ -78,6 +81,21 @@ canvas:focus-visible {
   display: flex;
   gap: 5px;
   flex-shrink: 0;
+}
+.history button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.editor-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+.history .editor-icon {
+  width: 14px;
+  height: 14px;
 }
 .project-label {
   flex: 1;
@@ -114,27 +132,21 @@ canvas:focus-visible {
 .atlas-tools button {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  padding: 8px 5px;
-  min-height: 34px;
+  padding: 10px 7px;
+  min-height: 38px;
   text-align: left;
   font-size: 11px;
   flex-shrink: 0;
 }
-.atlas-tools button > span:first-child {
-  width: 18px;
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 18px;
-}
 .atlas-tools button > span:last-child {
   min-width: 0;
-  overflow-wrap: anywhere;
-  hyphens: auto;
+  overflow-wrap: normal;
 }
 .atlas-tools button[aria-pressed="true"] {
-  border-left: 3px solid #e1c482;
+  border-color: #a3906180;
+  box-shadow: inset 3px 0 #e1c482;
   background: #d8c8a233;
   color: #efddb5;
 }
@@ -187,27 +199,35 @@ canvas:focus-visible {
   scrollbar-gutter: stable;
   padding: 16px;
 }
-.atlas-settings h1 {
-  margin: 0 0 16px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #e4e6dc;
-}
 h2 {
   font-size: 13px;
   font-weight: 600;
   color: #cdd1c7;
   margin: 0 0 12px;
 }
+.settings-heading {
+  margin-bottom: 20px;
+}
+.settings-heading .eyebrow {
+  margin-bottom: 5px;
+}
+.settings-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #e4e6dc;
+}
 .tool-fields {
   border: 0;
   padding: 0;
   margin: 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .field {
   display: block;
-  margin: 0 0 14px;
+  margin: 0;
 }
 .field > span {
   display: flex;
@@ -219,26 +239,241 @@ h2 {
   font-size: 11px;
   color: #a3ad9f;
 }
-.height-settings .tool-fields {
+.field-note {
+  font-size: 11px;
+  line-height: 1.55;
+  color: #aeb5a9;
+  margin: 0;
+}
+.height-contours {
+  font-size: 12px;
+  color: #aeb5a9;
+}
+.soon-label {
+  margin-left: auto;
+  border: 1px solid #485044;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 10px;
+  color: #98a28f;
+}
+.range-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 28px;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.range-heading label {
+  min-width: 0;
+  line-height: 1.35;
+}
+.range-value,
+.range-exact {
+  min-width: 56px;
+  max-width: 110px;
+  border: 1px solid #485044;
+  background: #1b1e20;
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: #e8d5a9;
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.range-value {
+  flex-shrink: 0;
+  cursor: text;
+}
+.range-value:hover:not(:disabled) {
+  border-color: #b69e68;
+  background: #35372e;
+}
+.range-exact {
+  width: 100px;
+}
+.range-input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.range-input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    #c6b180 var(--range-progress),
+    #4a5149 var(--range-progress)
+  );
+}
+.range-input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  background: #e5d1a5;
+  border: 2px solid #252924;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #c6b180;
+}
+.range-input::-moz-range-track {
+  height: 4px;
+  border-radius: 4px;
+  background: #4a5149;
+}
+.range-input::-moz-range-progress {
+  height: 4px;
+  border-radius: 4px;
+  background: #c6b180;
+}
+.range-input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #e5d1a5;
+  border: 2px solid #252924;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #c6b180;
+}
+.range-bounds {
+  display: flex;
+  justify-content: space-between;
+  color: #929c8d;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.field-error {
+  margin: 6px 0 0;
+  color: #ffc3b0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.range-exact[aria-invalid="true"] {
+  border-color: #d98d77;
+}
+.brush-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: -3px 0 0;
+  padding: 10px;
+  background: #282d2a;
+  border: 1px solid #3f4840;
+  border-radius: 5px;
+}
+.brush-metrics dt {
+  font-size: 10px;
+  color: #aab5a2;
+}
+.brush-metrics dd {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+}
+.warning-note {
+  color: #efd292;
+  border-left: 2px solid #b69e68;
+  padding-left: 8px;
+}
+.settings-group {
+  border: 0;
+  border-top: 1px solid #414941;
+  min-width: 0;
+  margin: 0;
+  padding: 14px 0 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-.height-settings .field {
-  margin: 0;
-}
-.height-settings .field > span {
-  font-size: 13px;
-}
-.height-settings .tool-fields > small {
-  display: block;
+.settings-group legend {
+  padding: 0 8px 0 0;
   font-size: 11px;
-  line-height: 1.6;
-  color: #aeb5a9;
+  font-weight: 600;
+  color: #c0c8b9;
 }
-.height-settings .height-contours {
+.segmented-control {
+  display: flex;
+  padding: 3px;
+  border-radius: 6px;
+  background: #181c1d;
+  border: 1px solid #414941;
+  gap: 3px;
+}
+.segmented-control button {
+  flex: 1;
+  font-size: 12px;
+  padding: 6px;
+  border-color: transparent;
+  background: transparent;
+}
+.segmented-control button[aria-pressed="true"] {
+  background: #444537;
+  border-color: #a3906155;
+  color: #efddb5;
+}
+.selection-empty,
+.navigation-guide {
+  padding: 16px 12px;
+  background: #282d2a;
+  border: 1px solid #3f4840;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b9c4b1;
+}
+.selection-empty > .editor-icon,
+.navigation-guide > .editor-icon {
+  width: 28px;
+  height: 28px;
+  color: #d0bd92;
+}
+.selection-empty h3 {
   font-size: 13px;
+  color: #e4e6dc;
+  margin-bottom: 0;
+}
+.selection-empty button {
+  margin-top: 4px;
+  font-size: 11px;
+  width: 100%;
+}
+.navigation-guide dl {
+  margin-bottom: 0;
+}
+.navigation-guide dt {
+  color: #e4e6dc;
+  margin-top: 12px;
+}
+.navigation-guide dd {
+  margin: 0;
+  font-size: 11px;
+}
+.tool-help {
+  border-top: 1px solid #414941;
+  padding-top: 12px;
+}
+.tool-help p {
   color: #aeb5a9;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+kbd {
+  font: inherit;
+  border: 1px solid #51594e;
+  border-bottom-width: 2px;
+  padding: 0 3px;
+  border-radius: 3px;
+  white-space: nowrap;
 }
 input[type="number"],
 select {
@@ -269,7 +504,7 @@ summary {
   cursor: pointer;
 }
 .future-options {
-  margin: 16px 0;
+  margin: 0;
 }
 .future-options button {
   display: block;
@@ -284,10 +519,18 @@ summary {
   padding-top: 16px;
   margin-top: 20px;
 }
-.surface-panel > button,
+.surface-content > button,
 .experiment button {
   width: 100%;
   font-size: 12px;
+}
+.surface-details > summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cdd1c7;
+}
+.surface-content {
+  padding-top: 14px;
 }
 .surface-item {
   margin: 12px 0;
@@ -399,6 +642,11 @@ summary {
   flex-wrap: wrap;
   gap: 4px;
 }
+.view-buttons button[aria-pressed="true"] {
+  background: #444537;
+  border-color: #a3906180;
+  color: #efddb5;
+}
 .check {
   display: flex;
   align-items: center;
@@ -465,6 +713,15 @@ summary {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 45%;
+}
+.tool-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #99a291;
 }
 .grid-status {
   flex-shrink: 0;
@@ -615,7 +872,7 @@ summary {
 }
 @media (max-width: 1150px) {
   .atlas-shell {
-    grid-template-columns: 100px minmax(0, 1fr) 250px;
+    grid-template-columns: 128px minmax(0, 1fr) 264px;
     grid-template-rows: 86px minmax(0, 1fr) 38px;
   }
   .atlas-header {
@@ -644,10 +901,46 @@ summary {
   .atlas-tools {
     padding: 10px 5px;
   }
+  .atlas-tools button {
+    gap: 5px;
+    padding: 9px 4px;
+  }
   .atlas-panel-content {
     padding: 12px;
   }
   .atlas-header button {
     padding: 5px 7px;
+  }
+}
+@media (max-width: 800px) {
+  .atlas-shell {
+    min-width: 600px;
+    grid-template-columns: 52px minmax(0, 1fr) 240px;
+  }
+  .atlas-tools button {
+    justify-content: center;
+  }
+  .atlas-tools button > span,
+  .atlas-tools .eyebrow,
+  .atlas-tools h2,
+  .atlas-tools .hint {
+    display: none;
+  }
+  .tool-group {
+    border-top: 1px solid #414941;
+    padding-top: 6px;
+    margin-top: 2px;
+  }
+  .interior-tools {
+    font-size: 9px;
+    overflow-wrap: anywhere;
+  }
+  .tool-hint {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
   }
 }

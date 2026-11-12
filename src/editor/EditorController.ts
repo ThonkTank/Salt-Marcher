@@ -961,6 +961,11 @@ export class EditorController {
     this.navigate({ x, y, scale }, this.input(event, "navigation"));
   }
 
+  /** View presets change the scale without consuming coordinate-entry drafts. */
+  setViewScale(event: Event, scale: number): void {
+    this.goTo(event, this.world.camera.x, this.world.camera.y, scale);
+  }
+
   /** Keep a small tile-aligned author neighborhood warm ahead of the pointer. */
   private spatialPrefetchBounds(local: LocalReadiness): Bounds {
     const coast = this.coastStroke || (!this.spatialStroke && this.coastMode);

@@ -1149,7 +1149,7 @@ den Faktor 1,1; `[` und Alt+Mausrad nach unten verkleinern ihn entsprechend.
 Das Ergebnis wird auf ganze Pixel gerundet und auf 8–512 begrenzt. Diese
 Gesten ändern weder die Kamera noch einen laufenden Strich; während einer
 aktiven oder noch abzuschließenden Pointergeste bleiben sie ohne Wirkung.
-Fokussierte Zahlenfelder behalten ihre eigene Tastaturbedienung. Die
+Fokussierte Regler und Präzisionsfelder behalten ihre eigene Tastaturbedienung. Die
 Größenkurzbefehle berücksichtigen AltGraph-Tastaturen. Eine zusätzliche
 Leertaste-Ziehen-Geste wird nicht angeboten. Die zeitabhängige Wirkung beim
 Halten und langsamen Ziehen gilt für Anheben/Absenken. Land/Meer folgt dem
@@ -1163,9 +1163,29 @@ Landschaftsdichte bleibt bei 0–100 Prozent. Hausmaße und Fundamentparameter
 müssen ihre unten angegebenen Grenzen einhalten; ungültige Werte werden mit
 sichtbarem Fehler abgewiesen und nicht als neue Autoren übernommen.
 
-Zahlenfelder werden beim Verlassen des Felds oder Enter übernommen;
-Escape verwirft den noch nicht übernommenen Text. Ein direkter Kartenklick
-übernimmt das fokussierte Zahlenfeld vor Beginn des Strichs.
+Pinselgrößen, Höhenrate, Landschaftsdichte sowie Hausmaße, Drehung und
+Fundamentparameter werden über Regler mit sichtbarem Wert und Einheit bedient.
+Höhenrate und Hausbreite/-tiefe verwenden eine logarithmische Skala, damit kleine
+und große Werte gleichermaßen erreichbar bleiben. Pinsel- und Dichteänderungen
+werden während des Ziehens wirksam. Hausregler übernehmen ihren Entwurf einmal
+beim Loslassen, Abschluss einer Tastenbedienung oder Verlassen; Escape verwirft
+einen noch offenen Hausreglerentwurf. Ein geändertes ausgewähltes Haus erzeugt
+dadurch einen einzelnen Undo-Schritt pro Reglerbedienung.
+
+Ein Klick auf den angezeigten Wert öffnet eine genaue Eingabe ohne Stepper.
+Sie akzeptiert Dezimalpunkt oder Dezimalkomma; gültige Werte werden beim Verlassen
+oder Enter übernommen. Escape oder eine leere Eingabe erhält den bisherigen
+Wert; ungültige Werte zeigen einen lokalen Fehler und verändern die Einstellung
+nicht. Ein direkter Kartenklick übernimmt einen gültigen fokussierten Wert vor
+Beginn des Strichs. Zielkoordinaten bleiben direkte Zahlenfelder.
+
+Ohne ausgewähltes Haus erklärt das Auswahlpanel den nächsten Schritt und zeigt
+keine vermeintlichen Objekteigenschaften. Abmessungen und Fundament bilden
+getrennte Gruppen. Gewässer und Fundamente sind in leeren Karten eingeklappt;
+vorhandene Ableitungen, eine Hausauswahl oder neue Warnungen öffnen den Bereich.
+Ansichtsvorgaben behalten den aktuellen Kartenmittelpunkt bei und verwenden
+keine noch nicht aufgerufenen Koordinateneingaben. Der Wechsel zwischen
+Werkzeugpanels erhält Canvas und Kamera.
 
 Eine neue P0-Welt ist Ozean mit natürlicher Höhe −100 Fuß und Meeresspiegel 0.
 Die natürliche Oberfläche entsteht aus der Summe relativer Höhenfelder mit
