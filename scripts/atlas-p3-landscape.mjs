@@ -9,7 +9,6 @@ import { captureCanvas } from "./atlas-p0-desktop.mjs";
 import {
   button,
   capture,
-  exact,
   landPixel,
   position,
   stateSnapshot,
@@ -124,12 +123,28 @@ async function inspect(file, points) {
 }
 
 async function settled(page) {
-  await exact(page, 30_000);
   await page.waitForFunction(
     () => {
       const state = window.atlasObserve([], { events: false });
-      if (state.state.error) throw new Error(state.state.error);
-      return state.renderer.landscape?.ready === true;
+      const error =
+        state.state.error ??
+        document.querySelector('[role="alert"]')?.textContent?.trim();
+      if (error) throw new Error(error);
+      // Submission alone is insufficient for display samples and screenshots:
+      // their scene fence must complete. Check one snapshot so no new action
+      // or view can slip between the submission and completion observations.
+      return (
+        !state.state.loading &&
+        !state.document.active &&
+        !state.document.finishing &&
+        state.renderer.submittedRevision === state.document.revision &&
+        state.renderer.submittedViewGeneration ===
+          state.renderer.viewGeneration &&
+        state.renderer.landscape?.ready === true &&
+        state.renderer.lastCompletedViewGeneration ===
+          state.renderer.viewGeneration &&
+        state.renderer.lastCompletedFrame >= state.renderer.lastSubmittedFrame
+      );
     },
     null,
     { timeout: 30_000 },
