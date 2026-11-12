@@ -4,16 +4,25 @@ Stand: 12. November 2026. **Der Standardratenfall ist als unabhängige Prüfung
 implementiert; der warme Höhenrenderer ist deutlich schneller, besteht die
 vereinbarte Wirkungs- und Leistungsabnahme aber noch nicht.** Der begrenzte
 Auftrag H1–H4 erreicht damit seine vorab festgelegte H2-Stopentscheidung.
-Breite H3-Integration und H4-Abnahme bleiben blockiert. Die Sicherung des
-Kandidaten im bestehenden Vorschauzweig ist keine Leistungsfreigabe.
+Breite H3-Integration und H4-Abnahme bleiben blockiert. Die Integration des Kandidaten in Main ist keine Leistungsfreigabe.
 
-Der bestehende Vorschauzweig `work/atlas-p0-feasibility` enthält den geprüften
+Main übernimmt den Stand `2ea19ad2f` aus `work/atlas-p0-feasibility` und damit den geprüften
 Höhenkandidaten aus `b5168be` sowie den veröffentlichten Land-/Meer- und
 Reglerstand `798cf97`. Die Integration erhält die zwischenzeitlichen
 Planungsänderungen aus `068dbc3`. Der reguläre Atlas-V7-Einstieg und der
 Fachstand P3.3 bleiben erhalten; dieser begrenzte Höhenauftrag führt keinen
 weiteren P0–P9-Planschritt aus.
-[PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
+Die Integration umfasst [#1467](https://github.com/ThonkTank/Salt-Marcher/pull/1467),
+[#1468](https://github.com/ThonkTank/Salt-Marcher/pull/1468) und
+[#1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469). Der einzige
+Mergekonflikt betraf `AGENTS.md`; Neubauauftrag und Arbeitsregeln bleiben erhalten.
+Der Produktquellhash ist unverändert. Lokal bestehen beide Typprüfungen,
+alle 1.524 TypeScript-Tests, der Electron-Build und 121/121 Desktop-Funktionsprüfungen
+(Start/Datei, Küste, Landschaft, Haus und Gewässer; SwiftShader). Integrationsbelege liegen unter
+`src-tauri/target/diagnostics/main-integration-20261112/`.
+Der Vorschauworkflow für `2ea19ad2f` (Lauf `43219637820`) ist erfolgreich;
+der vollständige Repository-Baseline-Lauf `43219892131` war bei der lokalen
+Integration noch aktiv. Daraus wird keine vollständige V7- oder Leistungsabnahme abgeleitet.
 
 **Planungsstand:** Der bestehende [Neubauplan](atlas-rebuild-plan.md) ist nach dem
 Architekturvergleich vom 12. November präzisiert: gemeinsame räumliche
