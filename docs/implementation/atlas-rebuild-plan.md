@@ -5,6 +5,16 @@ Pakete P0–P9. Die **Architekturkorrektur vom 9. November 2026 in Abschnitt 5**
 ersetzt den bisherigen P0-Restauftrag. Ausgangspunkt ist PR #1469 auf
 Commit 96637b0e399fa9da73a73cd8bfb9dd6c8df10ba3.
 
+**Präzisierung nach dem Architekturvergleich vom 12. November 2026:** Den
+Dokument-/Terrainkern und Pixi/WebGL weiterverwenden. A04/A06 ergänzen gemeinsame
+räumliche Abhängigkeiten, maßstabsabhängige Darstellung und beibehaltene
+Objektgeometrie. Der nächste Schritt bleibt P3.4 mit echten Fachberechnungen;
+P3.5 belegt den Objektpfad am vorhandenen Haus. P4 prüft die Trennung von
+Oberflächenberechnung und Stil an einem begrenzten Mischfall. P4–P8 erweitern
+diese Verträge mit ihren tatsächlichen Funktionen; keine zusätzliche
+Infrastrukturphase vor dem bereits freigegebenen P3-Fall. Die Quellen und
+Übertragungsgrenzen stehen in Abschnitt 9.
+
 **Zielentscheidung nach der Recherche vom 9. November 2026:** Mehrskalenautoren,
 numerische Übersichten, feste Renderbasis und die vier Besitzer bleiben.
 R1 hat die einfache räumliche Stempelverteilung C0 mit unabhängiger
@@ -30,8 +40,9 @@ neu geprüften Belege und die offenen Fehler. R4 besitzt eine integrierte feste
 Auswahl und gemeinsame Auswertung; der Laborbefund bleibt FAIL und die
 Hardwarequalifikation offen.
 Die [Arbeitsentscheidung](status.md#arbeitsentscheidung) gibt den begrenzten
-R5-Fachfall zur Umsetzung frei, beginnend mit P3.1 „Wald und Lichtung“ und den
-dafür benötigten P1/P2-Erweiterungen. Die gemeinsame Leistungsqualifikation
+R5-Fachfall einschließlich der noch ausstehenden P3.4/P3.5-Schritte und der
+dafür benötigten P1/P2-Erweiterungen zur Umsetzung frei. Der aktuelle Fachstand
+und nächste Schritt stehen im Status. Die gemeinsame Leistungsqualifikation
 und die vollständige P0-Abnahme bleiben ausstehend.
 Abschnitt 2 dokumentiert die gewählte D10-Änderung und D11-Umsetzung.
 Abschnitt 6 trennt Korrektheit, Hardware-Richtungsentscheidung und Freigabe.
@@ -87,6 +98,9 @@ Dateien oder Zeilen sind kein eigenes Erfolgsmaß. Vor einer Änderung die
 entfallende Zuständigkeit, Wartebedingung oder Wiederholungsarbeit benennen.
 Notwendige Unterschiede zwischen Modell, History, Persistenz und Darstellung
 bleiben erhalten; kein globales `fresh`-Flag und keine Hüllen allein wegen Dateilänge.
+Mehrere abgeleitete Stände, Caches oder Warteschlangen sind kein eigener Mangel.
+Für jeden Zweck müssen Besitzer, Gültigkeit, Übernahme und Ressourcenleben klar
+sein; unabhängige Autorenautoritäten oder unnötige Wiederholungsarbeit entfallen.
 
 Bereits umgesetzt sind ein effektiver Controllerzustand mit React-Feldentwürfen,
 maßstabsgerechte Reads, Quellenpatches statt Vollkopien, lokale sichtbare Freigabe,
@@ -493,10 +507,31 @@ Es gibt zwei Lesezwecke mit einer gemeinsamen, typisierten Antwortgrenze:
   die benötigten groben Quellen. Keine Vollständigkeitsfreigabe sämtlicher
   Feindaten des sichtbaren Weltbereichs.
 
+Operationen unterscheiden ihren **Lesebereich** einschließlich benötigtem Rand,
+Objekten und bestätigter Abwesenheit, ihren tatsächlichen **Änderungsbereich**
+sowie den davon abhängigen **Invalidierungsbereich** der Darstellung. Der
+Fachoperator bestimmt seinen benötigten Rand; Glätten, Höhenlinien, Deckungsfarbe
+und Fundamentübergänge benötigen nicht dieselbe Nachbarschaft. Bei Verschieben
+oder Löschen alte und neue Einflussbereiche berücksichtigen. Gemeinsame
+Quellenabfrage, Vorschlagsprüfung und lokale Invalidierung verwenden diese
+Angaben; keine globale Nachfahrensuche oder pauschale Weltrevision als Ersatz.
+
 SQLite-RTree begrenzt räumliche Auswahl und Quellenstufe vor der Enumeration.
 Für zusätzliche aktive Geometrie einen kleinen räumlichen Index nutzen. Objektliste,
 Labels, Auswahl und Kollision laden nicht sämtliche Weltobjekte; ausgewählte
 vereinfachte Straßen/Flüsse erhalten exakte Header. Innenpayloads bleiben getrennt.
+
+Darstellung, Ladebedarf, Auswahl und Beschriftung verwenden eine gemeinsame
+Ansichtsentscheidung aus kontinuierlichem Maßstab, Außen-/Innenkontext und den
+bestehenden Hystereseregeln. Fachlich unterschiedliche Inhaltsgrenzen bleiben
+erhalten; die 14 Ansichtsnamen sind keine globale Schaltschwelle für alle Inhalte.
+Bebauungsdichte, Außenkonturen, ausgewählte exakte Header und ausdrücklich
+geöffnete Innenräume sind verschiedene Darstellungen derselben Autoren.
+Landschaftsflächen, Kronendach und Nahsymbole folgen demselben Vertrag mit ihren
+eigenen Grenzen und stabilen Kandidaten. Die gemeinsamen Mengenbudgets stehen
+in A09. Ein unpassender Ersatzframe oder eine für den Werkzeugbedarf unzureichende
+Übersicht erteilt keine Bearbeitungsfreigabe. Maßstabsgerechte numerische Übersichten
+und die fortbestehende Grundlage innerhalb einer Geste folgen D11/A06.
 
 Die vorhandenen Quellenzustände, lokale Freigabe und gemeinsame Antwortprüfung
 stehen in der Architektur. Neue Felder/Objekte müssen dieselben Session-,
@@ -564,6 +599,26 @@ eine zweite Autorenwelt noch eine allgemeine Befehlswarteschlange. Ein Worker
 ist erst bei einem gemessenen Bedarf für eine reine begrenzte Teilrechnung
 zulässig; autorenändernde Vorschläge übernimmt allein das Dokument. Abgeleitete
 Projektionsresultate prüft und übernimmt dagegen der Renderer.
+
+**Vorbereitete Objektgeometrie bleibt erhalten.** Konturen und Zeichenpuffer
+werden getrennt von Kamera, Auswahl und Stil gehalten. Warme Navigation bei
+unveränderter sichtbarer Objektmenge und Darstellungsklasse erzeugt und lädt
+unveränderte Geometrie nicht erneut; Auswahl aktualisiert Stil oder Overlay.
+Geometriearbeit betrifft geänderte Objekte, neu benötigte Darstellungsklassen
+oder noch nicht vorbereitete Inhalte. P3.5 entwickelt diesen gemeinsamen Weg am
+vorhandenen Hausheader; Straßen und Innenräume erweitern ihn in P5/P6.
+Lokale Geometrie und Transformation folgen A02, räumliche Auswahl und Abhängigkeiten
+A04. Keine zweite Szenenautorität oder werkzeugeigene Kamera-/Cachepipeline.
+
+Jeder konkrete Darstellungsbaustein benennt seine unveränderlichen Eingaben und
+Abhängigkeiten, den benötigten Zielstand, den betroffenen Bereich sowie Aufbau,
+Invalidierung und Freigabe seiner Ressourcen. Numerische Höhe, Oberflächen-/
+Materialdarstellung, Objekte/Symbole und Bedienoverlay teilen die bestehenden
+CPU-/GPU-/Uploadgrenzen aus A09 einschließlich laufender und noch benutzter
+Altressourcen. Diese Verantwortungen schreiben weder allgemeine Layerklassen
+noch einen Rendergraph vor. Ein weiterhin benötigter eingefrorener Stand bleibt
+nach den folgenden Regeln zulässig; die neueste globale Revision ist keine
+pauschale Übernahmebedingung für abgeleitete Renderdaten.
 
 **Ein neuester Wunsch und ein eingefrorener Renderstand:** Quellenänderungen
 führen pro Schlüssel zum neuesten unveränderlichen Nachherstand und vereinigen
@@ -681,6 +736,16 @@ zusammengefasste Modelländerungen bestehen bleiben. Kalter Aufbau, echte
 Stufenwechsel, Fehlerbudget, höchstens 32 Basisübernahmen und Kontextwiederaufbau
 bleiben versioniert und budgetiert. Eine Verbesserung dieses bestehenden
 Renderwegs ist ein Kandidat, keine vorweggenommene Leistungszusage.
+
+**Oberflächenberechnung und Stil haben getrennte Abhängigkeiten.** Natürliche
+Höhe, daraus und aus Gewässern/Fundamenten abgeleitete Oberfläche sowie
+Farbe/Material/Relief fachlich getrennt invalidieren. Eine reine Stil- oder
+Landschaftsänderung verwendet kompatible numerische Höhe weiter und verändert
+keine Oberflächenautoren. P4 prüft, ob eine begrenzte wiederverwendbare
+Oberflächenrepräsentation auch die erneute Fluss-/See-/Fundamentrechnung spart.
+Ein zusätzlicher Puffer oder Pass ist keine Vorgabe: Gesamtaufwand einschließlich
+Speicher, kaltem Aufbau und Wiederherstellung entscheidet. Autorenwerte,
+numerische Toleranzen und laufende tatsächliche Pinselwirkung bleiben erhalten.
 
 **Normale Zahlen bleiben im GPU-Pfad.** Quellwerte bleiben Float64. Beim abgeleiteten
 GPU-Encoding dürfen ausschließlich skalierte Beträge unter 1e-30 als null
@@ -1496,11 +1561,22 @@ History und Dateirundlauf. Keine zusätzlichen Architekturschichten auf Vorrat.
    invalidiert ihn; ein unabhängiger Eingriff anderswo nicht. Keine eigene
    Dokumentautorität oder Commitqueue pro Job. Zwei gleiche Testjobs sind höchstens
    ein früher Teilnachweis und ersetzen den M06-Fall mit beiden Fachberechnungen nicht.
+   Den Lese-/Änderungs-/Invalidierungsvertrag aus A04 an beiden Fachjobs verwenden.
+   Ergebnisübernahme nach geändertem Readset ablehnen und nach unabhängiger Änderung
+   außerhalb zulassen. Eingaben, Ergebnisse und noch laufende Abbrüche zählen
+   gegen dieselben Grenzen; der Slot wird erst beim tatsächlichen Ende frei.
 5. **Gemeinsamer Rundlauf:** Landform → fernes Dorf → Graben/Lichtung/Haus → Welt
    → grobe Höhe/Waldänderung → Detailrückkehr → sofortiges Weiterarbeiten nach D11
    → Undo/Redo → Save/Neustart/Reopen. Die Wasser-/Fundamentszene und reale
    Konkurrenz gehören dazu. Kamera, 14 Ansichten, Kontextwechsel, DPR/Resize,
-   Auswahl und Overlay vervollständigen; keine globale Sperre bereiter Orte.
+   Auswahl und Overlay nach A04 vervollständigen; keine globale Sperre bereiter Orte.
+   Den vorhandenen Hausheader dabei als ersten Verbraucher des beibehaltenen
+   Objektpfads aus A06 ausbauen: warme Navigation/Auswahl verwendet vorbereitete
+   lokale Geometrie weiter, eine Hausänderung ersetzt nur abhängige Darstellung.
+   Reine Landschaftsänderung rekonstruiert keine kompatible numerische Höhe;
+   Auswahl allein berechnet weder Terrain noch Fundamente neu. Diese eingesparte
+   Arbeit in den vorhandenen M02/M03-Fällen beobachten. Vollständige Objekt-/
+   Innenraumdarstellung bleibt P5/P6; P3.2 bleibt die bereits umgesetzte Headerprobe.
 
 **Entscheidung vor weiterem Funktionsausbau:** Verlangt dieser kleine Fall globale
 Nachfahrenscans, eine zweite veränderliche Welt oder werkzeugeigene Commitpfade,
@@ -1522,6 +1598,18 @@ Boden-/Felsfarbe mit Vorlagen, Modi, zeitlichem Fluss, Pipette und Radierer
 übertragen. Landschaftsdeckung, Lichtungen und stabile Kandidaten vervollständigen.
 A03-Masken, Material-/Schnee-/Felsdarstellung und nahtlose Rand-/Haloregeln gelten.
 „Lokale Details zurücksetzen“ bleibt explizite Bereichsaktion mit Vorschau/Undo.
+Fläche, Kronendach und Nahsymbole verwenden die gemeinsame Ansichtsentscheidung
+aus A04; ihr funktionsfähiger Wechsel gehört zu F07 in P4. P8 vervollständigt den
+Kartenstil. Höhenlinien und weitere Ableitungen benennen ihren benötigten Rand.
+
+Beim Material-/Reliefausbau den bestehenden kombinierten Farbpfad gegen höchstens
+einen Kandidaten mit wiederverwendbarer Oberfläche nach A06 vergleichen: gleiche
+Szene mit See, Fluss und Fundament, wiederholte Landschafts-/Stiländerungen,
+danach eine echte Höhen-/Gewässeränderung. CPU-Vorbereitung, GPU-Arbeit, Uploads,
+sichtbare Rückmeldung und Gesamtspeicher einschließlich kaltem Aufbau und
+Kontextwiederherstellung erfassen. Bestehende Referenzen und Genauigkeitsgrenzen
+gelten für beide Varianten. Ohne belegten Gesamtnutzen den kombinierten Pfad
+behalten; Entscheidung einmal im Status festhalten und mit P4 fortfahren.
 
 **Entfällt:** werkzeugeigene Patch-, Vorschau-, History- und Persistenzpipelines.
 **Nachweis:** alle F04–F07-Modi einschließlich Halten, Abbruch, Rändern,
@@ -1536,6 +1624,10 @@ Rauheit sowie deterministische Vorschläge/Varianten mit endlichen Budgets erhal
 Parzellen/Häuser einzeln bearbeiten, auslassen, herauslösen und erneut erzeugen.
 Objekte/Innenpayloads trennen; Pose, Owner, Containment, Kollision und Löschfolgen
 über den gemeinsamen atomaren Kern führen. Reine bestehende Fachkerne nach A08 wählen.
+Den in P3 belegten Objektpfad erweitern: Straßen, Parzellen und Häuser verwenden
+gemeinsame räumliche Auswahl, passende Übersichten und beibehaltene lokale
+Geometrie. Pose-/Konturänderungen berücksichtigen alte und neue Einflussbereiche;
+exakte Auswahl und Picking folgen A02/A04. Keine eigene Navigationspipeline.
 
 **Entfällt:** ersetzte Vorschau-/Commit-Doppelmathematik, eigene Dokument- oder
 Historyserver. Aktive verwendete Fachberechnungen erhalten ihre Prüfungen.
@@ -1550,6 +1642,9 @@ Reinen hauslokalen Solver nach A08 übernehmen oder portieren. Räume, Merge/Spl
 Identitäten, Türen/Durchgänge, halbe Öffnungspositionen, Treppen und Etagenregeln
 vollständig erhalten. Innenpayload selektiv laden; Welttransform, Außenheader,
 Dachkontur und alle Geschosse einschließlich Keller getrennt behandeln.
+Geometrie, Transformation, Auswahl und Freigabe erweitern den Objektpfad aus P3/P5.
+Nur für den aktiven Haus-/Geschossbedarf Innenpayload und Darstellung vorbereiten;
+kein zweiter Dokument-, Kamera- oder Ressourcenlebenszyklus.
 
 **Entfällt:** unnötiger Welt-/SQL-Kontext im Solver und ersetzte Innenraumadapter.
 **Nachweis:** freie/gebundene gedrehte Häuser, Keller/Etagen, Raumbewegung,
@@ -1565,6 +1660,9 @@ integrieren. Profile/Betten mit Seepegeln, Rückstau und Zuflüssen als versioni
 Aufgaben berechnen. Seenpinsel erhält Aushub, Ufer, Vereinigung/Inseln und die
 atomare Höhen-/Wasseraktion. D03 mit Veraltet-Anzeige, lokal aktueller Darstellung
 und ausdrücklicher Korrektur vollständig umsetzen.
+Fachvorschläge nutzen die in P3.4 belegte Job- und Übernahmegrenze. Bestätigte
+Hydrologie und lokal aktuelle Oberflächendarstellung bleiben getrennte Produkte
+mit den räumlichen Abhängigkeiten aus A04/A06.
 
 **Entfällt:** synchrone globale Nachführung pro Terrainereignis sowie eine zweite
 Oberflächenmathematik. Keine alte hydrologische Lösung als aktuell ausgeben.
@@ -1577,7 +1675,12 @@ stale Ergebnissen, A→B→A, Undo/Redo und Reopen; Navigation bleibt verfügbar
 
 Regionen/Ränge, Malen/Radieren, Löcher/Teilflächen, leere Namen und geometrische
 N:N-Beziehungen mit Flächenanteilen erhalten. Labels/Marker teilen Priorisierung
-und Kollisionsbudget. Fantasykartografie mit Waldkronen, Relief, Materialien,
+und Kollisionsbudget; ihre Kandidaten stammen aus der Ansichtsentscheidung nach
+A04. Objekt-, Straßen- und Regionsnamen verwenden gemeinsame Vermessung und
+Platzierung mit derselben Schrift wie die Zeichnung. Stabile IDs, bevorzugte
+vorhandene Positionen und die bestehenden Hystereseregeln begrenzen Flackern.
+Die Darstellung benötigt keine eigene ungezählte Cache-/Uploadverwaltung.
+Fantasykartografie mit Waldkronen, Relief, Materialien,
 Dächern/Löchern und Walmdächern fertigstellen. Panels, Felder, Shortcuts, Modals,
 Fokus und Auswahl bei 900×620 und 1440×960 prüfen.
 
@@ -1660,6 +1763,18 @@ Fixtures sind deterministisch und verwenden das neue echte Schema. Entfernte
 Innenräume und fein bearbeitete Ausschnitte tatsächlich speichern; bloße leere
 Boundingboxes beweisen keine skalierbare Datenhaltung. Für lokale Lastfälle sowohl
 leere als auch bebaute Küste mit Wasser/Flüssen und einem ausgearbeiteten Haus nutzen.
+
+Die vorhandenen Fälle um gezielte Arbeitsbeobachtung erweitern, keine zusätzliche
+Prüfsuite: M02/M03 zählen bei warmer unveränderter Objektmenge und Darstellungsklasse
+Geometrieaufbau/-upload getrennt von Kamera und Auswahl. Ein geändertes Haus darf
+unabhängige Geometrie weiterverwenden; derselbe Fall gilt an den großen
+Koordinaten aus M02. Inhaltsgrenzen wiederholt in beide Richtungen durchlaufen;
+Ladebedarf, Darstellung, Auswahl und Werkzeugfreigabe müssen zusammenpassen.
+M05 prüft die begrenzte Kandidatenauswahl, M07/M08 die Wiederherstellung und
+Freigabe der hinzugekommenen Ressourcen. P4 ergänzt seinen Oberflächenvergleich
+in M03/M04, P8 die gemeinsame Namensplatzierung in M02/M05. Strukturell vermiedene
+Arbeit und gemessene Beschleunigung getrennt ausweisen; nur betroffene Nachweise
+erneuern. Zusätzliche Abstraktionen begründen keinen weiteren Gesamtlauf.
 
 ### M10 konkret: nach Navigation weiterarbeiten
 
@@ -2096,7 +2211,9 @@ Rohbelege werden nicht umgeschrieben.
 - [ ] Welt→Raum→Welt, Grob-/Feinbearbeitung, Undo/Redo und Reopen funktionieren
       zusammen; die erste Demo wurde zum vollständigen Produkt ausgebaut.
 - [ ] Kamerabewegung benötigt weder Quellenmutation noch synchronen Speicher-/
-      Fachauftrag; normale lokale Werkzeuge erreichen den Zeitvertrag auch unter
+      Fachauftrag. Unveränderte vorbereitete Objektgeometrie bleibt bei warmer
+      Navigation und Auswahl erhalten; Detailwechsel und fachliche Änderung
+      invalidieren gezielt nach A04/A06. Normale lokale Werkzeuge erreichen den Zeitvertrag auch unter
       Hintergrundlast. Kalte Navigation erreicht sichtbare Bearbeitbarkeit und erstes
       exaktes Ergebnis innerhalb der M10-Grenzen.
 - [ ] Reine lokale Reads warten nicht auf den Abschluss asynchroner Save-
@@ -2175,7 +2292,8 @@ Diese Quellen belegen Bibliotheksfunktionen, keine SaltMarcher-Latenzen.
 
 ### Recherchierte Vorbilder und Grenzen ihrer Übertragung
 
-Am 9. November 2026 anhand der folgenden Primärquellen geprüft.
+Am 9. November 2026 geprüft und für den Architekturvergleich am 12. November 2026
+um die Karten-, Szenen- und Terrainreferenzen unten ergänzt.
 Die Architekturentscheidung übernimmt konkrete Mechanismen; keine Quelle
 qualifiziert SaltMarchers vollständige Funktionsmatrix oder seine Zeitgrenzen.
 
@@ -2196,6 +2314,19 @@ mit einer fremden Implementierung gleichgesetzt. Ebenso sind die örtliche
 eigene Nachweispflichten. Fehlende Gegenbeispiele und die Existenz ähnlicher
 Programme ersetzen R1–R5 nicht. Gewählte GPU-/CPU-/Speichergrenzen bleiben
 Messgegenstände; sie sind keine aus den Quellen abgeleiteten Garantien.
+
+Für die Ergänzungen in A04/A06 und P3–P8 sind folgende Mechanismen maßgeblich:
+
+| Primärquelle                                                                                                                                                                                                                                                                                                | Belegter Mechanismus                                                                                                                              | Übertragung und Grenze                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [MapLibre: Architektur](https://github.com/maplibre/maplibre-gl-js/blob/main/ARCHITECTURE.md), [Kachelablauf](https://github.com/maplibre/maplibre-gl-js/blob/main/developer-guides/life-of-a-tile.md) und [Qt: Szenengraph-Renderer](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph-renderer.html) | Vorbereitete Geometrie, getrennte Darstellung und Wiederverwendung von GPU-Puffern.                                                               | Objektpfad in A06/P3.5. Lokale Koordinaten, gemeinsame Budgets und exakte Bearbeitungsfreigabe bleiben eigene Anforderungen; kein Enginewechsel aus bloßer Ähnlichkeit.                    |
+| [Mapbox: Performance](https://docs.mapbox.com/help/troubleshooting/mapbox-gl-js-performance/) und [Beschriftung](https://docs.mapbox.com/help/dive-deeper/optimize-map-label-placement/)                                                                                                                    | Getrennte Daten-/Darstellungsänderungen, Kosten zusätzlicher Layer sowie gemeinsame Kollisionsregeln, Prioritäten und bevorzugte Labelpositionen. | A04, P4/P5/P8: abgestimmte Detailstufen und gemeinsame Platzierung. Fachschichten behalten unterschiedliche Inhaltsgrenzen; mehr Pässe sind kein Selbstzweck.                              |
+| [Unity: PaintContext](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityengine/terraintools/paintcontext) und [SetHeightsDelayLOD](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityengine/terraindata/setheightsdelaylod)                                                   | Bearbeitungsbereiche über Kachelgrenzen; editierbare Quellen und abgeleitete Daten; aufschiebbare LOD-/Vegetationsnachführung.                    | Explizite räumliche Verträge in A04. Kein Aufschub unserer laufenden Höhenwirkung bis Pointerup und keine Gleichsetzung mit den 22 additiven Autorenstufen.                                |
+| [Unreal: Landscape](https://dev.epicgames.com/documentation/en-us/unreal-engine/landscape-overview) und [Render Dependency Graph](https://dev.epicgames.com/documentation/en-us/unreal-engine/render-dependency-graph-in-unreal-engine)                                                                     | Bedarfsgerechte Terraindarstellung; explizite Passabhängigkeiten und Ressourcenlebenszeiten.                                                      | Gemeinsame Gültigkeits-/Ressourcenregeln in A06, begrenzter Oberfläche/Stil-Vergleich in P4. Ein allgemeiner Graphcompiler oder neue 3D-/Backendarchitektur ist daraus nicht erforderlich. |
+
+Diese Quellen bestätigen Strukturprinzipien, keine neue Leistungsabnahme.
+Mehrskalige Autoren, numerische Genauigkeit und tatsächliche Live-Rückmeldung
+bleiben vom Darstellungs-LOD und von angenäherten Vorschauen getrennt.
 
 ### Quellen des bislang nicht qualifizierten Präsentationswegs
 

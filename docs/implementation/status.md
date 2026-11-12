@@ -8,6 +8,23 @@ enthalten. Der Fachstand bleibt P3.3; diese Überarbeitung aktiviert keinen
 weiteren Neubau-Planschritt. [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469)
 bleibt Draft.
 
+**Planungsstand:** Der bestehende [Neubauplan](atlas-rebuild-plan.md) ist nach dem
+Architekturvergleich vom 12. November präzisiert: gemeinsame räumliche
+Abhängigkeiten und Ansichtsregeln, beibehaltene Objektgeometrie in P3.5 sowie ein
+begrenzter Oberfläche/Stil-Vergleich in P4. Das sind nächste Arbeitsaufträge,
+keine neu implementierten Funktionen oder zusätzlichen Leistungsbelege.
+
+## Arbeitsentscheidung
+
+Die bereits erteilte R5-Freigabe gilt für den begrenzten gemeinsamen P3-Fall und
+seine notwendigen P1/P2-Erweiterungen weiter. Nach P3.1–P3.3 folgen **P3.4 echte
+Fachkonkurrenz** und **P3.5 gemeinsamer Rundlauf** einschließlich des Objektpfads
+am vorhandenen Haus. Die offene formale R4-/P0-Abnahme ist keine neue Vorbedingung
+für diese freigegebene Arbeit. Vor dem vollständigen Ausbau P4–P9 bleiben der
+bestandene gemeinsame P3-Fall und die vollständige P0-Abnahme erforderlich.
+Die Plananpassung verändert weder die veröffentlichte Vorschau noch die unten
+dokumentierten Produktnachweise.
+
 ## Ergebnis und Verhalten
 
 - Pinselgrößen, Höhenrate, Küstenrauheit, Landschaftsdichte, Hausbreite/-tiefe,
