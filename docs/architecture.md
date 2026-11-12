@@ -461,6 +461,38 @@ ausgeschnitten. `containsPolygon` liefert den gemeinsamen Außenring-/Lochtest.
 
 ## Entwicklung und Prüfungen
 
+### Dauerhafte Codegrenzen
+
+Ein Zustand hat einen verantwortlichen Besitzer; Fachberechnungen dürfen in
+kohärente Module delegiert werden. Koordinatoren verbinden Eingabe, Berechnung
+und Übernahme. Funktionen beschreiben eine konkrete Aufgabe beziehungsweise
+Invariante auf einer Abstraktionsebene. Unabhängige Verantwortungen werden
+getrennt; Zeilenzahl und ein beliebig allgemeiner Ein-Satz-Kommentar sind keine
+Qualitätskriterien. Zusammengehörige atomare Übergänge bleiben nachvollziehbar.
+Die Arbeitsregeln stehen kompakt in `AGENTS.md`.
+
+`npm run check:architecture` prüft mit dem vorhandenen TypeScript-Parser:
+
+- Produktionsmodule unter `src/editor/model/` importieren ausschließlich andere
+  Produktionsmodule desselben Fachkerns, auch bei Typimports und Re-Exports.
+- `src/editor/render/` darf Produktionsmodule aus Renderer und Modell sowie
+  `budgets`, `observation`, `ComputeJobs` und Pixi importieren. Controller,
+  ProjectSession, Desktopbridge und native beziehungsweise Speicheradapter
+  gehören nicht zu dieser Abhängigkeitsrichtung.
+- Produktionsmodule unter `src/` bilden keinen Laufzeitimportzyklus. Reine
+  Typbeziehungen und vom TypeScript-Compiler entfernte Imports zählen nicht als
+  Laufzeitkanten. Test- und Typecheck-Dateien sind keine Produktionsmodule.
+
+Die Auflösung verwendet `tsconfig.json`, einschließlich Aliasen. Dynamische
+Imports mit nicht statisch bestimmbaren Zielen sind in Modell und Renderer
+verboten. Die Prüfung untersucht Modulabhängigkeiten; sie beweist weder die
+Reinheit beliebiger Funktionskörper noch Schreibschutz über übergebene Objekte,
+Rust-Abhängigkeiten oder die Richtigkeit von Lebenszyklen. Dafür bleiben gezielte
+Verhaltensprüfungen und Review erforderlich. Es gibt keine Ausnahmeliste.
+Positive und absichtlich fehlerhafte kleine Fixtures prüfen den Wächter selbst;
+der unveränderte Produktgraph dient als reale Kontrolle. Die Prüfung läuft am
+Anfang von `check` und dadurch auch in der bestehenden Repository-CI.
+
 `scripts/contracts.mjs` generiert TypeScript ausschließlich aus Rust und
 formatiert den Export vor Vergleich oder Schreiben. Ein TypeScript-Projekt umfasst
 Produktcode, Tests und Konfiguration. Rusttests prüfen Fachmathematik, Paketaufteilung,

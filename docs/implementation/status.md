@@ -1,5 +1,17 @@
 # Aktueller Stand
 
+Letzte Entwicklungsänderung, 12. November 2026: Architekturregeln in `AGENTS.md`
+und ein TypeScript-Importwächter sind integriert. `check:architecture` läuft vor
+den bisherigen Prüfungen in `check`/CI. 19 positive und negative Wächtertests,
+der bestehende Produktionsgraph, beide TypeScript-Typprüfungen und Formatprüfung
+der geänderten Dateien bestehen. Isoliert injizierte verbotene Modellimports und
+Laufzeitzyklen werden im echten Repository mit Exit 1 erkannt. Die Prüfung
+verändert kein Produktverhalten; die unten genannten Leistungsgrenzen bleiben
+offen. Ein zusätzlich gestarteter Gesamttest wurde beim kalten Rust-Bridge-Build
+abgebrochen und wird nicht als bestanden gewertet; native Bedienung und die
+vollständige CI wurden für diese Entwicklungsänderung lokal nicht erneut geprüft.
+Belege: `src-tauri/target/diagnostics/architecture-guards-20261112/`.
+
 Stand: 12. November 2026. **Der Standardratenfall ist als unabhängige Prüfung
 implementiert; der warme Höhenrenderer ist deutlich schneller, besteht die
 vereinbarte Wirkungs- und Leistungsabnahme aber noch nicht.** Der begrenzte
