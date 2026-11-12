@@ -1,6 +1,7 @@
 # Aktueller Stand
 
-Stand: 12. November 2026. **Der Landschaftspinsel im optionalen Electron-/Pixi-Editor
+Stand: 12. November 2026. **Die Vorschau 0.3.3-43128826913.1 ist veröffentlicht.
+Der Landschaftspinsel im optionalen Electron-/Pixi-Editor
 behält bereits gemalte Strichabschnitte bei Fehlern, verarbeitet Eingaben in
 geometrischen Batches und aktualisiert die Darstellung lokal. Der Fachstand
 bleibt P3.3.** Die vorangehenden Höhen-UI-Änderungen einschließlich Moduserinnerung,
@@ -8,10 +9,14 @@ bleibt P3.3.** Die vorangehenden Höhen-UI-Änderungen einschließlich Moduserin
 wurde nicht eingeführt. Atlas V7 bleibt der reguläre Tauri-Einstieg mit Format 22;
 der optionale Editor verwendet weiterhin Format 27 (`atlas-p3-derived-water-1`).
 
-Die Umsetzung liegt auf dem lokalen Zweig `work/landscape-painting-20261112`,
-Produktcommit `fc92ec7c783ac4f10792d457e6f2a9af2bbcef29`. Ausgangspunkt ist
-`3c6e649` mit den bereits abgeschlossenen Höhen-UI-Änderungen. Der gemeinsame
-Remote-Zweig `work/atlas-p0-feasibility` wurde als `fb6e22e` zurückgelesen;
+Veröffentlichter Programmstand ist
+[`66d3f6904e75347bad8579e5a8a17decd6650701`](https://github.com/ThonkTank/Salt-Marcher/commit/66d3f6904e75347bad8579e5a8a17decd6650701)
+aus `work/atlas-p0-feasibility`. Release-Tag, Update-Feed und tatsächlich
+heruntergeladene Pakete stimmen auf diesen Stand überein. Die ursprüngliche
+lokale Umsetzung liegt auf `work/landscape-painting-20261112`, Produktcommit
+`fc92ec7c783ac4f10792d457e6f2a9af2bbcef29`, ausgehend von `3c6e649` mit den
+bereits abgeschlossenen Höhen-UI-Änderungen. Der nachfolgende Abschlusscommit
+aktualisiert ausschließlich dieses Statusdokument;
 [PR #1469](https://github.com/ThonkTank/Salt-Marcher/pull/1469) bleibt Draft.
 
 ## Ergebnis und Verhalten
@@ -45,13 +50,14 @@ und genau ein Undo-Schritt pro verändertem Strich bleiben erhalten. History,
 Dateiformat und ein einziger geordneter Writer werden weiterverwendet. Es wurde
 kein zweites Dokument oder werkzeugeigenes Schreibjournal eingeführt.
 
-## Nachweis am endgültigen Produktstand
+## Lokaler Nachweis der Umsetzung
 
-Der saubere Build gehört zu `fc92ec7`. Produktquellhash (`product-inputs-v1`):
+Der saubere Logikbuild vor dem Versionswechsel gehört zum lokalen `fc92ec7`.
+Produktquellhash (`product-inputs-v1`):
 `811ae283f5bd19ad1fc95b61c802caf9d5dfdadb81a2f17b7617bb25a8cdf682`.
-Der Hash wurde aus den aktuellen Produktdateien erneut berechnet und stimmt mit
-`desktop-dist/build.json` überein. Der nachfolgende Abschlusscommit ändert nur
-dieses Statusdokument.
+Der Hash wurde aus den damaligen Produktdateien erneut berechnet und stimmt mit
+`desktop-dist/build.json` überein. Der veröffentlichte Build mit Paketversion
+0.3.3 besitzt den unten separat nachgewiesenen Produktquellhash.
 
 | Prüfung                                          | Ergebnis                                                                                       |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
@@ -125,20 +131,67 @@ Lokale Nachweise liegen ignoriert unter `src-tauri/target/diagnostics/`:
 Integrationsläufe. Die negative Kontrolle liegt im separaten Baseline-Worktree
 unter `src-tauri/target/diagnostics/landscape-negative-control/`.
 
-## Übertragung und nächste Übergabe
+## Veröffentlichte Vorschau 0.3.3
 
-Der Nutzer hat Push und Veröffentlichung am 12. November ausdrücklich
-freigegeben. Die neue Electron-Vorschau erhält Version **0.3.3**; geändert
-werden ausschließlich die Paketversion und die beiden Root-Versionsfelder
-der Lockdatei. Die oben nachgewiesene Programmlogik bleibt identisch. Der
-Versionswechsel ändert den Produktquellhash; der endgültige Paket- und
-Veröffentlichungsnachweis wird an den neuen Build gebunden.
+Push und Veröffentlichung wurden am 12. November ausdrücklich freigegeben.
+Der [Release-Lauf 43128826913](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43128826913)
+ist für **66d3f69** vollständig erfolgreich, einschließlich Veröffentlichung.
+Die Paketversion und beide Root-Versionsfelder der Lockdatei lauten **0.3.3**;
+die Programmlogik der oben beschriebenen Landschaftskorrektur ist enthalten.
 
-Der geprüfte Stand einschließlich der vorherigen Höhen-UI-Commits wird in
-`work/atlas-p0-feasibility` übernommen. Der vorhandene Workflow muss das
-tatsächliche RPM/ZIP und den gepackten Update-Dialog erfolgreich prüfen,
-bevor der Vorschaukanal aktualisiert wird. Die Veröffentlichung ist an diesem
-Vorbereitungsstand noch ausstehend.
+**[Fedora-RPM herunterladen](https://github.com/ThonkTank/Salt-Marcher/releases/download/atlas-preview/saltmarcher-atlas-p0-0.3.3-43128826913.1.x86_64.rpm)**
+· [portable ZIP](https://github.com/ThonkTank/Salt-Marcher/releases/download/atlas-preview/saltmarcher-atlas-p0-0.3.3-43128826913.1.linux-x64.zip)
+· [Vorschauseite](https://github.com/ThonkTank/Salt-Marcher/releases/tag/atlas-preview).
+
+| Prüfung am veröffentlichten Kandidaten | Ergebnis |
+| --- | --- |
+| TypeScript | PASS |
+| Update- und Releasefehler | **35/35** und **6/6 PASS** |
+| Tatsächlicher Electron-Netzadapter | **7/7 PASS** |
+| RPM-Bau, Paketinhalt und native Bindung | tatsächliches RPM/ZIP geprüft; **2/2 PASS** |
+| Normaler Smoke des tatsächlichen Pakets | **103/103 PASS**, einschließlich 35 Landschaftsprüfungen |
+| Bedienoberfläche im tatsächlichen Paket | **60/60 PASS** |
+| Gepackter Update-Dialog und IPC | **11/11 PASS** |
+| Veröffentlichung und erneute öffentliche Downloads | PASS; Manifest, Release-Tag, RPM und ZIP gehören zu **66d3f69 / 43128826913.1** |
+
+Der erste Kandidat `c4dc287` wurde im
+[Paketlauf 43127584454](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43127584454)
+vor der Veröffentlichung gestoppt. Alle 320 Samples und die einzelne
+History-Aktion waren erhalten; die neue Anzeigeprüfung las vier Proben vor
+Abschluss der letzten GPU-Szene (eingereichter Frame 152, abgeschlossener 151).
+`settled()` prüft jetzt aktuelle Submission, Ansicht, Quellenbereitschaft und
+GPU-Abschluss in derselben Beobachtung. Inhalts- und Historyprüfungen bleiben
+unverändert, das Zeitlimit bleibt 30 Sekunden. Die native Gegenprobe hält den
+letzten Scene-Fence gezielt zurück: Der alte Wait passiert bei 110/111 und einer
+unbekannten Probe, der korrigierte Wait bleibt gesperrt und passiert nach echter
+Freigabe bei 111/111 mit `[191, 0, 0, 0]`. Der Helperhash stimmt mit **66d3f69**
+überein. Lokal bestanden erneut **35/35** Landschaftsprüfungen. Anschließend
+bestand der oben genannte vollständige CI-Paketlauf.
+
+Die öffentlichen Dateien wurden nach Veröffentlichung erneut heruntergeladen
+und unabhängig geprüft. Das RPM enthält tatsächlich Version **0.3.3**, Release
+**43128826913.1** und Architektur **x86_64**. Seine 104.130.881 Bytes und die
+127.333.268 Bytes der ZIP stimmen samt SHA-256 exakt mit dem Feed überein.
+Das tatsächliche ZIP-ASAR enthält einen sauberen Build von **66d3f69**.
+Seine 61 Produktinputs wurden aus den Git-Objekten dieses Commits rekonstruiert;
+Quelldateiliste, Produktquellhash und Lockhash stimmen überein.
+Produktquellhash (`product-inputs-v1`):
+`5667781e659c5a2d88b27826afb2c3207d427187cbfff35e151b09464bb3ece8`.
+Die Release-Nachweise liegen ignoriert unter
+`src-tauri/target/diagnostics/landscape-release-0.3.3/`.
+
+Die lokale Aktualisierung erfolgt über **Updates → Nach Updates suchen →
+Herunterladen → Installieren und neu starten**. Nach Neustart muss der aktuelle
+App-Stand **0.3.3 / 66d3f69** anzeigen.
+
+## Offene Abnahmen und nächste Übergabe
+
+Der separate [Repository-Baseline-Lauf für 66d3f69](https://github.com/ThonkTank/Salt-Marcher/actions/runs/43128833774)
+war beim Statusabschluss noch aktiv; sein Paketbau ist bestanden. Der frühere
+Lauf für `fb6e22e` scheiterte in `clipped-world-corner` am unveränderten
+Testhelfer `navigateTo`: `page.locator("details")` trifft vier Elemente und
+verletzt Playwrights Eindeutigkeitsanforderung. Ein bestandener neuer gesamter
+Baseline-Lauf wird daraus nicht abgeleitet.
 
 Der letzte vollständige Höhen-GPU-Referenzlauf aus P3.2 bleibt historisch
 **FAIL, 3/6**; R4-Halten und die native Hardware-/Eingabelatenzabnahme bleiben offen.
